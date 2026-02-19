@@ -1,0 +1,126 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      String   @default("admin")
+  createdAt DateTime @default(now())
+}
+
+model Project {
+  id          String     @id @default(cuid())
+  name        String
+  nameTranslations String?  // JSON: {"en": "...", "ru": "...", "uz": "..."}
+  description String?
+  descriptionTranslations String?  // JSON for translations
+  address     String?
+  addressTranslations String?  // JSON for translations
+  coverImage  String?
+  topViewImage String?   // Aerial view of entire complex
+  latitude    Float?     // GPS latitude
+  longitude   Float?     // GPS longitude
+  infrastructure String? // JSON: nearby places data
+  buildings   Building[]
+  createdAt   DateTime   @default(now())
+}
+
+model Building {
+  id             String   @id @default(cuid())
+  name           String
+  nameTranslations String?  // JSON: {"en": "...", "ru": "...", "uz": "..."}
+  projectId      String
+  project        Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  floors         Floor[]
+  frontViewImage String?  // Front facade image
+  backViewImage  String?  // Back facade image
+  leftViewImage  String?  // Left side image
+  rightViewImage String?  // Right side image
+  positionData   String?  // DEPRECATED: use polygonData instead
+  polygonData    String?  // JSON: [{x, y}, ...] polygon coordinates on aerial view (as % of image)
+  sortOrder      Int      @default(0)  // For ordering buildings A, B, C...
+  createdAt      DateTime @default(now())
+}
+
+model Floor {
+  id             String   @id @default(cuid())
+  number         Int
+  buildingId     String
+  building       Building @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  basePricePerM2 Float?
+  floorPlanImage String?  // Interior floor plan image
+  positionData   String?  // JSON: {yStart, yEnd} for clickable area on building view
+  units          Unit[]
+  createdAt      DateTime @default(now())
+}
+
+model Unit {
+  id          String   @id @default(cuid())
+  unitNumber  String
+  floorId     String
+  floor       Floor    @relation(fields: [floorId], references: [id], onDelete: Cascade)
+  rooms       Int
+  area        Float
+  status      String   @default("available")
+  pricePerM2  Float?
+  totalPrice  Float?
+  svgPathId   String?  // DEPRECATED: use polygonData instead
+  polygonData String?  // JSON: [{x, y}, ...] polygon coordinates on floor plan (as % of image)
+  labelX      Float?   // Label position X (as % of image width)
+  labelY      Float?   // Label position Y (as % of image height)
+  sketchImage  String?  // Unit layout/sketch image (photo 1)
+  sketchImage2 String?  // Photo 2
+  sketchImage3 String?  // Photo 3
+  sketchImage4 String?  // Photo 4
+  description String?
+  descriptionTranslations String?  // JSON for translations
+  features    String?  // JSON: additional features like balcony, view, etc.
+  // Reservation/Sale details
+  customerName  String?
+  customerPhone String?
+  customerNotes String?
+  statusChangedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Lead {
+  id          String   @id @default(cuid())
+  name        String
+  phone       String
+  projectId   String?
+  projectName String?
+  unitId      String?  // Optional: if they selected a specific unit
+  unitNumber  String?
+  status      String   @default("new") // new, contacted, converted, closed
+  notes       String?
+  createdAt   DateTime @default(now())
+}
+
+model HeroImage {
+  id        String   @id @default(cuid())
+  imageUrl  String
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+}
+
+model FAQ {
+  id                   String   @id @default(cuid())
+  questionUz           String
+  questionEn           String
+  questionRu           String
+  answerUz             String
+  answerEn             String
+  answerRu             String
+  sortOrder            Int      @default(0)
+  isActive             Boolean  @default(true)
+  createdAt            DateTime @default(now())
+}

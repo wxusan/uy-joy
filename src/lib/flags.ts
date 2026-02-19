@@ -1,0 +1,1 @@
+export const SHOW_AI = (process.env.NEXT_PUBLIC_SHOW_AI || "false").toLowerCase() === "true";

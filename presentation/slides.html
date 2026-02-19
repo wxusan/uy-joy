@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UyJoy - Taqdimot</title>
+  <style>
+    @page {
+      size: 297mm 210mm; /* A4 Landscape */
+      margin: 0;
+    }
+    
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { background: #0f172a; }
+    body { 
+      font-family: 'Segoe UI', system-ui, sans-serif; 
+      background: #0f172a; 
+      color: white;
+      width: 297mm;
+      margin: 0 auto;
+    }
+    
+    .slide {
+      width: 297mm;
+      height: 210mm;
+      min-height: 210mm;
+      max-height: 210mm;
+      padding: 25mm 30mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      overflow: hidden;
+      background: #0f172a;
+    }
+    
+    .slide-title {
+      background: linear-gradient(135deg, #0f172a 0%, #064e3b 100%);
+      text-align: center;
+    }
+    
+    h1 { font-size: 3.5rem; margin-bottom: 16px; }
+    h2 { font-size: 2.2rem; margin-bottom: 30px; color: #10b981; }
+    h3 { font-size: 1.5rem; margin-bottom: 16px; color: #34d399; }
+    
+    .logo { color: #10b981; }
+    .subtitle { font-size: 1.3rem; color: #94a3b8; margin-bottom: 30px; }
+    
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+    
+    .card {
+      background: #1e293b;
+      border-radius: 12px;
+      padding: 20px;
+      border: 1px solid #334155;
+    }
+    
+    .card-icon { font-size: 2.2rem; margin-bottom: 10px; }
+    .card h4 { font-size: 1.1rem; margin-bottom: 8px; color: #f1f5f9; }
+    .card p { color: #94a3b8; line-height: 1.5; font-size: 0.95rem; }
+    
+    .feature-list { list-style: none; }
+    .feature-list li {
+      padding: 10px 0;
+      border-bottom: 1px solid #334155;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 1.05rem;
+    }
+    .feature-list li:last-child { border-bottom: none; }
+    .check { color: #10b981; font-size: 1.3rem; }
+    
+    .highlight-box {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      border-radius: 12px;
+      padding: 25px;
+      text-align: center;
+    }
+    
+    .highlight-box h3 { color: white; margin-bottom: 10px; }
+    .highlight-box p { color: #d1fae5; font-size: 1rem; }
+    
+    .screenshot {
+      background: #334155;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      color: #64748b;
+      min-height: 200px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    .screenshot-icon { font-size: 3rem; }
+    
+    .price-card {
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      border: 2px solid #10b981;
+      border-radius: 16px;
+      padding: 30px;
+      text-align: center;
+    }
+    
+    .price { font-size: 2.5rem; color: #10b981; font-weight: bold; }
+    .price-note { color: #94a3b8; margin-top: 8px; }
+    
+    .timeline {
+      position: relative;
+      padding-left: 35px;
+    }
+    
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 8px;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      background: #10b981;
+    }
+    
+    .timeline-item {
+      position: relative;
+      margin-bottom: 16px;
+      padding: 14px 18px;
+      background: #1e293b;
+      border-radius: 10px;
+    }
+    
+    .timeline-item strong { font-size: 1rem; }
+    .timeline-item p { font-size: 0.9rem; margin-top: 4px; }
+    
+    .timeline-item::before {
+      content: '';
+      position: absolute;
+      left: -32px;
+      top: 18px;
+      width: 14px;
+      height: 14px;
+      background: #10b981;
+      border-radius: 50%;
+    }
+    
+    .contact-info {
+      display: flex;
+      gap: 40px;
+      justify-content: center;
+      margin-top: 30px;
+    }
+    
+    .contact-item {
+      text-align: center;
+    }
+    
+    .contact-item .icon { font-size: 1.8rem; margin-bottom: 8px; }
+    
+    .slide-number {
+      position: fixed;
+      bottom: 15px;
+      right: 25px;
+      color: #475569;
+      font-size: 0.85rem;
+    }
+
+    @media print {
+      @page { size: landscape; margin: 0; }
+      .slide { 
+        page-break-after: always;
+        page-break-inside: avoid;
+        width: 100%;
+        height: 100vh;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Slide 1: Title -->
+<section class="slide slide-title">
+  <h1><span class="logo">Uy</span>Joy</h1>
+  <p class="subtitle">Zamonaviy Uy-Joy Vizualizatsiya Platformasi</p>
+  <p style="color: #64748b; font-size: 1.1rem;">Turar-joy majmualarini interaktiv tarzda ko'rsatish uchun raqamli yechim</p>
+</section>
+
+<!-- Slide 2: Problem -->
+<section class="slide">
+  <h2>❌ Muammo</h2>
+  <div class="grid-2">
+    <div>
+      <ul class="feature-list">
+        <li><span style="color: #ef4444;">✗</span> Mijozlar kvartiralarni tasavvur qila olmaydi</li>
+        <li><span style="color: #ef4444;">✗</span> Qog'oz rejalar eskirgan va noqulay</li>
+        <li><span style="color: #ef4444;">✗</span> Narxlar va mavjudlik haqida ma'lumot yo'q</li>
+        <li><span style="color: #ef4444;">✗</span> Sotuvchilar har bir mijozga alohida tushuntirishi kerak</li>
+        <li><span style="color: #ef4444;">✗</span> Chet ellik mijozlar uchun til muammosi</li>
+      </ul>
+    </div>
+    <div class="screenshot">
+      <span class="screenshot-icon">📋</span>
+      <p>An'anaviy usul:<br>Qog'oz rejalar, telefon qo'ng'iroqlari</p>
+    </div>
+  </div>
+</section>
+
+<!-- Slide 3: Solution -->
+<section class="slide">
+  <h2>✅ Yechim: UyJoy Platformasi</h2>
+  <div class="grid-3">
+    <div class="card">
+      <div class="card-icon">🏢</div>
+      <h4>Interaktiv Xarita</h4>
+      <p>Loyihaning yuqoridan ko'rinishi, binolar, qavatlar - hammasi bir joyda</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">🎨</div>
+      <h4>Haqiqiy Shakllar</h4>
+      <p>Kvartiralar haqiqiy shakllarda ko'rsatiladi, to'rtburchak emas</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">💰</div>
+      <h4>Jonli Narxlar</h4>
+      <p>Narxlar, maydon, xonalar soni - real vaqtda</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">🌍</div>
+      <h4>3 Tilda</h4>
+      <p>O'zbek, Rus, Ingliz tillarida to'liq tarjima</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">🤖</div>
+      <h4>AI Qo'llab-quvvatlash</h4>
+      <p>Sun'iy intellekt kvartira chegaralarini avtomatik aniqlaydi</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">📱</div>
+      <h4>Mobil Moslashuvchan</h4>
+      <p>Telefon, planshet, kompyuterda ishlaydi</p>
+    </div>
+  </div>
+</section>
+
+<!-- Slide 4: How it Works -->
+<section class="slide">
+  <h2>🔄 Qanday Ishlaydi?</h2>
+  <div class="grid-2">
+    <div>
+      <h3>Mijoz Uchun</h3>
+      <div class="timeline">
+        <div class="timeline-item">
+          <strong>1. Loyihani tanlash</strong>
+          <p style="color: #94a3b8;">Asosiy sahifadan loyihani ko'rish</p>
+        </div>
+        <div class="timeline-item">
+          <strong>2. Binoni tanlash</strong>
+          <p style="color: #94a3b8;">Yuqoridan ko'rinishda binoni bosish</p>
+        </div>
+        <div class="timeline-item">
+          <strong>3. Qavatni tanlash</strong>
+          <p style="color: #94a3b8;">Bino fasadida qavatni tanlash</p>
+        </div>
+        <div class="timeline-item">
+          <strong>4. Kvartira ko'rish</strong>
+          <p style="color: #94a3b8;">Narx, maydon, holat - bir zumda</p>
+        </div>
+      </div>
+    </div>
+    <div class="screenshot">
+      <span class="screenshot-icon">🖥️</span>
+      <p>Platforma ekran tasviri<br><small>(Demo ko'rsatish)</small></p>
+    </div>
+  </div>
+</section>
+
+<!-- Slide 5: Admin Panel -->
+<section class="slide">
+  <h2>⚙️ Admin Panel - Oson Boshqaruv</h2>
+  <div class="grid-2">
+    <div class="screenshot">
+      <span class="screenshot-icon">🔧</span>
+      <p>Admin panel ekran tasviri<br><small>(Demo ko'rsatish)</small></p>
+    </div>
+    <div>
+      <ul class="feature-list">
+        <li><span class="check">✓</span> Binolar va qavatlarni qo'shish</li>
+        <li><span class="check">✓</span> Rasm yuklash va kvartiralarni chizish</li>
+        <li><span class="check">✓</span> AI bilan avtomatik aniqlash</li>
+        <li><span class="check">✓</span> Narxlarni o'zgartirish</li>
+        <li><span class="check">✓</span> Holat yangilash (mavjud/band/sotilgan)</li>
+        <li><span class="check">✓</span> Bir qavatni barcha qavatlarga nusxalash</li>
+        <li><span class="check">✓</span> Ko'p tilli kontent kiritish</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- Slide 6: Future Features -->
+<section class="slide">
+  <h2>🚀 Kelajakdagi Imkoniyatlar</h2>
+  <div class="grid-3">
+    <div class="card">
+      <div class="card-icon">💬</div>
+      <h4>Telegram Bot</h4>
+      <p>So'rovnoma → Admin guruh → Excel hisobot avtomatik</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">📊</div>
+      <h4>CRM Integratsiya</h4>
+      <p>Bitrix24, AmoCRM bilan bog'lanish, mijozlar bazasi</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">📅</div>
+      <h4>Bron Qilish</h4>
+      <p>Onlayn bron, to'lov qilish, shartnoma imzolash</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">🎥</div>
+      <h4>Virtual Tur (360°)</h4>
+      <p>Kvartira ichini virtual ko'rish, 3D model</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">📱</div>
+      <h4>Mobil Ilova</h4>
+      <p>iOS/Android uchun alohida ilova, push xabarlar</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">📈</div>
+      <h4>Analitika</h4>
+      <p>Ko'rishlar soni, qaysi kvartira mashhur, konversiya</p>
+    </div>
+  </div>
+  <div style="margin-top: 20px; text-align: center;">
+    <p style="color: #64748b; font-size: 0.95rem;">💡 Har bir funksiya alohida qo'shilishi mumkin</p>
+  </div>
+</section>
+
+<!-- Slide 7: Benefits -->
+<section class="slide">
+  <h2>💎 Sizga Nima Beradi?</h2>
+  <div class="grid-3">
+    <div class="card" style="text-align: center;">
+      <div class="card-icon">⏱️</div>
+      <h4>Vaqt Tejash</h4>
+      <p>Sotuvchilar vaqtini 50% kamaytiradi</p>
+    </div>
+    <div class="card" style="text-align: center;">
+      <div class="card-icon">🎯</div>
+      <h4>Sifatli Mijozlar</h4>
+      <p>Faqat qiziquvchilar murojaat qiladi</p>
+    </div>
+    <div class="card" style="text-align: center;">
+      <div class="card-icon">🌐</div>
+      <h4>24/7 Ko'rsatuv</h4>
+      <p>Mijoz istalgan vaqtda ko'ra oladi</p>
+    </div>
+    <div class="card" style="text-align: center;">
+      <div class="card-icon">📈</div>
+      <h4>Professional Imidj</h4>
+      <p>Zamonaviy kompaniya sifatida ko'rinish</p>
+    </div>
+    <div class="card" style="text-align: center;">
+      <div class="card-icon">🔄</div>
+      <h4>Oson Yangilash</h4>
+      <p>Narx o'zgarsa - 1 minutda yangilash</p>
+    </div>
+    <div class="card" style="text-align: center;">
+      <div class="card-icon">📱</div>
+      <h4>Ulashish Oson</h4>
+      <p>Linkni WhatsApp/Telegram'da ulashish</p>
+    </div>
+  </div>
+</section>
+
+<!-- Slide 8: Demo -->
+<section class="slide slide-title" style="background: linear-gradient(135deg, #064e3b 0%, #0f172a 100%);">
+  <h2 style="color: white;">🎬 Jonli Demo</h2>
+  <p class="subtitle">Platformani real vaqtda ko'rsatish</p>
+  <div style="margin-top: 40px;">
+    <div class="card" style="display: inline-block; padding: 20px 40px;">
+      <p style="color: #10b981; font-size: 1.3rem;">localhost:3000</p>
+    </div>
+  </div>
+</section>
+
+<!-- Slide 9: Next Steps -->
+<section class="slide">
+  <h2>📋 Keyingi Qadamlar</h2>
+  <div class="grid-2">
+    <div>
+      <div class="timeline">
+        <div class="timeline-item">
+          <strong>1-bosqich: Asosiy platforma</strong>
+          <p style="color: #10b981;">✅ Tayyor</p>
+        </div>
+        <div class="timeline-item">
+          <strong>2-bosqich: Haqiqiy ma'lumotlar</strong>
+          <p style="color: #94a3b8;">Sizning loyihangiz rasmlarini yuklash</p>
+        </div>
+        <div class="timeline-item">
+          <strong>3-bosqich: Domenga joylashtirish</strong>
+          <p style="color: #94a3b8;">navruz-residence.uz yoki shunga o'xshash</p>
+        </div>
+        <div class="timeline-item">
+          <strong>4-bosqich: Telegram bot</strong>
+          <p style="color: #94a3b8;">So'rovlarni yig'ish tizimi</p>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="highlight-box">
+        <h3>Tayyor!</h3>
+        <p style="margin-top: 15px;">Platforma ishga tushirishga tayyor.<br>Faqat haqiqiy rasmlar va ma'lumotlar kerak.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Slide 10: Contact -->
+<section class="slide slide-title">
+  <h1><span class="logo">Uy</span>Joy</h1>
+  <p class="subtitle">Savollar?</p>
+  <div class="contact-info">
+    <div class="contact-item">
+      <div class="icon">📧</div>
+      <p>info@example.com</p>
+    </div>
+    <div class="contact-item">
+      <div class="icon">📱</div>
+      <p>+998 XX XXX XX XX</p>
+    </div>
+  </div>
+  <p style="margin-top: 60px; color: #64748b;">Rahmat e'tiboringiz uchun! 🙏</p>
+</section>
+
+</body>
+</html>

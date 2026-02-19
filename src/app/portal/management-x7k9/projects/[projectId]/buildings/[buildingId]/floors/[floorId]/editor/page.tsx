@@ -347,6 +347,24 @@ export default function FloorPlanEditorPage() {
     }
   };
 
+  // Delete floor plan image
+  const handleImageDelete = async () => {
+    if (!confirm("Qavat rejasi rasmini o'chirmoqchimisiz?")) return;
+    setUploading(true);
+    try {
+      await fetch(`/api/floors/${params.floorId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ floorPlanImage: null }),
+      });
+      await loadFloor();
+    } catch {
+      alert("O'chirishda xatolik");
+    } finally {
+      setUploading(false);
+    }
+  };
+
   if (!floor) {
     return <p className="text-slate-500">{t("loading")}</p>;
   }
@@ -401,8 +419,17 @@ export default function FloorPlanEditorPage() {
                       : "bg-emerald-600 text-white hover:bg-emerald-700"
                   }`}
                 >
-                  {uploading ? t("loading") : floor.floorPlanImage ? "Rasmni o‘zgartirish" : "Rasm yuklash"}
+                  {uploading ? t("loading") : floor.floorPlanImage ? "Rasmni o'zgartirish" : "Rasm yuklash"}
                 </label>
+                {floor.floorPlanImage && (
+                  <button
+                    onClick={handleImageDelete}
+                    disabled={uploading}
+                    className="px-4 py-2 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 disabled:bg-slate-300 transition"
+                  >
+                    🗑 O&apos;chirish
+                  </button>
+                )}
                 {SHOW_AI && (
                   <button
                     onClick={handleAIDetect}

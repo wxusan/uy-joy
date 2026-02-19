@@ -1,11 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import ApartmentCard from "./ApartmentCard";
-import ApartmentDetailModal from "./ApartmentDetailModal";
 import ScrollReveal from "./ScrollReveal";
+
+// Lazy load modal for better initial page load
+const ApartmentDetailModal = dynamic(() => import("./ApartmentDetailModal"), {
+  ssr: false,
+});
 
 interface Unit {
   id: string;

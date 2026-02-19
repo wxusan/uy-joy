@@ -2,6 +2,7 @@
 
 import { formatPrice } from "@/lib/utils";
 import { useTranslations } from "next-intl";
+import { getCardImageUrl } from "@/lib/cloudinary";
 
 interface Unit {
   id: string;
@@ -52,9 +53,10 @@ export default function ApartmentCard({ unit, onClick }: Props) {
       <div className="relative aspect-[4/3] bg-slate-50 overflow-hidden">
         {unit.sketchImage ? (
           <img
-            src={unit.sketchImage}
+            src={getCardImageUrl(unit.sketchImage)}
             alt={`№${unit.unitNumber}`}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            loading="lazy"
           />
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-slate-50 to-slate-100">

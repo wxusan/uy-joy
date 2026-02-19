@@ -77,6 +77,31 @@ export default function BuildingImagesPage() {
     }
   };
 
+  const deleteImage = async (type: string, id: string, field: string) => {
+    if (!confirm("Rasmni o'chirmoqchimisiz?")) return;
+    setUploading(`${type}-${id}-${field}`);
+    setMessage(null);
+
+    try {
+      const endpoint = type === "building" 
+        ? `/api/buildings/${id}` 
+        : `/api/floors/${id}`;
+
+      await fetch(endpoint, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ [field]: null }),
+      });
+
+      setMessage({ type: "success", text: "Rasm o'chirildi!" });
+      loadBuilding();
+    } catch {
+      setMessage({ type: "error", text: "O'chirishda xatolik" });
+    } finally {
+      setUploading(null);
+    }
+  };
+
   const handleFileChange = (
     e: React.ChangeEvent<HTMLInputElement>,
     type: string,
@@ -141,9 +166,17 @@ export default function BuildingImagesPage() {
             return (
               <div key={view}>
                 <p className="text-sm font-medium text-slate-700 mb-2">{viewLabels[view]}</p>
-                <div className="w-full aspect-[3/4] bg-slate-100 rounded-lg overflow-hidden mb-2">
+                <div className="w-full aspect-[3/4] bg-slate-100 rounded-lg overflow-hidden mb-2 relative group">
                   {imageUrl ? (
-                    <img src={imageUrl} alt={`${view} view`} className="w-full h-full object-cover" />
+                    <>
+                      <img src={imageUrl} alt={`${view} view`} className="w-full h-full object-cover" />
+                      <button
+                        onClick={() => deleteImage("building", building.id, fieldName)}
+                        className="absolute top-2 right-2 w-7 h-7 bg-red-500 hover:bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-sm"
+                      >
+                        ✕
+                      </button>
+                    </>
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-slate-400 text-sm">
                       Rasm yo&apos;q
@@ -166,7 +199,7 @@ export default function BuildingImagesPage() {
                       : "bg-emerald-600 text-white hover:bg-emerald-700"
                   }`}
                 >
-                  {uploading === uploadKey ? "Yuklanmoqda..." : "Yuklash"}
+                  {uploading === uploadKey ? "Yuklanmoqda..." : imageUrl ? "O'zgartirish" : "Yuklash"}
                 </label>
               </div>
             );
@@ -192,13 +225,21 @@ export default function BuildingImagesPage() {
                   <p className="text-sm font-semibold text-slate-700 mb-2 text-center">
                     {floor.number}-qavat
                   </p>
-                  <div className="w-full aspect-square bg-white rounded-lg overflow-hidden mb-2 border">
+                  <div className="w-full aspect-square bg-white rounded-lg overflow-hidden mb-2 border relative group">
                     {floor.floorPlanImage ? (
-                      <img
-                        src={floor.floorPlanImage}
-                        alt={`Floor ${floor.number} plan`}
-                        className="w-full h-full object-contain"
-                      />
+                      <>
+                        <img
+                          src={floor.floorPlanImage}
+                          alt={`Floor ${floor.number} plan`}
+                          className="w-full h-full object-contain"
+                        />
+                        <button
+                          onClick={() => deleteImage("floor", floor.id, "floorPlanImage")}
+                          className="absolute top-1 right-1 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-xs"
+                        >
+                          ✕
+                        </button>
+                      </>
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-slate-400 text-xs">
                         Rasm yo&apos;q
@@ -221,7 +262,7 @@ export default function BuildingImagesPage() {
                         : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                     }`}
                   >
-                    {uploading === uploadKey ? "..." : "Yuklash"}
+                    {uploading === uploadKey ? "..." : floor.floorPlanImage ? "O'zgartirish" : "Yuklash"}
                   </label>
                 </div>
               );

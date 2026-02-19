@@ -166,11 +166,13 @@ def create_pdf_report():
         ["Frontend", "TypeScript", "5.x"],
         ["Frontend", "Tailwind CSS", "3.4.x"],
         ["Backend", "Next.js API Routes", "14.x"],
-        ["Database", "PostgreSQL", "15+"],
-        ["ORM", "Prisma", "5.x"],
+        ["Database", "PostgreSQL (Neon)", "Serverless"],
+        ["ORM", "Prisma", "5.22.x"],
         ["i18n", "next-intl", "3.x"],
-        ["Image Processing", "Sharp", "0.33.x"],
+        ["Image Storage", "Cloudinary", "2.9.x"],
+        ["Image Processing", "Sharp", "0.34.x"],
         ["Authentication", "NextAuth.js", "4.x"],
+        ["Hosting", "Vercel", "Serverless"],
     ]
     
     tech_table = Table(tech_data, colWidths=[2*inch, 2.5*inch, 1.5*inch])
@@ -414,14 +416,15 @@ def create_pdf_report():
     for p in perf:
         story.append(Paragraph(p, bullet_style))
     
-    story.append(Paragraph("Image Optimization Settings:", subheading_style))
+    story.append(Paragraph("Image Handling (Cloudinary):", subheading_style))
     img_data = [
-        ["Type", "Max Dimensions", "Quality"],
-        ["Project/Building", "1200 x 800px", "JPEG 80%"],
-        ["Floor Plan", "2000 x 1500px", "PNG Level 9"],
-        ["Unit Sketch", "1200 x 1200px", "WebP 80%"],
+        ["Feature", "Description"],
+        ["Auto Format", "Converts to WebP/AVIF based on browser"],
+        ["Auto Quality", "Optimizes compression automatically"],
+        ["CDN Delivery", "Global edge network for fast loading"],
+        ["Transformations", "Resize, crop on-the-fly via URL params"],
     ]
-    img_table = Table(img_data, colWidths=[2*inch, 2*inch, 2*inch])
+    img_table = Table(img_data, colWidths=[2*inch, 4*inch])
     img_table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), NAVY_900),
         ('TEXTCOLOR', (0, 0), (-1, 0), HexColor("#FFFFFF")),
@@ -434,21 +437,25 @@ def create_pdf_report():
     # 9. Deployment Guide
     story.append(Paragraph("9. Deployment Guide", heading_style))
     
-    story.append(Paragraph("9.1 Prerequisites", subheading_style))
-    prereqs = [
-        "• Node.js 18+ installed",
-        "• PostgreSQL 15+ database",
-        "• npm or yarn package manager"
+    story.append(Paragraph("9.1 Cloud Services Used", subheading_style))
+    services = [
+        "• Vercel - Serverless hosting platform (automatic deployments from GitHub)",
+        "• Neon - Serverless PostgreSQL database with connection pooling",
+        "• Cloudinary - Image storage and CDN with automatic optimization",
+        "• GitHub - Source code repository (wxusan/uy-joy)"
     ]
-    for p in prereqs:
-        story.append(Paragraph(p, bullet_style))
+    for s in services:
+        story.append(Paragraph(s, bullet_style))
     
     story.append(Paragraph("9.2 Environment Variables", subheading_style))
     env_data = [
         ["Variable", "Description"],
-        ["DATABASE_URL", "PostgreSQL connection string"],
+        ["DATABASE_URL", "Neon PostgreSQL connection string with pgbouncer"],
         ["NEXTAUTH_SECRET", "Random secret for session encryption"],
-        ["NEXTAUTH_URL", "Production URL of the application"],
+        ["NEXTAUTH_URL", "Production URL (https://uy-joy-qmw3.vercel.app)"],
+        ["CLOUDINARY_CLOUD_NAME", "Cloudinary cloud name"],
+        ["CLOUDINARY_API_KEY", "Cloudinary API key"],
+        ["CLOUDINARY_API_SECRET", "Cloudinary API secret"],
     ]
     env_table = Table(env_data, colWidths=[2.5*inch, 3.5*inch])
     env_table.setStyle(TableStyle([
@@ -459,15 +466,14 @@ def create_pdf_report():
     ]))
     story.append(env_table)
     
-    story.append(Paragraph("9.3 Deployment Steps", subheading_style))
+    story.append(Paragraph("9.3 Deployment Process", subheading_style))
     deploy_steps = [
-        "1. Clone repository: git clone [repo-url]",
-        "2. Install dependencies: npm install",
-        "3. Configure environment: cp .env.example .env",
-        "4. Run database migrations: npx prisma migrate deploy",
-        "5. Build application: npm run build",
-        "6. Start production server: npm start",
-        "7. (Optional) Use PM2 for process management"
+        "1. Push code to GitHub repository",
+        "2. Vercel automatically detects changes and starts build",
+        "3. Build runs: prisma generate && next build",
+        "4. Vercel deploys to production URL",
+        "5. Database already configured in Neon (serverless, always on)",
+        "6. Images stored in Cloudinary CDN (global delivery)"
     ]
     for d in deploy_steps:
         story.append(Paragraph(d, bullet_style))

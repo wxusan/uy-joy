@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { formatPrice } from "@/lib/utils";
+import { getCardImageUrl, getFullImageUrl } from "@/lib/cloudinary";
 
 interface Unit {
   id: string;
@@ -87,7 +88,7 @@ export default function ApartmentDetailModal({ unit, onClose }: Props) {
             ✕
           </button>
           <img
-            src={lightbox}
+            src={getFullImageUrl(lightbox)}
             alt=""
             className="max-w-full max-h-[90vh] object-contain rounded-xl shadow-2xl"
             onClick={(e) => e.stopPropagation()}
@@ -152,7 +153,7 @@ export default function ApartmentDetailModal({ unit, onClose }: Props) {
                     onClick={() => setLightbox(photo)}
                     className="relative aspect-video bg-slate-100 rounded-xl overflow-hidden hover:opacity-90 active:scale-95 transition group"
                   >
-                    <img src={photo} alt={`Photo ${i + 1}`} className="w-full h-full object-cover" />
+                    <img src={getCardImageUrl(photo)} alt={`Photo ${i + 1}`} className="w-full h-full object-cover" loading="lazy" />
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition flex items-center justify-center">
                       <svg className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition drop-shadow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />

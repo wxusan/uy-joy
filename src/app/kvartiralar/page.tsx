@@ -6,8 +6,8 @@ import Footer from "@/components/Footer";
 import ApartmentsClient from "./ApartmentsClient";
 import { getTranslation, Locale } from "@/lib/translations";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+// ISR: Revalidate every 60 seconds for faster loading
+export const revalidate = 60;
 
 export default async function ApartmentsPage() {
   const t = await getTranslations();

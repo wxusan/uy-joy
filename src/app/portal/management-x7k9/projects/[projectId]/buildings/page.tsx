@@ -115,6 +115,18 @@ export default function BuildingsPage() {
     setUploadingBuildingId(null);
   };
 
+  const handleImageDelete = async (buildingId: string, field: string) => {
+    if (!confirm("Rasmni o'chirmoqchimisiz?")) return;
+    setUploadingBuildingId(buildingId);
+    await fetch(`/api/buildings/${buildingId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ [field]: null }),
+    });
+    await loadProject();
+    setUploadingBuildingId(null);
+  };
+
   if (!project) {
     return <p className="text-slate-500">{t("loading")}</p>;
   }
@@ -180,30 +192,45 @@ export default function BuildingsPage() {
                     { field: "leftViewImage",  label: "Chap",    image: building.leftViewImage },
                     { field: "rightViewImage", label: "O\u2019ng",   image: building.rightViewImage },
                   ] as { field: string; label: string; image: string | null }[]).map(({ field, label, image }) => (
-                    <label key={field} className="flex flex-col items-center gap-1 cursor-pointer group w-16">
-                      <div className="w-16 h-16 bg-slate-100 rounded-lg overflow-hidden relative">
+                    <div key={field} className="flex flex-col items-center gap-1 w-16">
+                      <div className="w-16 h-16 bg-slate-100 rounded-lg overflow-hidden relative group">
                         {image ? (
-                          <img src={image} alt={label} className="w-full h-full object-cover" />
+                          <>
+                            <img src={image} alt={label} className="w-full h-full object-cover" />
+                            <button
+                              onClick={() => handleImageDelete(building.id, field)}
+                              className="absolute top-0 right-0 w-5 h-5 bg-red-500 hover:bg-red-600 text-white text-xs rounded-bl-lg opacity-0 group-hover:opacity-100 transition flex items-center justify-center"
+                            >
+                              ✕
+                            </button>
+                          </>
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-slate-300 text-lg">
+                          <label className="w-full h-full flex items-center justify-center text-slate-300 text-lg cursor-pointer hover:bg-slate-200 transition">
                             📷
-                          </div>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => handleImageUpload(building.id, field, e)}
+                              disabled={uploadingBuildingId === building.id}
+                            />
+                          </label>
                         )}
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition">
-                          <span className="text-white text-xs font-medium">
-                            {uploadingBuildingId === building.id ? "..." : "+"}
-                          </span>
-                        </div>
                       </div>
                       <span className="text-[10px] text-slate-500 text-center leading-tight">{label}</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(e) => handleImageUpload(building.id, field, e)}
-                        disabled={uploadingBuildingId === building.id}
-                      />
-                    </label>
+                      {image && (
+                        <label className="text-[9px] text-blue-600 hover:underline cursor-pointer">
+                          O&apos;zgartirish
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => handleImageUpload(building.id, field, e)}
+                            disabled={uploadingBuildingId === building.id}
+                          />
+                        </label>
+                      )}
+                    </div>
                   ))}
                 </div>
 

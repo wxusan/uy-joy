@@ -12,9 +12,10 @@ import ScrollReveal from "@/components/ScrollReveal";
 import prisma from "@/lib/prisma";
 import { formatPrice } from "@/lib/utils";
 import { getTranslation, Locale } from "@/lib/translations";
+import { getHeroImageUrl, getCardImageUrl } from "@/lib/cloudinary";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+// ISR: Revalidate every 60 seconds for faster loading
+export const revalidate = 60;
 
 export default async function Home() {
   const t = await getTranslations();
@@ -195,25 +196,25 @@ export default async function Home() {
                 </div>
               ) : heroImages.length === 1 ? (
                 <div className="rounded-2xl overflow-hidden h-80">
-                  <img src={heroImages[0].imageUrl} alt="Building" className="w-full h-full object-cover" />
+                  <img src={getHeroImageUrl(heroImages[0].imageUrl)} alt="Building" className="w-full h-full object-cover" loading="lazy" />
                 </div>
               ) : heroImages.length === 2 ? (
                 <div className="grid grid-cols-2 gap-3">
                   {heroImages.map((img, i) => (
                     <div key={img.id} className="rounded-xl overflow-hidden h-64">
-                      <img src={img.imageUrl} alt={`Building ${i + 1}`} className="w-full h-full object-cover" />
+                      <img src={getCardImageUrl(img.imageUrl)} alt={`Building ${i + 1}`} className="w-full h-full object-cover" loading="lazy" />
                     </div>
                   ))}
                 </div>
               ) : (
                 <>
                   <div className="rounded-2xl overflow-hidden h-56">
-                    <img src={heroImages[0].imageUrl} alt="Building" className="w-full h-full object-cover" />
+                    <img src={getHeroImageUrl(heroImages[0].imageUrl)} alt="Building" className="w-full h-full object-cover" loading="lazy" />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     {heroImages.slice(1).map((img, i) => (
                       <div key={img.id} className="rounded-xl overflow-hidden h-28">
-                        <img src={img.imageUrl} alt={`Building ${i + 2}`} className="w-full h-full object-cover" />
+                        <img src={getCardImageUrl(img.imageUrl)} alt={`Building ${i + 2}`} className="w-full h-full object-cover" loading="lazy" />
                       </div>
                     ))}
                   </div>

@@ -9,7 +9,7 @@ import FAQ from "@/components/FAQ";
 import HomeStats from "@/components/HomeStats";
 import FeaturedApartments from "@/components/FeaturedApartments";
 import ScrollReveal from "@/components/ScrollReveal";
-import prisma from "@/lib/prisma";
+import { getCachedProject, getCachedHeroImages, getCachedFAQs } from "@/lib/cached-queries";
 import { formatPrice } from "@/lib/utils";
 import { getTranslation, Locale } from "@/lib/translations";
 import { getHeroImageUrl, getCardImageUrl } from "@/lib/cloudinary";
@@ -22,30 +22,12 @@ export default async function Home() {
   const cookieStore = await cookies();
   const locale = (cookieStore.get("locale")?.value || "uz") as Locale;
 
-  // Get the first (and only) project
-  // Get hero images
-  const heroImages = await prisma.heroImage.findMany({
-    orderBy: { sortOrder: "asc" },
-  });
-
-  // Get FAQs from database
-  const faqs = await prisma.fAQ.findMany({
-    where: { isActive: true },
-    orderBy: { sortOrder: "asc" },
-  });
-
-  const project = await prisma.project.findFirst({
-    include: {
-      buildings: {
-        include: {
-          floors: {
-            include: { units: true },
-            orderBy: { number: "asc" },
-          },
-        },
-      },
-    },
-  });
+  // Get cached data for faster loading
+  const [heroImages, faqs, project] = await Promise.all([
+    getCachedHeroImages(),
+    getCachedFAQs(),
+    getCachedProject(),
+  ]);
 
   if (!project) {
     return (

@@ -1,10 +1,10 @@
-import prisma from "@/lib/prisma";
 import { cookies } from "next/headers";
 import { getTranslations } from "next-intl/server";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ExploreClient from "./ExploreClient";
 import { getTranslation, Locale } from "@/lib/translations";
+import { getCachedProject } from "@/lib/cached-queries";
 
 // ISR: Revalidate every 60 seconds for faster loading
 export const revalidate = 60;
@@ -14,19 +14,8 @@ export default async function KvartiralarniKorishPage() {
   const cookieStore = await cookies();
   const locale = (cookieStore.get("locale")?.value || "uz") as Locale;
 
-  // Get the first (and only) project - no cache
-  const project = await prisma.project.findFirst({
-    include: {
-      buildings: {
-        include: {
-          floors: {
-            include: { units: true },
-            orderBy: { number: "asc" },
-          },
-        },
-      },
-    },
-  });
+  // Get cached project data
+  const project = await getCachedProject();
 
   if (!project) {
     return (

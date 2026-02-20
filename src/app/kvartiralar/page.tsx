@@ -1,10 +1,10 @@
-import prisma from "@/lib/prisma";
 import { cookies } from "next/headers";
 import { getTranslations } from "next-intl/server";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ApartmentsClient from "./ApartmentsClient";
 import { getTranslation, Locale } from "@/lib/translations";
+import { getCachedProjectWithPolygonUnits } from "@/lib/cached-queries";
 
 // ISR: Revalidate every 60 seconds for faster loading
 export const revalidate = 60;
@@ -14,24 +14,7 @@ export default async function ApartmentsPage() {
   const cookieStore = await cookies();
   const locale = (cookieStore.get("locale")?.value || "uz") as Locale;
 
-  const project = await prisma.project.findFirst({
-    include: {
-      buildings: {
-        include: {
-          floors: {
-            include: {
-              units: {
-                where: {
-                  polygonData: { not: null }, // Only units with drawn polygons
-                },
-              },
-            },
-            orderBy: { number: "asc" },
-          },
-        },
-      },
-    },
-  });
+  const project = await getCachedProjectWithPolygonUnits();
 
   if (!project) {
     return (

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { formatPrice } from "@/lib/utils";
 import { useTranslations } from "next-intl";
 import { getCardImageUrl } from "@/lib/cloudinary";
@@ -52,11 +53,12 @@ export default function ApartmentCard({ unit, onClick }: Props) {
       {/* Image */}
       <div className="relative aspect-[4/3] bg-slate-50 overflow-hidden">
         {unit.sketchImage ? (
-          <img
+          <Image
             src={getCardImageUrl(unit.sketchImage)}
             alt={`№${unit.unitNumber}`}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-            loading="lazy"
+            fill
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+            className="object-cover group-hover:scale-105 transition-transform duration-300"
           />
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-slate-50 to-slate-100">

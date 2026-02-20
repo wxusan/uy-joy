@@ -60,7 +60,7 @@ export default function UnitDetailModal({ unit, onClose }: Props) {
       });
       setSubmitted(true);
     } catch {
-      alert("Failed to submit");
+      alert(tc("error"));
     } finally {
       setSubmitting(false);
     }

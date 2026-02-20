@@ -37,7 +37,7 @@ export default function AdminUsers() {
   };
 
   const deleteUser = async (id: string) => {
-    if (!confirm(t("confirmDelete"))) return;
+    if (!confirm(t("confirmDeleteUserMsg"))) return;
     await fetch(`/api/users?id=${id}`, { method: "DELETE" });
     loadUsers();
   };

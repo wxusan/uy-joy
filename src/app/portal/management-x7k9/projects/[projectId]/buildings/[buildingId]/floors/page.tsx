@@ -115,7 +115,7 @@ export default function FloorsPage() {
   };
 
   const handleDeleteFloor = async (id: string, number: number) => {
-    if (!confirm(`Delete floor ${number}? This will also delete all units on this floor.`)) return;
+    if (!confirm(t("confirmDeleteFloorMsg", { number }))) return;
     setLoading(true);
     await fetch(`/api/floors/${id}`, { method: "DELETE" });
     await loadBuilding();
@@ -243,7 +243,7 @@ export default function FloorsPage() {
           ) : (
             <form onSubmit={handleAddRangeFloors} className="flex flex-wrap gap-3 items-end">
               <div>
-                <label className="block text-xs text-slate-500 mb-1">From floor</label>
+                <label className="block text-xs text-slate-500 mb-1">{t("fromFloor")}</label>
                 <input
                   type="number"
                   value={rangeFrom}
@@ -255,7 +255,7 @@ export default function FloorsPage() {
               </div>
               <div className="pb-2 text-slate-400 text-lg self-end">→</div>
               <div>
-                <label className="block text-xs text-slate-500 mb-1">To floor</label>
+                <label className="block text-xs text-slate-500 mb-1">{t("toFloor")}</label>
                 <input
                   type="number"
                   value={rangeTo}
@@ -279,7 +279,7 @@ export default function FloorsPage() {
               <div className="flex flex-col gap-1">
                 {rangeFrom && rangeTo && parseInt(rangeFrom) <= parseInt(rangeTo) && (
                   <p className="text-xs text-blue-600">
-                    {parseInt(rangeTo) - parseInt(rangeFrom) + 1} floors will be created
+                    {t("floorsWillBeCreated", { count: parseInt(rangeTo) - parseInt(rangeFrom) + 1 })}
                   </p>
                 )}
                 <button
@@ -287,7 +287,7 @@ export default function FloorsPage() {
                   disabled={loading || !rangeFrom || !rangeTo || parseInt(rangeFrom) > parseInt(rangeTo)}
                   className="px-5 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:bg-slate-300 transition text-sm"
                 >
-                  {loading ? "..." : `Add Floors`}
+                  {loading ? "..." : t("addFloors")}
                 </button>
               </div>
             </form>

@@ -15,20 +15,44 @@ interface Lead {
   createdAt: string;
 }
 
+const LEAD_STATUSES = [
+  "new",
+  "inCRM",
+  "callback",
+  "inProgress",
+  "contacted",
+  "converted",
+  "notInterested",
+  "closed",
+] as const;
+
 export default function LeadsPage() {
   const t = useTranslations("admin");
   const tc = useTranslations("common");
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const loadLeads = () => {
     fetch("/api/leads")
       .then((res) => res.json())
       .then((data) => {
         setLeads(data);
         setLoading(false);
       });
+  };
+
+  useEffect(() => {
+    loadLeads();
   }, []);
+
+  const updateLeadStatus = async (leadId: string, newStatus: string) => {
+    await fetch(`/api/leads/${leadId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: newStatus }),
+    });
+    loadLeads();
+  };
 
   const exportToCSV = () => {
     const headers = ["Name", "Phone", "Project", "Unit", "Status", "Date"];
@@ -52,8 +76,12 @@ export default function LeadsPage() {
 
   const statusColors: Record<string, string> = {
     new: "bg-blue-100 text-blue-700",
+    inCRM: "bg-purple-100 text-purple-700",
+    callback: "bg-orange-100 text-orange-700",
+    inProgress: "bg-cyan-100 text-cyan-700",
     contacted: "bg-yellow-100 text-yellow-700",
     converted: "bg-green-100 text-green-700",
+    notInterested: "bg-red-100 text-red-700",
     closed: "bg-slate-100 text-slate-700",
   };
 
@@ -113,9 +141,17 @@ export default function LeadsPage() {
                   <td className="p-4 text-slate-600">{lead.projectName || "-"}</td>
                   <td className="p-4 text-slate-600">{lead.unitNumber || "-"}</td>
                   <td className="p-4">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[lead.status] || statusColors.new}`}>
-                      {lead.status}
-                    </span>
+                    <select
+                      value={lead.status}
+                      onChange={(e) => updateLeadStatus(lead.id, e.target.value)}
+                      className={`px-2 py-1 rounded-full text-xs font-medium border-0 cursor-pointer ${statusColors[lead.status] || statusColors.new}`}
+                    >
+                      {LEAD_STATUSES.map((status) => (
+                        <option key={status} value={status}>
+                          {t(status)}
+                        </option>
+                      ))}
+                    </select>
                   </td>
                   <td className="p-4 text-slate-500 text-sm">
                     {new Date(lead.createdAt).toLocaleDateString()} {new Date(lead.createdAt).toLocaleTimeString()}

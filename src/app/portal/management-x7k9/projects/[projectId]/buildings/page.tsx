@@ -79,7 +79,7 @@ export default function BuildingsPage() {
   };
 
   const handleDeleteBuilding = async (id: string, name: string) => {
-    if (!confirm(`Delete building "${name}"? This will also delete all floors and units.`)) return;
+    if (!confirm(t("confirmDeleteBuildingMsg", { name }))) return;
     setLoading(true);
 
     await fetch(`/api/buildings/${id}`, { method: "DELETE" });
@@ -116,7 +116,7 @@ export default function BuildingsPage() {
   };
 
   const handleImageDelete = async (buildingId: string, field: string) => {
-    if (!confirm("Rasmni o'chirmoqchimisiz?")) return;
+    if (!confirm(t("confirmDeleteImage"))) return;
     setUploadingBuildingId(buildingId);
     await fetch(`/api/buildings/${buildingId}`, {
       method: "PUT",

@@ -6,12 +6,19 @@ import { useSession, signOut } from "next-auth/react";
 import { useTranslations, useLocale } from "next-intl";
 import { useState, useTransition } from "react";
 import { locales, localeNames, Locale } from "@/lib/locales";
+import { BarChart3, Building2, Users } from "lucide-react";
 
 const navItemsConfig = [
-  { href: "/portal/management-x7k9", labelKey: "dashboard", icon: "📊" },
-  { href: "/portal/management-x7k9/projects", labelKey: "projects", icon: "🏢" },
-  { href: "/portal/management-x7k9/users", labelKey: "users", icon: "👥", superadminOnly: true },
+  { href: "/portal/management-x7k9", labelKey: "dashboard", icon: "dashboard" },
+  { href: "/portal/management-x7k9/projects", labelKey: "projects", icon: "projects" },
+  { href: "/portal/management-x7k9/users", labelKey: "users", icon: "users", superadminOnly: true },
 ];
+
+const iconMap: Record<string, React.ReactNode> = {
+  dashboard: <BarChart3 className="w-4 h-4" />,
+  projects: <Building2 className="w-4 h-4" />,
+  users: <Users className="w-4 h-4" />,
+};
 
 interface Props {
   isOpen: boolean;
@@ -76,13 +83,12 @@ export default function AdminSidebar({ isOpen, onClose }: Props) {
                 key={item.href}
                 href={item.href}
                 onClick={onClose}
-                className={`flex items-center gap-3 px-4 py-2.5 mx-2 rounded-lg text-sm transition-all ${
-                  isActive
+                className={`flex items-center gap-3 px-4 py-2.5 mx-2 rounded-lg text-sm transition-all ${isActive
                     ? "bg-emerald-600 text-white font-medium"
                     : "text-slate-400 hover:text-white hover:bg-slate-800"
-                }`}
+                  }`}
               >
-                <span>{item.icon}</span>
+                <span>{iconMap[item.icon]}</span>
                 {t(item.labelKey)}
               </Link>
             );

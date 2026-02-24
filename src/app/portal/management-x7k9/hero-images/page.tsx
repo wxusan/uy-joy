@@ -190,11 +190,10 @@ export default function HeroImagesPage() {
           />
           <label
             htmlFor="hero-upload"
-            className={`px-6 py-3 rounded-lg font-medium cursor-pointer transition ${
-              images.length >= 3
+            className={`px-6 py-3 rounded-lg font-medium cursor-pointer transition ${images.length >= 3
                 ? "bg-slate-200 text-slate-400 cursor-not-allowed"
                 : "bg-navy-900 text-white hover:bg-navy-800"
-            }`}
+              }`}
           >
             {uploading ? "Yuklanmoqda..." : "+ Rasm qoshish"}
           </label>
@@ -207,18 +206,17 @@ export default function HeroImagesPage() {
       {/* Images grid */}
       {images.length === 0 ? (
         <div className="bg-slate-50 rounded-xl p-12 text-center">
-          <span className="text-4xl mb-4 block">🖼️</span>
+          <span className="text-4xl mb-4 block text-slate-300">—</span>
           <p className="text-slate-500">Hali rasm yo&apos;q. Birinchi rasmni yuklang.</p>
           <p className="text-slate-400 text-sm mt-2">
             Rasmlar bosh sahifaning yuqori qismida ko&apos;rinadi.
           </p>
         </div>
       ) : (
-        <div className={`grid gap-4 ${
-          images.length === 1 ? "grid-cols-1" : 
-          images.length === 2 ? "grid-cols-2" : 
-          "grid-cols-3"
-        }`}>
+        <div className={`grid gap-4 ${images.length === 1 ? "grid-cols-1" :
+            images.length === 2 ? "grid-cols-2" :
+              "grid-cols-3"
+          }`}>
           {images.map((img, index) => (
             <div
               key={img.id}
@@ -250,7 +248,7 @@ export default function HeroImagesPage() {
       {/* Preview note */}
       <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
         <p className="text-blue-800 text-sm">
-          💡 <strong>Ko&apos;rib chiqish:</strong> Bosh sahifaga o&apos;ting va rasmlarni ko&apos;ring. 
+          <strong>Ko&apos;rib chiqish:</strong> Bosh sahifaga o&apos;ting va rasmlarni ko&apos;ring.
           1 ta rasm bo&apos;lsa - to&apos;liq ekranda, 2 ta bo&apos;lsa - yonma-yon, 3 ta bo&apos;lsa - 1 katta + 2 kichik.
         </p>
       </div>

@@ -169,7 +169,7 @@ export default function FloorsPage() {
               onClick={() => setShowPositionEditor(true)}
               className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 transition"
             >
-              📍 {t("editFloorPositions")}
+              {t("editFloorPositions")}
             </button>
           )}
           <Link
@@ -187,21 +187,19 @@ export default function FloorsPage() {
         <div className="flex border-b">
           <button
             onClick={() => setAddMode("single")}
-            className={`flex-1 py-2.5 text-sm font-medium transition ${
-              addMode === "single"
+            className={`flex-1 py-2.5 text-sm font-medium transition ${addMode === "single"
                 ? "bg-emerald-50 text-emerald-700 border-b-2 border-emerald-600"
                 : "text-slate-500 hover:text-slate-700"
-            }`}
+              }`}
           >
             + {t("addFloor")}
           </button>
           <button
             onClick={() => setAddMode("range")}
-            className={`flex-1 py-2.5 text-sm font-medium transition ${
-              addMode === "range"
+            className={`flex-1 py-2.5 text-sm font-medium transition ${addMode === "range"
                 ? "bg-blue-50 text-blue-700 border-b-2 border-blue-600"
                 : "text-slate-500 hover:text-slate-700"
-            }`}
+              }`}
           >
             ++ {t("addMultipleFloors")}
           </button>
@@ -369,17 +367,15 @@ export default function FloorsPage() {
                     <div
                       className="bg-yellow-400"
                       style={{
-                        width: `${
-                          (floor.units.filter((u) => u.status === "reserved").length / total) * 100
-                        }%`,
+                        width: `${(floor.units.filter((u) => u.status === "reserved").length / total) * 100
+                          }%`,
                       }}
                     />
                     <div
                       className="bg-red-400"
                       style={{
-                        width: `${
-                          (floor.units.filter((u) => u.status === "sold").length / total) * 100
-                        }%`,
+                        width: `${(floor.units.filter((u) => u.status === "sold").length / total) * 100
+                          }%`,
                       }}
                     />
                   </div>

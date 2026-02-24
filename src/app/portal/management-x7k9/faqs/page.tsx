@@ -293,7 +293,7 @@ export default function FAQsPage() {
       {/* Info */}
       <div className="mt-6 p-4 bg-amber-50 rounded-lg border border-amber-200">
         <p className="text-amber-800 text-sm">
-          💡 <strong>Eslatma:</strong> Agar bazada savollar bo&apos;lmasa, bosh sahifada standart savollar ko&apos;rinadi. 
+          <strong>Eslatma:</strong> Agar bazada savollar bo&apos;lmasa, bosh sahifada standart savollar ko&apos;rinadi.
           Kamida bitta savol qo&apos;shsangiz, faqat siz qo&apos;shgan savollar ko&apos;rinadi.
         </p>
       </div>

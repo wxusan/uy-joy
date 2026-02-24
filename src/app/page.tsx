@@ -10,7 +10,6 @@ import HomeStats from "@/components/HomeStats";
 import FeaturedApartments from "@/components/FeaturedApartments";
 import ScrollReveal from "@/components/ScrollReveal";
 import { getCachedProject, getCachedHeroImages, getCachedFAQs } from "@/lib/cached-queries";
-import { formatPrice } from "@/lib/utils";
 import { getTranslation, Locale } from "@/lib/translations";
 import { getHeroImageUrl, getCardImageUrl } from "@/lib/cloudinary";
 
@@ -51,19 +50,6 @@ export default async function Home() {
   const reserved = allUnits.filter((u) => u.status === "reserved").length;
   const sold = allUnits.filter((u) => u.status === "sold").length;
 
-  const prices = allUnits
-    .map((u) => {
-      const floor = project.buildings
-        .flatMap((b) => b.floors)
-        .find((f) => f.id === u.floorId);
-      const pp = u.pricePerM2 || floor?.basePricePerM2 || 0;
-      return pp * u.area;
-    })
-    .filter((p) => p > 0);
-
-  const minPrice = prices.length ? Math.min(...prices) : 0;
-  const maxPrice = prices.length ? Math.max(...prices) : 0;
-
   const roomTypes = Array.from(new Set(allUnits.map((u) => u.rooms))).sort();
   const areaRange = allUnits.length > 0 ? {
     min: Math.min(...allUnits.map((u) => u.area)),
@@ -85,7 +71,7 @@ export default async function Home() {
           status: unit.status,
           pricePerM2: unit.pricePerM2,
           totalPrice: unit.totalPrice,
-          sketchImage:  unit.sketchImage,
+          sketchImage: unit.sketchImage,
           sketchImage2: unit.sketchImage2,
           sketchImage3: unit.sketchImage3,
           sketchImage4: unit.sketchImage4,
@@ -118,16 +104,10 @@ export default async function Home() {
               <p className="text-sm text-slate-400 mb-8 max-w-2xl mx-auto">{projectDescription}</p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link
-                  href="/kvartiralarni-korish"
-                  className="inline-block bg-emerald-500 text-white px-8 py-3 rounded-lg font-semibold hover:bg-emerald-400 transition"
+                  href="/vizual"
+                  className="cta-pulse inline-block bg-emerald-500 text-emerald-200 px-8 py-3 rounded-lg font-semibold hover:bg-emerald-400 transition"
                 >
                   {t("landing.exploreApartments")}
-                </Link>
-                <Link
-                  href="#about"
-                  className="inline-block border border-white/30 text-white px-8 py-3 rounded-lg font-semibold hover:border-white/60 transition"
-                >
-                  {t("project.aboutComplex")}
                 </Link>
               </div>
             </ScrollReveal>
@@ -207,27 +187,13 @@ export default async function Home() {
         </section>
 
         {/* Featured Apartments */}
-        <FeaturedApartments units={featuredUnitsData} />
+        <FeaturedApartments
+          units={featuredUnitsData}
+          projectName={projectName}
+          expectedYear={project.expectedYear}
+        />
 
-        {/* Price Range */}
-        <section className="bg-slate-50 py-16">
-          <div className="max-w-6xl mx-auto px-4">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-8">
-              <h2 className="text-2xl font-bold text-navy-900">{t("project.priceRange")}</h2>
-              <div className="flex items-center gap-8">
-                <div className="text-center">
-                  <p className="text-sm text-slate-500 mb-1">{t("project.startingFrom")}</p>
-                  <p className="text-3xl font-bold text-emerald-600">{formatPrice(minPrice)}</p>
-                </div>
-                <div className="text-slate-300 text-2xl">–</div>
-                <div className="text-center">
-                  <p className="text-sm text-slate-500 mb-1">{t("project.upTo")}</p>
-                  <p className="text-3xl font-bold text-navy-900">{formatPrice(maxPrice)}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
+
 
         {/* Location & Infrastructure */}
         {project.latitude && project.longitude ? (
@@ -245,7 +211,7 @@ export default async function Home() {
                 <div>
                   <p className="text-slate-300 mb-4">{t("project.locationDescription")}</p>
                   <div className="flex items-start gap-3 text-white bg-slate-700/50 rounded-lg p-4">
-                    <span className="text-xl">📍</span>
+                    <svg className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" /></svg>
                     <div>
                       <p className="font-medium">{projectName}</p>
                       <p className="text-sm text-slate-400">{projectAddress}</p>
@@ -277,8 +243,8 @@ export default async function Home() {
               <h2 className="text-3xl font-bold mb-4">{t("project.findPerfectApartment")}</h2>
               <p className="text-emerald-100 mb-8">{t("project.useInteractiveFloorPlan")}</p>
               <Link
-                href="/kvartiralarni-korish"
-                className="inline-block bg-white text-emerald-700 px-8 py-3 rounded-lg font-semibold hover:bg-emerald-50 transition"
+                href="/vizual"
+                className="cta-pulse inline-block bg-white text-emerald-700 px-8 py-3 rounded-lg font-semibold hover:bg-emerald-50 transition"
               >
                 {t("project.exploreFloorPlans")} →
               </Link>

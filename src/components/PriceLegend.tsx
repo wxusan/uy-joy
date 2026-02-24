@@ -12,7 +12,7 @@ export default function PriceLegend() {
   ];
 
   return (
-    <div className="flex items-center gap-6 p-3 bg-white rounded-lg shadow-sm border">
+    <div className="flex items-center gap-3 sm:gap-6 p-2 sm:p-3 bg-white rounded-lg shadow-sm border flex-wrap">
       {items.map((item) => (
         <div key={item.key} className="flex items-center gap-2">
           <div className={`w-4 h-4 rounded ${item.color} opacity-70`} />

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { CircleCheck } from "lucide-react";
 
 interface Props {
   projectId: string;
@@ -52,7 +53,7 @@ export default function ContactForm({ projectId, projectName }: Props) {
   if (success) {
     return (
       <div className="bg-green-50 border border-green-200 rounded-btn p-6 text-center">
-        <span className="text-4xl block mb-3">✅</span>
+        <CircleCheck className="w-10 h-10 text-green-500 mx-auto mb-3" />
         <p className="text-green-700 font-medium">{t("success")}</p>
       </div>
     );
@@ -63,7 +64,7 @@ export default function ContactForm({ projectId, projectName }: Props) {
       <h3 className="font-heading text-lg font-semibold text-navy-900 mb-4">
         {t("title")}
       </h3>
-      
+
       <form onSubmit={handleSubmit} className="space-y-3">
         <input
           type="text"
@@ -73,7 +74,7 @@ export default function ContactForm({ projectId, projectName }: Props) {
           className="w-full px-4 py-2.5 border border-[#E5E7EB] rounded-btn focus:ring-2 focus:ring-navy-900 focus:border-navy-900 outline-none transition text-sm"
           required
         />
-        
+
         <input
           type="tel"
           value={phone}
@@ -82,11 +83,11 @@ export default function ContactForm({ projectId, projectName }: Props) {
           className="w-full px-4 py-2.5 border border-[#E5E7EB] rounded-btn focus:ring-2 focus:ring-navy-900 focus:border-navy-900 outline-none transition text-sm"
           required
         />
-        
+
         {error && (
           <p className="text-red-500 text-sm">{error}</p>
         )}
-        
+
         <button
           type="submit"
           disabled={loading}

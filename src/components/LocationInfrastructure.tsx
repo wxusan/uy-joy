@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
+import { MapPin, Cross, ShoppingCart, GraduationCap, Bus, Landmark } from "lucide-react";
 
 interface NearbyPlace {
   category: string;
@@ -19,27 +20,27 @@ interface Props {
 const defaultInfrastructure: NearbyPlace[] = [
   {
     category: "religious",
-    categoryIcon: "🕌",
+    categoryIcon: "",
     places: [],
   },
   {
     category: "medical",
-    categoryIcon: "🏥",
+    categoryIcon: "",
     places: [],
   },
   {
     category: "shopping",
-    categoryIcon: "🛒",
+    categoryIcon: "",
     places: [],
   },
   {
     category: "education",
-    categoryIcon: "🏫",
+    categoryIcon: "",
     places: [],
   },
   {
     category: "transport",
-    categoryIcon: "🚇",
+    categoryIcon: "",
     places: [],
   },
 ];
@@ -52,18 +53,18 @@ const categoryLabels: Record<string, Record<string, string>> = {
   transport: { en: "Public Transport", ru: "Общественный транспорт", uz: "Jamoat transporti" },
 };
 
-const categoryIcons: Record<string, string> = {
-  religious: "🕌",
-  medical: "🏥",
-  shopping: "🏪",
-  education: "🎓",
-  transport: "🚌",
+const categoryIconComponents: Record<string, React.ReactNode> = {
+  religious: <Landmark className="w-5 h-5 text-emerald-400" />,
+  medical: <Cross className="w-5 h-5 text-emerald-400" />,
+  shopping: <ShoppingCart className="w-5 h-5 text-emerald-400" />,
+  education: <GraduationCap className="w-5 h-5 text-emerald-400" />,
+  transport: <Bus className="w-5 h-5 text-emerald-400" />,
 };
 
 export default function LocationInfrastructure({ latitude, longitude, infrastructure, address }: Props) {
   const t = useTranslations("project");
   const [locale, setLocale] = useState("uz"); // Default to uz to match server
-  
+
   // Get locale from cookie after mount (client-side only)
   useEffect(() => {
     const cookieLocale = document.cookie.match(/locale=([^;]+)/)?.[1];
@@ -72,8 +73,8 @@ export default function LocationInfrastructure({ latitude, longitude, infrastruc
     }
   }, []);
 
-  const places = infrastructure && infrastructure.length > 0 
-    ? infrastructure 
+  const places = infrastructure && infrastructure.length > 0
+    ? infrastructure
     : defaultInfrastructure;
 
   // Filter out categories with no places
@@ -106,7 +107,7 @@ export default function LocationInfrastructure({ latitude, longitude, infrastruc
               {locale === "uz" ? "Yaqin atrofdagi infratuzilma" : locale === "ru" ? "\u0418\u043d\u0444\u0440\u0430\u0441\u0442\u0440\u0443\u043a\u0442\u0443\u0440\u0430" : "Nearby Infrastructure"}
             </h3>
             <div className="flex items-start gap-3 mb-6">
-              <span className="text-xl">📍</span>
+              <MapPin className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" />
               <p className="font-medium text-white">{address}</p>
             </div>
 
@@ -114,7 +115,7 @@ export default function LocationInfrastructure({ latitude, longitude, infrastruc
               <div className="space-y-4">
                 {activePlaces.map((category, idx) => (
                   <div key={idx} className="flex items-start gap-3">
-                    <span className="text-xl">{categoryIcons[category.category] || category.categoryIcon}</span>
+                    <span className="flex-shrink-0 mt-0.5">{categoryIconComponents[category.category] || <MapPin className="w-5 h-5 text-emerald-400" />}</span>
                     <div>
                       <p className="text-sm font-medium text-emerald-300">
                         {categoryLabels[category.category]?.[locale] || category.category}

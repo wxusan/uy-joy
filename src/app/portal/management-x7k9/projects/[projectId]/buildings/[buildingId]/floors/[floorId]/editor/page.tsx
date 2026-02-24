@@ -18,7 +18,7 @@ interface Unit {
   polygonData: string | null;
   labelX: number | null;
   labelY: number | null;
-  sketchImage:  string | null;
+  sketchImage: string | null;
   sketchImage2: string | null;
   sketchImage3: string | null;
   sketchImage4: string | null;
@@ -107,7 +107,7 @@ export default function FloorPlanEditorPage() {
     } else {
       setUnitForm({ unitNumber: "", rooms: "1", area: "0", status: "available", pricePerM2: "" });
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPolygonId]);
 
   const getStatusColor = (status: string) => {
@@ -286,13 +286,17 @@ export default function FloorPlanEditorPage() {
 
       const { apartments } = await res.json();
 
-      // Create units for each detected apartment
-      for (const apt of apartments) {
+      // Create units for each detected apartment with floor+order numbering
+      const existingCount = floor?.units.length || 0;
+      const floorNum = floor?.number || 1;
+      for (let i = 0; i < apartments.length; i++) {
+        const apt = apartments[i];
+        const unitNum = `${floorNum}${String(existingCount + i + 1).padStart(2, "0")}`;
         await fetch("/api/units", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            unitNumber: `Auto-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+            unitNumber: unitNum,
             floorId: params.floorId,
             rooms: apt.suggestedRooms || 1,
             area: apt.suggestedArea || 50,
@@ -333,9 +337,9 @@ export default function FloorPlanEditorPage() {
         method: "POST",
       });
       const data = await res.json();
-      
+
       if (res.ok) {
-        alert(`✅ ${data.message}`);
+        alert(`${data.message}`);
       } else {
         throw new Error(data.error || "Copy failed");
       }
@@ -344,6 +348,46 @@ export default function FloorPlanEditorPage() {
       alert(message);
     } finally {
       setCopying(false);
+    }
+  };
+
+  // Renumber all units on this floor to floor+order format (e.g., 701, 702, ...)
+  const handleRenumberAll = async () => {
+    if (!floor || floor.units.length === 0) return;
+    if (!confirm(
+      `Barcha ${floor.units.length} kvartira ${floor.number}01, ${floor.number}02, ... formatiga o'zgartiriladi. Davom etasizmi?`
+    )) return;
+
+    setSaving(true);
+    try {
+      // Sort units by polygon center position (top-to-bottom, left-to-right)
+      const unitsWithCenter = floor.units.map(u => {
+        let cx = 0, cy = 0;
+        if (u.polygonData) {
+          try {
+            const pts = JSON.parse(u.polygonData);
+            cx = pts.reduce((s: number, p: { x: number }) => s + p.x, 0) / pts.length;
+            cy = pts.reduce((s: number, p: { y: number }) => s + p.y, 0) / pts.length;
+          } catch { /* ignore */ }
+        }
+        return { ...u, cx, cy };
+      }).sort((a, b) => a.cy - b.cy || a.cx - b.cx);
+
+      for (let i = 0; i < unitsWithCenter.length; i++) {
+        const newNum = `${floor.number}${String(i + 1).padStart(2, "0")}`;
+        await fetch(`/api/units/${unitsWithCenter[i].id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ unitNumber: newNum }),
+        });
+      }
+
+      await loadFloor();
+      alert(`${floor.units.length} kvartira raqamlandi`);
+    } catch {
+      alert("Raqamlashda xatolik");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -374,9 +418,9 @@ export default function FloorPlanEditorPage() {
   return (
     <div>
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 gap-2">
         <div>
-          <h1 className="text-2xl font-bold">{t("floorPlanEditor")}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold">{t("floorPlanEditor")}</h1>
           <p className="text-slate-500 text-sm">
             {floor.building?.name} · {t("floor")} {floor.number}
           </p>
@@ -390,9 +434,9 @@ export default function FloorPlanEditorPage() {
       </div>
 
       {/* Main Content */}
-      <div className="grid lg:grid-cols-3 gap-6">
+      <div className="grid lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Editor Column */}
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 order-1">
           {/* Image Upload */}
           <div className="bg-white rounded-xl shadow-sm border p-4 mb-4">
             <div className="flex items-center justify-between">
@@ -402,7 +446,7 @@ export default function FloorPlanEditorPage() {
                   {floor.floorPlanImage ? "Rasm yuklandi" : "Boshlash uchun rasm yuklang"}
                 </p>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 <input
                   type="file"
                   accept="image/*"
@@ -413,11 +457,10 @@ export default function FloorPlanEditorPage() {
                 />
                 <label
                   htmlFor="floor-image-upload"
-                  className={`px-4 py-2 rounded-lg text-sm font-medium cursor-pointer transition ${
-                    uploading
-                      ? "bg-slate-200 text-slate-500"
-                      : "bg-emerald-600 text-white hover:bg-emerald-700"
-                  }`}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium cursor-pointer transition ${uploading
+                    ? "bg-slate-200 text-slate-500"
+                    : "bg-emerald-600 text-white hover:bg-emerald-700"
+                    }`}
                 >
                   {uploading ? t("loading") : floor.floorPlanImage ? "Rasmni o'zgartirish" : "Rasm yuklash"}
                 </label>
@@ -427,7 +470,7 @@ export default function FloorPlanEditorPage() {
                     disabled={uploading}
                     className="px-4 py-2 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 disabled:bg-slate-300 transition"
                   >
-                    🗑 O&apos;chirish
+                    O&apos;chirish
                   </button>
                 )}
                 {SHOW_AI && (
@@ -436,7 +479,7 @@ export default function FloorPlanEditorPage() {
                     disabled={aiDetecting || !floor.floorPlanImage}
                     className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 disabled:bg-slate-300 transition"
                   >
-                    {aiDetecting ? "Aniqlanmoqda..." : "🤖 AI Aniqlash"}
+                    {aiDetecting ? "Aniqlanmoqda..." : "AI Aniqlash"}
                   </button>
                 )}
                 <button
@@ -445,7 +488,15 @@ export default function FloorPlanEditorPage() {
                   className="px-4 py-2 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600 disabled:bg-slate-300 transition"
                   title="Barcha qavatlarga nusxalash"
                 >
-                  {copying ? "Nusxalanmoqda..." : "📋 Barcha qavatlarga nusxalash"}
+                  {copying ? "Nusxalanmoqda..." : "Barcha qavatlarga nusxalash"}
+                </button>
+                <button
+                  onClick={handleRenumberAll}
+                  disabled={saving || floor.units.length === 0}
+                  className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 disabled:bg-slate-300 transition"
+                  title={`Kvartiralarni ${floor.number}01, ${floor.number}02, ... formatida raqamlash`}
+                >
+                  {saving ? "..." : "Raqamlash"}
                 </button>
               </div>
             </div>
@@ -483,7 +534,7 @@ export default function FloorPlanEditorPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Xonalar</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Xonalar</label>
                     <input
                       type="number"
                       value={unitForm.rooms}
@@ -493,7 +544,7 @@ export default function FloorPlanEditorPage() {
                     />
                   </div>
                   <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Maydon (m²)</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Maydon (m²)</label>
                     <input
                       type="number"
                       value={unitForm.area}
@@ -526,7 +577,7 @@ export default function FloorPlanEditorPage() {
                     className="w-full px-3 py-2 border rounded-lg"
                   />
                 </div>
-                
+
                 {/* Photos (up to 4) */}
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">
@@ -596,7 +647,7 @@ export default function FloorPlanEditorPage() {
                                   <span className="text-xs">{t("loading")}</span>
                                 ) : (
                                   <>
-                                    <span className="text-lg">📷</span>
+                                    <span className="text-lg text-slate-400">+</span>
                                     <span className="text-xs">{slotNum}-rasm</span>
                                   </>
                                 )}
@@ -635,11 +686,10 @@ export default function FloorPlanEditorPage() {
                   <button
                     key={unit.id}
                     onClick={() => setSelectedPolygonId(unit.id)}
-                    className={`w-full flex items-center justify-between p-2 rounded-lg text-left transition ${
-                      selectedPolygonId === unit.id
-                        ? "bg-blue-50 border border-blue-200"
-                        : "hover:bg-slate-50"
-                    }`}
+                    className={`w-full flex items-center justify-between p-2 rounded-lg text-left transition ${selectedPolygonId === unit.id
+                      ? "bg-blue-50 border border-blue-200"
+                      : "hover:bg-slate-50"
+                      }`}
                   >
                     <div>
                       <p className="font-medium text-sm">{unit.unitNumber}</p>
@@ -648,13 +698,12 @@ export default function FloorPlanEditorPage() {
                       </p>
                     </div>
                     <span
-                      className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                        unit.status === "available"
-                          ? "bg-green-100 text-green-700"
-                          : unit.status === "reserved"
+                      className={`px-2 py-0.5 rounded-full text-xs font-medium ${unit.status === "available"
+                        ? "bg-green-100 text-green-700"
+                        : unit.status === "reserved"
                           ? "bg-yellow-100 text-yellow-700"
                           : "bg-red-100 text-red-700"
-                      }`}
+                        }`}
                     >
                       {unit.status}
                     </span>

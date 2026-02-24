@@ -29,6 +29,7 @@ model Project {
   latitude    Float?     // GPS latitude
   longitude   Float?     // GPS longitude
   infrastructure String? // JSON: nearby places data
+  expectedYear Int?      // Expected year of project completion (e.g., 2028)
   buildings   Building[]
   createdAt   DateTime   @default(now())
 }

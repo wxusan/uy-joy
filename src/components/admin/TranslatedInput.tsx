@@ -69,13 +69,13 @@ export default function TranslatedInput({
           const err = await response.json();
           detail = err?.detail || err?.error || "";
         } catch {
-          try { detail = await response.text(); } catch {}
+          try { detail = await response.text(); } catch { }
         }
         throw new Error(`AI tarjimasi muvaffaqiyatsiz bo'ldi${detail ? `: ${detail}` : ''}`);
       }
 
       const data = await response.json();
-      
+
       if (data.translations) {
         // Apply AI translations
         const updated = {
@@ -105,7 +105,7 @@ export default function TranslatedInput({
           onClick={() => setShowTranslations(!showTranslations)}
           className="text-xs text-blue-600 hover:underline"
         >
-          {showTranslations ? "Tarjimalarni yashirish" : "🌐 Tarjima qo\u2019shish"}
+          {showTranslations ? "Tarjimalarni yashirish" : "Tarjima qo\u2019shish"}
         </button>
       </div>
 
@@ -115,9 +115,8 @@ export default function TranslatedInput({
         value={value}
         onChange={(e) => handleMainChange(e.target.value)}
         placeholder={placeholder}
-        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none ${
-          multiline ? "h-24 resize-none" : ""
-        }`}
+        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none ${multiline ? "h-24 resize-none" : ""
+          }`}
       />
 
       {/* Translation inputs */}
@@ -133,13 +132,12 @@ export default function TranslatedInput({
                 type="button"
                 onClick={fetchAiTranslations}
                 disabled={aiLoading || !value.trim()}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition ${
-                  aiLoading
-                    ? "bg-slate-200 text-slate-500 cursor-wait"
-                    : !value.trim()
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition ${aiLoading
+                  ? "bg-slate-200 text-slate-500 cursor-wait"
+                  : !value.trim()
                     ? "bg-slate-100 text-slate-400 cursor-not-allowed"
                     : "bg-purple-600 text-white hover:bg-purple-700"
-                }`}
+                  }`}
               >
                 {aiLoading ? (
                   <>
@@ -148,7 +146,7 @@ export default function TranslatedInput({
                   </>
                 ) : (
                   <>
-                    <span>✨</span>
+                    <span>AI</span>
                     AI bilan tarjima
                   </>
                 )}
@@ -172,9 +170,8 @@ export default function TranslatedInput({
                   value={translations[lang.code] || ""}
                   onChange={(e) => handleTranslationChange(lang.code, e.target.value)}
                   placeholder={`${label} (${lang.label.split(" ")[1]})`}
-                  className={`flex-1 px-2 py-1.5 text-sm border rounded focus:ring-1 focus:ring-emerald-500 outline-none ${
-                    multiline ? "h-16 resize-none" : ""
-                  }`}
+                  className={`flex-1 px-2 py-1.5 text-sm border rounded focus:ring-1 focus:ring-emerald-500 outline-none ${multiline ? "h-16 resize-none" : ""
+                    }`}
                 />
               </div>
             ))}

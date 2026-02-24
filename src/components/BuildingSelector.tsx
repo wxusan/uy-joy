@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { BuildingWithFloors } from "@/types";
+import { Building2 } from "lucide-react";
 
 interface Props {
   buildings: BuildingWithFloors[];
@@ -11,7 +12,7 @@ interface Props {
 
 export default function BuildingSelector({ buildings, selectedBuildingId, onBuildingSelect }: Props) {
   const t = useTranslations("explore");
-  
+
   if (buildings.length <= 1) {
     return null; // Don't show selector for single building
   }
@@ -32,14 +33,13 @@ export default function BuildingSelector({ buildings, selectedBuildingId, onBuil
             <button
               key={building.id}
               onClick={() => onBuildingSelect(building)}
-              className={`flex-1 min-w-[140px] max-w-[200px] p-4 rounded-xl border-2 transition text-left ${
-                isSelected
+              className={`flex-1 min-w-[140px] max-w-[200px] p-4 rounded-xl border-2 transition text-left ${isSelected
                   ? "border-emerald-500 bg-emerald-50"
                   : "border-slate-200 hover:border-emerald-300 hover:bg-slate-50"
-              }`}
+                }`}
             >
               <div className="flex items-center gap-2 mb-2">
-                <span className="text-2xl">🏢</span>
+                <Building2 className="w-5 h-5 text-slate-500" />
                 <span className="font-semibold text-slate-800">{building.name}</span>
               </div>
               <div className="text-sm text-slate-500">

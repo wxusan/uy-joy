@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import Image from "next/image";
 
@@ -34,6 +34,26 @@ export default function BuildingViewer({ building, onFloorSelect, onBack }: Prop
   const t = useTranslations("explore");
   const [currentView, setCurrentView] = useState<ViewType>("front");
   const [hoveredFloor, setHoveredFloor] = useState<string | null>(null);
+  const [cascadeFloorId, setCascadeFloorId] = useState<string | null>(null);
+
+  // Floor cascade animation on mount
+  const sortedFloors = [...building.floors].sort((a, b) => b.number - a.number);
+
+  useEffect(() => {
+    const floorIds = sortedFloors.map(f => f.id);
+    let i = 0;
+    const interval = setInterval(() => {
+      if (i < floorIds.length) {
+        setCascadeFloorId(floorIds[i]);
+        i++;
+      } else {
+        setCascadeFloorId(null);
+        clearInterval(interval);
+      }
+    }, 150);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [building.id]);
 
   const viewImages: Record<ViewType, string | null> = {
     front: building.frontViewImage,
@@ -58,14 +78,13 @@ export default function BuildingViewer({ building, onFloorSelect, onBack }: Prop
     return { available, total };
   };
 
-  // Sort floors by number (highest first for display)
-  const sortedFloors = [...building.floors].sort((a, b) => b.number - a.number);
+  // sortedFloors is declared at the top of the component
 
   // Get floor positions - use stored data if available, otherwise auto-generate
   const getFloorPositions = () => {
     const totalFloors = building.floors.length;
     const floorHeight = 85 / totalFloors; // Leave space for roof and ground
-    
+
     return sortedFloors.map((floor, index) => {
       // Try to use stored position data first
       if (floor.positionData) {
@@ -78,7 +97,7 @@ export default function BuildingViewer({ building, onFloorSelect, onBack }: Prop
           // Invalid JSON, fall through to auto-generate
         }
       }
-      
+
       // Auto-generate position if not stored
       const yStart = 10 + (index * floorHeight);
       const yEnd = yStart + floorHeight - 1;
@@ -87,7 +106,7 @@ export default function BuildingViewer({ building, onFloorSelect, onBack }: Prop
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border p-4">
+    <div className="bg-white rounded-xl shadow-sm border p-3 sm:p-4">
       {/* Header with back button */}
       <div className="flex items-center justify-between mb-4">
         <div>
@@ -112,11 +131,10 @@ export default function BuildingViewer({ building, onFloorSelect, onBack }: Prop
               <button
                 key={view}
                 onClick={() => setCurrentView(view)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-                  currentView === view
-                    ? "bg-emerald-600 text-white"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                }`}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition ${currentView === view
+                  ? "bg-emerald-600 text-white"
+                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  }`}
               >
                 {viewLabels[view]}
               </button>
@@ -125,11 +143,11 @@ export default function BuildingViewer({ building, onFloorSelect, onBack }: Prop
         );
       })()}
 
-      <div className="grid lg:grid-cols-3 gap-4">
+      <div className="grid md:grid-cols-3 gap-4">
         {/* Building view image with floor overlays - 75% size */}
-        <div className="lg:col-span-2 flex justify-center">
+        <div className="md:col-span-2 flex justify-center">
           {currentImage ? (
-            <div className="relative w-3/4 aspect-[3/4] bg-slate-100 rounded-lg overflow-hidden">
+            <div className="relative w-full sm:w-3/4 aspect-[3/4] bg-slate-100 rounded-lg overflow-hidden">
               <Image
                 src={currentImage}
                 alt={`${building.name} ${currentView} view`}
@@ -137,23 +155,25 @@ export default function BuildingViewer({ building, onFloorSelect, onBack }: Prop
                 className="object-cover"
                 sizes="(max-width: 768px) 100vw, 600px"
               />
-              
+
               {/* Floor overlays */}
               {getFloorPositions().map(({ floor, position }) => {
                 const stats = getFloorStats(floor);
                 const isHovered = hoveredFloor === floor.id;
-                
+                const isCascading = cascadeFloorId === floor.id;
+
                 return (
                   <button
                     key={floor.id}
                     onClick={() => onFloorSelect(floor.id)}
                     onMouseEnter={() => setHoveredFloor(floor.id)}
                     onMouseLeave={() => setHoveredFloor(null)}
-                    className={`absolute left-0 right-0 border-y transition-all cursor-pointer ${
-                      isHovered
-                        ? "bg-emerald-500/40 border-emerald-500"
+                    className={`absolute left-0 right-0 border-y transition-all cursor-pointer ${isHovered
+                      ? "bg-emerald-500/40 border-emerald-500"
+                      : isCascading
+                        ? "floor-cascade border-emerald-400"
                         : "bg-transparent border-transparent hover:bg-white/20"
-                    }`}
+                      }`}
                     style={{
                       top: `${position.yStart}%`,
                       height: `${position.yEnd - position.yStart}%`,
@@ -175,7 +195,7 @@ export default function BuildingViewer({ building, onFloorSelect, onBack }: Prop
               <div className="max-w-xs mx-auto">
                 {/* Roof */}
                 <div className="h-4 bg-slate-400 rounded-t-lg" />
-                
+
                 {/* Floors */}
                 {sortedFloors.map((floor) => {
                   const isHovered = hoveredFloor === floor.id;
@@ -185,9 +205,8 @@ export default function BuildingViewer({ building, onFloorSelect, onBack }: Prop
                       onClick={() => onFloorSelect(floor.id)}
                       onMouseEnter={() => setHoveredFloor(floor.id)}
                       onMouseLeave={() => setHoveredFloor(null)}
-                      className={`w-full flex items-center gap-3 border-x border-b border-slate-300 px-3 py-3 transition ${
-                        isHovered ? "bg-emerald-50" : "bg-white hover:bg-slate-50"
-                      }`}
+                      className={`w-full flex items-center gap-3 border-x border-b border-slate-300 px-3 py-3 transition ${isHovered ? "bg-emerald-50" : "bg-white hover:bg-slate-50"
+                        }`}
                     >
                       <span className="text-sm font-bold text-slate-600 w-8">{floor.number}</span>
                       <span className="flex-1 text-sm text-slate-500 text-left">{t("floor")} {floor.number}</span>
@@ -205,18 +224,20 @@ export default function BuildingViewer({ building, onFloorSelect, onBack }: Prop
           {sortedFloors.map((floor) => {
             const stats = getFloorStats(floor);
             const isHovered = hoveredFloor === floor.id;
-            
+            const isCascading = cascadeFloorId === floor.id;
+
             return (
               <button
                 key={floor.id}
                 onClick={() => onFloorSelect(floor.id)}
                 onMouseEnter={() => setHoveredFloor(floor.id)}
                 onMouseLeave={() => setHoveredFloor(null)}
-                className={`w-full flex items-center justify-between p-3 rounded-lg border transition ${
-                  isHovered
-                    ? "border-emerald-500 bg-emerald-50"
+                className={`w-full flex items-center justify-between p-3 rounded-lg border transition ${isHovered
+                  ? "border-emerald-500 bg-emerald-50"
+                  : isCascading
+                    ? "border-emerald-400 floor-cascade"
                     : "border-slate-200 hover:border-slate-300"
-                }`}
+                  }`}
               >
                 <span className="font-medium">{t("floor")} {floor.number}</span>
                 <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

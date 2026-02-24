@@ -3,7 +3,7 @@
     "home": "Bosh sahifa",
     "admin": "Admin",
     "projectInfo": "Loyiha haqida",
-    "explore": "Ko'rish",
+    "explore": "Vizual",
     "signOut": "Chiqish",
     "loading": "Yuklanmoqda...",
     "save": "Saqlash",
@@ -19,7 +19,7 @@
   "landing": {
     "premiumResidential": "Premium turar-joy majmuasi",
     "exploreDescription": "Orzu qilgan kvartirangizni interaktiv tarzda tanlang",
-    "exploreApartments": "Kvartiralarni ko'rish",
+    "exploreApartments": "Vizual ko'rish",
     "viewDetails": "Batafsil",
     "totalApartments": "Jami kvartiralar",
     "availableNow": "Hozir mavjud",
@@ -64,7 +64,10 @@
     "elevator": "Lift",
     "stairs": "Zinapoya",
     "room": "xona",
-    "rooms": "xona"
+    "rooms": "xona",
+    "encourageFloor": "Qavatni tanlang",
+    "seeApartments": "Kvartiralarni ko'ring!",
+    "viewBuilding": "Binoni ko'ring"
   },
   "legend": {
     "available": "Mavjud",
@@ -270,6 +273,9 @@
     "availableStatus": "Bu kvartira hozirda mavjud",
     "reservedStatus": "Bu kvartira hozirda band qilingan",
     "soldStatus": "Bu kvartira sotilgan",
-    "learnMore": "Ko'proq bilish?"
+    "learnMore": "Ko'proq bilish?",
+    "apartmentNumber": "Kvartira raqami",
+    "expectedYear": "Topshirish yili",
+    "project": "Loyiha"
   }
 }

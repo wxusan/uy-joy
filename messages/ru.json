@@ -3,7 +3,7 @@
     "home": "Главная",
     "admin": "Админ",
     "projectInfo": "О проекте",
-    "explore": "Обзор",
+    "explore": "Визуальный тур",
     "signOut": "Выйти",
     "loading": "Загрузка...",
     "save": "Сохранить",
@@ -19,7 +19,7 @@
   "landing": {
     "premiumResidential": "Премиальный жилой комплекс",
     "exploreDescription": "Исследуйте и выбирайте квартиру вашей мечты интерактивно",
-    "exploreApartments": "Смотреть квартиры",
+    "exploreApartments": "Визуальный тур",
     "viewDetails": "Подробнее",
     "totalApartments": "Всего квартир",
     "availableNow": "Доступно сейчас",
@@ -64,7 +64,10 @@
     "elevator": "Лифт",
     "stairs": "Лестница",
     "room": "комната",
-    "rooms": "комнат"
+    "rooms": "комнат",
+    "encourageFloor": "Выберите этаж",
+    "seeApartments": "Смотрите квартиры!",
+    "viewBuilding": "Смотреть здание"
   },
   "unit": {
     "apartment": "Квартира",
@@ -84,7 +87,10 @@
     "availableStatus": "Эта квартира доступна",
     "reservedStatus": "Эта квартира забронирована",
     "soldStatus": "Эта квартира продана",
-    "learnMore": "Узнать больше?"
+    "learnMore": "Узнать больше?",
+    "apartmentNumber": "Номер квартиры",
+    "expectedYear": "Год сдачи",
+    "project": "Проект"
   },
   "legend": {
     "available": "Доступно",

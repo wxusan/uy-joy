@@ -44,7 +44,7 @@ export default function TopViewMapper({ imageUrl, buildings, onClose, onSaved }:
               { x: data.x, y: data.y + data.height },
             ];
           }
-        } catch {}
+        } catch { }
       }
     }
     setPolygons(initial);
@@ -122,7 +122,7 @@ export default function TopViewMapper({ imageUrl, buildings, onClose, onSaved }:
               onDoubleClick={handleDoubleClick}
             >
               <Image src={imageUrl} alt="Top view" fill className="object-cover select-none pointer-events-none" />
-              
+
               {/* SVG overlay for polygons */}
               <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
                 {/* Completed polygons */}
@@ -178,7 +178,7 @@ export default function TopViewMapper({ imageUrl, buildings, onClose, onSaved }:
               </svg>
             </div>
             <p className="text-xs text-slate-500 mt-2">
-              💡 O&apos;ng tomondan binoni tanlang, keyin rasmda nuqtalarni bosib polygon chizing. Yakunlash uchun ikki marta bosing.
+              O&apos;ng tomondan binoni tanlang, keyin rasmda nuqtalarni bosib polygon chizing. Yakunlash uchun ikki marta bosing.
             </p>
           </div>
           <div className="col-span-4 space-y-2">
@@ -186,9 +186,8 @@ export default function TopViewMapper({ imageUrl, buildings, onClose, onSaved }:
             {buildings.map((b) => (
               <div
                 key={b.id}
-                className={`flex items-center justify-between px-3 py-2 rounded-lg border transition ${
-                  activeId === b.id ? "border-emerald-500 bg-emerald-50" : "border-slate-200 hover:bg-slate-50"
-                }`}
+                className={`flex items-center justify-between px-3 py-2 rounded-lg border transition ${activeId === b.id ? "border-emerald-500 bg-emerald-50" : "border-slate-200 hover:bg-slate-50"
+                  }`}
               >
                 <button
                   onClick={() => { setActiveId(b.id); setCurrentPoints([]); }}

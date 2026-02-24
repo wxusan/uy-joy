@@ -18,7 +18,7 @@ export default async function Navbar() {
               {t("home")}
             </Link>
             <Link
-              href="/kvartiralarni-korish"
+              href="/vizual"
               className="text-sm hover:text-emerald-400 transition"
             >
               {t("explore")}

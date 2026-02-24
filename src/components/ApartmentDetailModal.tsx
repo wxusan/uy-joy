@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { formatPrice } from "@/lib/utils";
 import { getCardImageUrl, getFullImageUrl } from "@/lib/cloudinary";
+import { Bed, Ruler, Building2, CircleCheck } from "lucide-react";
 
 interface Unit {
   id: string;
@@ -13,7 +14,7 @@ interface Unit {
   status: string;
   pricePerM2: number | null;
   totalPrice: number | null;
-  sketchImage:  string | null;
+  sketchImage: string | null;
   sketchImage2: string | null;
   sketchImage3: string | null;
   sketchImage4: string | null;
@@ -32,23 +33,23 @@ interface Props {
 const statusChip = (status: string) => {
   switch (status) {
     case "available": return "bg-emerald-100 text-emerald-700";
-    case "reserved":  return "bg-yellow-100 text-yellow-700";
-    case "sold":      return "bg-red-100 text-red-700";
-    default:          return "bg-slate-100 text-slate-600";
+    case "reserved": return "bg-yellow-100 text-yellow-700";
+    case "sold": return "bg-red-100 text-red-700";
+    default: return "bg-slate-100 text-slate-600";
   }
 };
 
 export default function ApartmentDetailModal({ unit, onClose }: Props) {
-  const t  = useTranslations("unit");
+  const t = useTranslations("unit");
   const tc = useTranslations("contact");
-  const [formData, setFormData]   = useState({ name: "", phone: "" });
+  const [formData, setFormData] = useState({ name: "", phone: "" });
   const [submitting, setSubmitting] = useState(false);
-  const [submitted, setSubmitted]   = useState(false);
-  const [lightbox, setLightbox]     = useState<string | null>(null);
+  const [submitted, setSubmitted] = useState(false);
+  const [lightbox, setLightbox] = useState<string | null>(null);
 
-  const pricePerM2  = unit.pricePerM2 || unit.floor.basePricePerM2 || 0;
-  const totalPrice  = unit.totalPrice || pricePerM2 * unit.area;
-  const photos      = [unit.sketchImage, unit.sketchImage2, unit.sketchImage3, unit.sketchImage4].filter(Boolean) as string[];
+  const pricePerM2 = unit.pricePerM2 || unit.floor.basePricePerM2 || 0;
+  const totalPrice = unit.totalPrice || pricePerM2 * unit.area;
+  const photos = [unit.sketchImage, unit.sketchImage2, unit.sketchImage3, unit.sketchImage4].filter(Boolean) as string[];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -111,51 +112,31 @@ export default function ApartmentDetailModal({ unit, onClose }: Props) {
           </div>
 
           {/* Sticky header */}
-          <div className="flex items-start justify-between px-5 pt-4 pb-3 border-b sticky top-0 bg-white z-10">
+          <div className="flex items-start justify-between px-4 pt-3 pb-2 border-b sticky top-0 bg-white z-10">
             <div>
-              <h2 className="font-bold text-xl text-slate-900">№{unit.unitNumber}</h2>
-              <p className="text-sm text-slate-500 mt-0.5">
-                {unit.floor.building.name} · {t("floor")} {unit.floor.number}
+              <h2 className="font-bold text-lg text-slate-900">№{unit.unitNumber}</h2>
+              <p className="text-xs text-slate-500">
+                {unit.floor.building.name} · {t("floor")} {unit.floor.number} · {unit.rooms} {t("rooms")} · {unit.area} m²
               </p>
             </div>
-            <button onClick={onClose} className="text-slate-400 hover:text-slate-600 p-1 -mr-1 text-xl">✕</button>
+            <button onClick={onClose} className="text-slate-400 hover:text-slate-600 p-1 -mr-1 text-lg">✕</button>
           </div>
 
-          <div className="px-5 py-4 space-y-4">
-            {/* Feature chips */}
-            <div className="flex flex-wrap gap-2">
-              <span className="bg-slate-100 px-3 py-1.5 rounded-full text-sm font-medium">
-                🛏 {unit.rooms} {t("rooms")}
-              </span>
-              <span className="bg-slate-100 px-3 py-1.5 rounded-full text-sm font-medium">
-                📐 {unit.area} m²
-              </span>
-              <span className="bg-slate-100 px-3 py-1.5 rounded-full text-sm font-medium">
-                🏢 {unit.floor.number}-{t("floor").toLowerCase()}
-              </span>
-              <span className={`px-3 py-1.5 rounded-full text-xs font-semibold ${statusChip(unit.status)}`}>
-                {t(unit.status as "available" | "reserved" | "sold")}
-              </span>
-            </div>
+          <div className="px-4 py-3 space-y-3">
 
-            {/* Price */}
-            <div className="bg-emerald-50 rounded-xl px-4 py-3">
-              <p className="text-xs text-emerald-600 font-medium uppercase tracking-wide">{t("totalPrice")}</p>
-              <p className="text-2xl font-bold text-emerald-800">{formatPrice(totalPrice)}</p>
-            </div>
 
             {/* Photos */}
             {photos.length > 0 && (
-              <div className={`grid gap-2 ${photos.length === 1 ? "grid-cols-1" : "grid-cols-2"}`}>
+              <div className={`grid gap-1.5 ${photos.length === 1 ? "grid-cols-1" : "grid-cols-2"}`}>
                 {photos.slice(0, 4).map((photo, i) => (
                   <button
                     key={i}
                     onClick={() => setLightbox(photo)}
-                    className="relative aspect-video bg-slate-100 rounded-xl overflow-hidden hover:opacity-90 active:scale-95 transition group"
+                    className="relative aspect-[4/3] bg-slate-50 rounded-lg overflow-hidden hover:opacity-90 active:scale-95 transition group"
                   >
-                    <img src={getCardImageUrl(photo)} alt={`Photo ${i + 1}`} className="w-full h-full object-cover" loading="lazy" />
+                    <img src={getCardImageUrl(photo)} alt={`Photo ${i + 1}`} className="w-full h-full object-contain p-1" loading="lazy" />
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition flex items-center justify-center">
-                      <svg className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition drop-shadow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition drop-shadow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
                       </svg>
                     </div>
@@ -168,7 +149,7 @@ export default function ApartmentDetailModal({ unit, onClose }: Props) {
             {unit.status === "available" ? (
               submitted ? (
                 <div className="text-center py-6">
-                  <span className="text-4xl block mb-3">✅</span>
+                  <CircleCheck className="w-10 h-10 text-green-500 mx-auto mb-3" />
                   <p className="font-semibold text-green-700 text-lg">{tc("thankYou")}</p>
                   <p className="text-sm text-green-600 mt-1">{tc("willContact")}</p>
                 </div>

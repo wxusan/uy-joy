@@ -188,9 +188,9 @@ export default function BuildingsPage() {
                 <div className="flex gap-2 flex-shrink-0">
                   {([
                     { field: "frontViewImage", label: "Oldingi", image: building.frontViewImage },
-                    { field: "backViewImage",  label: "Orqa",    image: building.backViewImage },
-                    { field: "leftViewImage",  label: "Chap",    image: building.leftViewImage },
-                    { field: "rightViewImage", label: "O\u2019ng",   image: building.rightViewImage },
+                    { field: "backViewImage", label: "Orqa", image: building.backViewImage },
+                    { field: "leftViewImage", label: "Chap", image: building.leftViewImage },
+                    { field: "rightViewImage", label: "O\u2019ng", image: building.rightViewImage },
                   ] as { field: string; label: string; image: string | null }[]).map(({ field, label, image }) => (
                     <div key={field} className="flex flex-col items-center gap-1 w-16">
                       <div className="w-16 h-16 bg-slate-100 rounded-lg overflow-hidden relative group">
@@ -206,7 +206,7 @@ export default function BuildingsPage() {
                           </>
                         ) : (
                           <label className="w-full h-full flex items-center justify-center text-slate-300 text-lg cursor-pointer hover:bg-slate-200 transition">
-                            📷
+                            Yuklash
                             <input
                               type="file"
                               accept="image/*"
@@ -298,7 +298,7 @@ export default function BuildingsPage() {
 
       {/* Tips */}
       <div className="mt-8 p-4 bg-blue-50 rounded-xl text-sm text-blue-800">
-        <p className="font-medium mb-2">💡 {t("tips")}</p>
+        <p className="font-medium mb-2">{t("tips")}</p>
         <ul className="list-disc list-inside space-y-1 text-blue-700">
           <li>{t("tipUploadFacade")}</li>
           <li>{t("tipFloorPositions")}</li>

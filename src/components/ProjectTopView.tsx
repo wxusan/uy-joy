@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import Image from "next/image";
+import { Building2, ArrowRight } from "lucide-react";
 
 type Point = { x: number; y: number };
 
@@ -53,14 +54,14 @@ export default function ProjectTopView({ topViewImage, buildings, onBuildingSele
   };
 
   const toSvgPath = (points: Point[]) => {
-    if (points.length < 3) return "";
-    return points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ") + " Z";
+    return points.map((p, i) => `${i === 0 ? "M" : "L"}${p.x},${p.y}`).join(" ") + " Z";
   };
 
-  const getCenter = (points: Point[]) => ({
-    x: points.reduce((a, p) => a + p.x, 0) / points.length,
-    y: points.reduce((a, p) => a + p.y, 0) / points.length,
-  });
+  const getCenter = (points: Point[]) => {
+    const x = points.reduce((sum, p) => sum + p.x, 0) / points.length;
+    const y = points.reduce((sum, p) => sum + p.y, 0) / points.length;
+    return { x, y };
+  };
 
   // If no top view image, show placeholder with building cards
   if (!topViewImage) {
@@ -74,9 +75,11 @@ export default function ProjectTopView({ topViewImage, buildings, onBuildingSele
               <button
                 key={building.id}
                 onClick={() => onBuildingSelect(building.id)}
-                className="p-4 border-2 rounded-xl hover:border-emerald-500 hover:bg-emerald-50 transition text-left"
+                className="p-4 border-2 rounded-xl hover:border-emerald-500 hover:bg-emerald-50 transition text-left group"
               >
-                <div className="text-4xl mb-2">🏢</div>
+                <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center mb-2 group-hover:bg-emerald-100 transition">
+                  <Building2 className="w-5 h-5 text-slate-500 group-hover:text-emerald-600" />
+                </div>
                 <h4 className="font-semibold">{building.name}</h4>
                 <p className="text-sm text-slate-500">{stats.floors} {t("floors")}</p>
                 <p className="text-sm text-emerald-600">
@@ -90,12 +93,22 @@ export default function ProjectTopView({ topViewImage, buildings, onBuildingSele
     );
   }
 
+  // Calculate label positions for each building (offset from building center)
+  const getLabelPosition = (center: Point, index: number, total: number) => {
+    // Position labels above/to the side of buildings
+    const labelY = Math.max(2, center.y - 15);
+    // Spread labels horizontally to avoid overlap
+    const spacing = 100 / (total + 1);
+    const labelX = spacing * (index + 1);
+    return { x: labelX, y: labelY };
+  };
+
   return (
-    <div className="bg-white rounded-xl shadow-sm border p-4">
+    <div className="bg-white rounded-xl shadow-sm border p-3 sm:p-4">
       <h3 className="font-semibold text-slate-700 mb-4 text-center">{t("selectBuilding")}</h3>
-      
-      {/* Aerial view container - 75% size */}
-      <div className="relative w-3/4 mx-auto aspect-[4/3] bg-slate-100 rounded-lg overflow-hidden">
+
+      {/* Aerial view container - full on mobile, 75% on desktop */}
+      <div className="relative w-full sm:w-3/4 mx-auto aspect-[4/3] bg-slate-100 rounded-lg overflow-hidden">
         <Image
           src={topViewImage}
           alt="Project aerial view"
@@ -103,19 +116,21 @@ export default function ProjectTopView({ topViewImage, buildings, onBuildingSele
           className="object-cover"
           sizes="(max-width: 768px) 100vw, 800px"
         />
-        
-        {/* SVG overlay for polygon building areas */}
+
+        {/* SVG overlay for polygon building areas + labels with arrows */}
         <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-          {buildings.map((building) => {
+          {buildings.map((building, index) => {
             const polygon = getBuildingPolygon(building);
             if (!polygon || polygon.length < 3) return null;
-            
+
             const stats = getBuildingStats(building);
             const isHovered = hoveredBuilding === building.id;
             const center = getCenter(polygon);
-            
+            const labelPos = getLabelPosition(center, index, buildings.length);
+
             return (
               <g key={building.id}>
+                {/* Building polygon */}
                 <path
                   d={toSvgPath(polygon)}
                   fill={isHovered ? "rgba(16, 185, 129, 0.35)" : "transparent"}
@@ -126,27 +141,51 @@ export default function ProjectTopView({ topViewImage, buildings, onBuildingSele
                   onMouseLeave={() => setHoveredBuilding(null)}
                   onClick={() => onBuildingSelect(building.id)}
                 />
-                {/* Tooltip on hover - smaller text */}
-                {isHovered && (
-                  <foreignObject
-                    x={center.x - 12}
-                    y={center.y - 6}
-                    width="24"
-                    height="12"
-                    className="pointer-events-none overflow-visible"
+
+                {/* Connector line from label to building center */}
+                <line
+                  x1={labelPos.x}
+                  y1={labelPos.y + 3.5}
+                  x2={center.x}
+                  y2={center.y}
+                  stroke={isHovered ? "#059669" : "#10b981"}
+                  strokeWidth={isHovered ? 0.45 : 0.3}
+                  strokeLinecap="round"
+                  className="pointer-events-none transition-all duration-200"
+                />
+
+                {/* Label box — sharp rectangle */}
+                <foreignObject
+                  x={labelPos.x - 14}
+                  y={labelPos.y - 3.5}
+                  width="28"
+                  height="7"
+                  className="overflow-visible cursor-pointer"
+                  onClick={() => onBuildingSelect(building.id)}
+                  onMouseEnter={() => setHoveredBuilding(building.id)}
+                  onMouseLeave={() => setHoveredBuilding(null)}
+                >
+                  <div
+                    className={`label-mild-pulse px-1 py-0.5 text-center whitespace-nowrap transition-all duration-300 ${isHovered
+                      ? "bg-white text-emerald-700 shadow-sm"
+                      : "bg-emerald-600 text-white"
+                      }`}
+                    style={{
+                      fontSize: "2.2px",
+                      lineHeight: 1.4,
+                      border: isHovered ? "0.3px solid #059669" : "0.3px solid transparent",
+                    }}
                   >
-                    <div className="bg-slate-900/90 text-white px-1 py-0.5 rounded text-center" style={{ fontSize: '2px' }}>
-                      <p className="font-medium whitespace-nowrap">{building.name}</p>
-                      <p className="text-emerald-400 whitespace-nowrap" style={{ fontSize: '1.8px' }}>{stats.available}/{stats.total}</p>
-                    </div>
-                  </foreignObject>
-                )}
+                    <p className="font-semibold">{building.name}</p>
+                    <p style={{ fontSize: "1.8px" }} className={isHovered ? "text-emerald-500" : "text-emerald-100"}>{stats.available}/{stats.total}</p>
+                  </div>
+                </foreignObject>
               </g>
             );
           })}
         </svg>
       </div>
-      
+
       {/* Building legend */}
       <div className="mt-4 flex flex-wrap gap-2 justify-center">
         {buildings.map((building) => {
@@ -157,12 +196,12 @@ export default function ProjectTopView({ topViewImage, buildings, onBuildingSele
               onClick={() => onBuildingSelect(building.id)}
               onMouseEnter={() => setHoveredBuilding(building.id)}
               onMouseLeave={() => setHoveredBuilding(null)}
-              className={`px-3 py-1.5 rounded-full text-sm transition ${
-                hoveredBuilding === building.id
-                  ? "bg-emerald-100 text-emerald-700"
-                  : "bg-slate-100 hover:bg-emerald-50"
-              }`}
+              className={`px-3 py-1.5 rounded-full text-sm transition flex items-center gap-1.5 ${hoveredBuilding === building.id
+                ? "bg-emerald-100 text-emerald-700"
+                : "bg-slate-100 hover:bg-emerald-50"
+                }`}
             >
+              <Building2 className="w-3.5 h-3.5" />
               {building.name} ({stats.available}/{stats.total})
             </button>
           );

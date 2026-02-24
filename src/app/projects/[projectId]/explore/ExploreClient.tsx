@@ -39,7 +39,7 @@ interface ProjectData {
         polygonData: string | null;
         labelX: number | null;
         labelY: number | null;
-        sketchImage:  string | null;
+        sketchImage: string | null;
         sketchImage2: string | null;
         sketchImage3: string | null;
         sketchImage4: string | null;
@@ -158,7 +158,7 @@ export default function ExploreClient({ project }: Props) {
         <BuildingViewer
           building={selectedBuilding}
           onFloorSelect={handleFloorSelect}
-          onBack={project.buildings.length > 1 ? handleBackToProject : () => {}}
+          onBack={project.buildings.length > 1 ? handleBackToProject : () => { }}
         />
       )}
 
@@ -182,6 +182,7 @@ export default function ExploreClient({ project }: Props) {
               units={selectedFloor.units}
               floorPlanImage={selectedFloor.floorPlanImage}
               basePricePerM2={selectedFloor.basePricePerM2}
+              floorNumber={selectedFloor.number}
               onUnitClick={(unit) =>
                 setSelectedUnit({
                   ...unit,

@@ -73,7 +73,7 @@ export default async function ProjectPage({ params }: { params: { projectId: str
             </Link>
             <h1 className="text-4xl md:text-5xl font-bold mb-3">{projectName}</h1>
             <p className="text-slate-300 flex items-center gap-2">
-              <span>📍</span> {projectAddress}
+              <span className="text-emerald-500">•</span> {projectAddress}
             </p>
           </div>
         </section>
@@ -127,14 +127,14 @@ export default async function ProjectPage({ params }: { params: { projectId: str
             {/* Gallery placeholder */}
             <div className="space-y-4">
               <div className="bg-gradient-to-br from-slate-200 to-slate-100 rounded-2xl h-48 flex items-center justify-center">
-                <span className="text-6xl">🏢</span>
+                <span className="text-6xl text-slate-200">⌂</span>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-gradient-to-br from-emerald-100 to-slate-100 rounded-xl h-24 flex items-center justify-center">
-                  <span className="text-3xl">🌳</span>
+                  <span className="text-3xl text-emerald-500">•</span>
                 </div>
                 <div className="bg-gradient-to-br from-slate-100 to-emerald-100 rounded-xl h-24 flex items-center justify-center">
-                  <span className="text-3xl">🅿️</span>
+                  <span className="text-3xl text-blue-500">•</span>
                 </div>
               </div>
             </div>
@@ -177,7 +177,7 @@ export default async function ProjectPage({ params }: { params: { projectId: str
                   shopping centers, schools, and healthcare facilities.
                 </p>
                 <div className="flex items-start gap-3 text-slate-700 bg-slate-50 rounded-lg p-4">
-                  <span className="text-xl">📍</span>
+                  <span className="text-xl text-emerald-500">•</span>
                   <div>
                     <p className="font-medium">{projectName}</p>
                     <p className="text-sm text-slate-500">{projectAddress}</p>

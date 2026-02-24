@@ -19,7 +19,7 @@ interface UnitData {
   polygonData: string | null;
   labelX: number | null;
   labelY: number | null;
-  sketchImage:  string | null;
+  sketchImage: string | null;
   sketchImage2: string | null;
   sketchImage3: string | null;
   sketchImage4: string | null;
@@ -29,6 +29,7 @@ interface Props {
   units: UnitData[];
   floorPlanImage: string | null;
   basePricePerM2: number | null;
+  floorNumber?: number;
   onUnitClick: (unit: UnitData) => void;
 }
 
@@ -36,11 +37,20 @@ export default function FloorPlanPolygon({
   units,
   floorPlanImage,
   basePricePerM2,
+  floorNumber,
   onUnitClick,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+
+  // Auto-construct display number: if unitNumber is short (1-2 digits), prefix with floor number
+  const getDisplayNumber = (unitNumber: string) => {
+    if (floorNumber && /^\d{1,2}$/.test(unitNumber)) {
+      return `${floorNumber}${unitNumber.padStart(2, "0")}`;
+    }
+    return unitNumber;
+  };
 
   // Get container dimensions
   useEffect(() => {
@@ -111,7 +121,7 @@ export default function FloorPlanPolygon({
   const getStatusFill = (status: string, isHovered: boolean) => {
     const opacity = isHovered ? 0.7 : 0.5;
     const soldOpacity = isHovered ? 0.5 : 0.35;
-    
+
     switch (status) {
       case "available":
         return `rgba(34, 197, 94, ${opacity})`; // green
@@ -161,12 +171,6 @@ export default function FloorPlanPolygon({
 
               const isHovered = hoveredId === unit.id;
               const center = getPolygonCenter(points);
-              const price = calculateUnitPrice(
-                unit.area,
-                unit.pricePerM2,
-                basePricePerM2,
-                unit.totalPrice
-              );
 
               return (
                 <g key={unit.id}>
@@ -174,49 +178,27 @@ export default function FloorPlanPolygon({
                   <path
                     d={getPathString(points)}
                     fill={getStatusFill(unit.status, isHovered)}
-                    stroke={isHovered ? "#1e293b" : "#475569"}
-                    strokeWidth={isHovered ? 2.5 : 1.5}
+                    stroke={isHovered ? "#ffffff" : "#ffffff"}
+                    strokeWidth={isHovered ? 3.5 : 3}
                     className="cursor-pointer transition-all duration-150"
                     onClick={() => onUnitClick(unit)}
                     onMouseEnter={() => setHoveredId(unit.id)}
                     onMouseLeave={() => setHoveredId(null)}
                   />
 
-                  {/* Labels - smaller text */}
+                  {/* Unit number only — minimalistic */}
                   <text
                     x={center.x}
-                    y={center.y - 6}
+                    y={center.y + 4}
                     textAnchor="middle"
-                    fontSize="11"
+                    fontSize="14"
                     fontWeight="bold"
-                    fill="#1e293b"
+                    fill={isHovered ? "#ffffff" : "#1e293b"}
                     className="pointer-events-none"
+                    style={{ textShadow: "0 1px 2px rgba(255,255,255,0.6)" }}
                   >
-                    {unit.unitNumber}
+                    {getDisplayNumber(unit.unitNumber)}
                   </text>
-                  <text
-                    x={center.x}
-                    y={center.y + 6}
-                    textAnchor="middle"
-                    fontSize="9"
-                    fill="#475569"
-                    className="pointer-events-none"
-                  >
-                    {unit.rooms}R · {unit.area}m²
-                  </text>
-                  {isHovered && (
-                    <text
-                      x={center.x}
-                      y={center.y + 18}
-                      textAnchor="middle"
-                      fontSize="10"
-                      fontWeight="600"
-                      fill="#1e293b"
-                      className="pointer-events-none"
-                    >
-                      {formatPrice(price)}
-                    </text>
-                  )}
                 </g>
               );
             })}

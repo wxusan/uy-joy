@@ -114,7 +114,7 @@ export default function ProjectImagesPage() {
       </div>
 
       {message && (
-        <div className={`p-4 rounded-lg ${ message.type === "success" ? "bg-green-50 text-green-800" : "bg-red-50 text-red-800" }`}>
+        <div className={`p-4 rounded-lg ${message.type === "success" ? "bg-green-50 text-green-800" : "bg-red-50 text-red-800"}`}>
           {message.text}
         </div>
       )}
@@ -173,9 +173,8 @@ export default function ProjectImagesPage() {
             <input type="file" accept="image/*" onChange={(e) => e.target.files?.[0] && uploadImage(e.target.files[0])}
               className="hidden" id="project-topview" disabled={uploading !== null} />
             <label htmlFor="project-topview"
-              className={`inline-block px-4 py-2 rounded-lg cursor-pointer transition ${
-                uploading === "project-topview" ? "bg-slate-200 text-slate-500" : "bg-emerald-600 text-white hover:bg-emerald-700"
-              }`}>
+              className={`inline-block px-4 py-2 rounded-lg cursor-pointer transition ${uploading === "project-topview" ? "bg-slate-200 text-slate-500" : "bg-emerald-600 text-white hover:bg-emerald-700"
+                }`}>
               {uploading === "project-topview" ? "Yuklanmoqda..." : "Rasm yuklash"}
             </label>
             {project.topViewImage && project.buildings.length > 0 && (
@@ -192,7 +191,7 @@ export default function ProjectImagesPage() {
           imageUrl={project.topViewImage}
           buildings={project.buildings.map(b => ({ id: b.id, name: b.name, positionData: (b as any).positionData || null }))}
           onClose={() => setShowMapper(false)}
-          onSaved={async () => { setShowMapper(false); await loadProject(); setMessage({ type:'success', text:'Saved building areas' }); }}
+          onSaved={async () => { setShowMapper(false); await loadProject(); setMessage({ type: 'success', text: 'Saved building areas' }); }}
         />
       )}
 
@@ -221,11 +220,11 @@ export default function ProjectImagesPage() {
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-slate-400">
-                      <span className="text-4xl">🏢</span>
+                      <span className="text-4xl text-slate-300">—</span>
                     </div>
                   )}
                 </div>
-                
+
                 {/* Building Info */}
                 <h3 className="font-semibold text-slate-800 group-hover:text-emerald-700 transition">
                   {building.name}
@@ -233,7 +232,7 @@ export default function ProjectImagesPage() {
                 <p className="text-sm text-slate-500">
                   {building.floors.length} ta qavat
                 </p>
-                
+
                 {/* Arrow */}
                 <div className="mt-2 text-emerald-600 text-sm font-medium flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
                   Rasmlarni boshqarish →

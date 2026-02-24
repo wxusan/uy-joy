@@ -49,21 +49,11 @@ export default async function ApartmentsPage() {
   // Get dynamic filter ranges
   const roomsSet = new Set(units.map((u) => u.rooms));
   const rooms = Array.from(roomsSet).sort((a, b) => a - b);
-  
+
   const areas = units.map((u) => u.area);
   const areaRange = {
     min: areas.length ? Math.floor(Math.min(...areas)) : 0,
     max: areas.length ? Math.ceil(Math.max(...areas)) : 200,
-  };
-
-  const prices = units.map((u) => {
-    const pp = u.pricePerM2 || u.floor.basePricePerM2 || 0;
-    return u.totalPrice || pp * u.area;
-  }).filter(p => p > 0);
-  
-  const priceRange = {
-    min: prices.length ? Math.min(...prices) : 0,
-    max: prices.length ? Math.max(...prices) : 1000000000,
   };
 
   return (
@@ -81,8 +71,9 @@ export default async function ApartmentsPage() {
           filterOptions={{
             rooms,
             areaRange,
-            priceRange,
           }}
+          projectName={projectName}
+          expectedYear={project.expectedYear}
         />
       </main>
       <Footer />

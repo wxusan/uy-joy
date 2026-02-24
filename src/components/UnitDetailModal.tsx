@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { formatPrice, calculateUnitPrice } from "@/lib/utils";
 import { getCardImageUrl, getFullImageUrl } from "@/lib/cloudinary";
+import { Bed, Ruler, Building2, CircleCheck } from "lucide-react";
 
 interface UnitData {
   id: string;
@@ -15,7 +16,7 @@ interface UnitData {
   totalPrice: number | null;
   floorNumber: number;
   basePricePerM2: number | null;
-  sketchImage?:  string | null;
+  sketchImage?: string | null;
   sketchImage2?: string | null;
   sketchImage3?: string | null;
   sketchImage4?: string | null;
@@ -29,19 +30,27 @@ interface Props {
 const statusChip = (status: string) => {
   switch (status) {
     case "available": return "bg-emerald-100 text-emerald-700";
-    case "reserved":  return "bg-yellow-100 text-yellow-700";
-    case "sold":      return "bg-red-100 text-red-700";
-    default:          return "bg-slate-100 text-slate-600";
+    case "reserved": return "bg-yellow-100 text-yellow-700";
+    case "sold": return "bg-red-100 text-red-700";
+    default: return "bg-slate-100 text-slate-600";
   }
 };
 
 export default function UnitDetailModal({ unit, onClose }: Props) {
-  const t  = useTranslations("unit");
+  const t = useTranslations("unit");
+
+  // Auto-construct display number: if unitNumber is short (1-2 digits), prefix with floor number
+  const getDisplayNumber = (unitNumber: string, floorNumber?: number) => {
+    if (floorNumber && /^\d{1,2}$/.test(unitNumber)) {
+      return `${floorNumber}${unitNumber.padStart(2, "0")}`;
+    }
+    return unitNumber;
+  };
   const tc = useTranslations("contact");
-  const [formData, setFormData]     = useState({ name: "", phone: "" });
+  const [formData, setFormData] = useState({ name: "", phone: "" });
   const [submitting, setSubmitting] = useState(false);
-  const [submitted, setSubmitted]   = useState(false);
-  const [lightbox, setLightbox]     = useState<string | null>(null);
+  const [submitted, setSubmitted] = useState(false);
+  const [lightbox, setLightbox] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,7 +63,7 @@ export default function UnitDetailModal({ unit, onClose }: Props) {
           name: formData.name,
           phone: formData.phone,
           unitId: unit?.id,
-          unitNumber: unit?.unitNumber,
+          unitNumber: unit ? getDisplayNumber(unit.unitNumber, unit.floorNumber) : undefined,
           projectName: `${t("floor")} ${unit?.floorNumber}`,
         }),
       });
@@ -69,7 +78,7 @@ export default function UnitDetailModal({ unit, onClose }: Props) {
   if (!unit) return null;
 
   const totalPrice = calculateUnitPrice(unit.area, unit.pricePerM2, unit.basePricePerM2, unit.totalPrice);
-  const photos     = [unit.sketchImage, unit.sketchImage2, unit.sketchImage3, unit.sketchImage4].filter(Boolean) as string[];
+  const photos = [unit.sketchImage, unit.sketchImage2, unit.sketchImage3, unit.sketchImage4].filter(Boolean) as string[];
 
   return (
     <>
@@ -106,7 +115,7 @@ export default function UnitDetailModal({ unit, onClose }: Props) {
           {/* Sticky header */}
           <div className="flex items-start justify-between px-5 pt-5 pb-3 border-b sticky top-0 bg-white z-10">
             <div>
-              <h2 className="font-bold text-xl text-slate-900">№{unit.unitNumber}</h2>
+              <h2 className="font-bold text-xl text-slate-900">№{getDisplayNumber(unit.unitNumber, unit.floorNumber)}</h2>
               <p className="text-sm text-slate-500 mt-0.5">{t("floor")} {unit.floorNumber}</p>
             </div>
             <button onClick={onClose} className="text-slate-400 hover:text-slate-600 p-1 -mr-1 text-xl">✕</button>
@@ -115,25 +124,20 @@ export default function UnitDetailModal({ unit, onClose }: Props) {
           <div className="px-5 py-4 space-y-4">
             {/* Feature chips */}
             <div className="flex flex-wrap gap-2">
-              <span className="bg-slate-100 px-3 py-1.5 rounded-full text-sm font-medium">
-                🛏 {unit.rooms} {t("rooms")}
+              <span className="bg-slate-100 px-3 py-1.5 rounded-full text-sm font-medium inline-flex items-center gap-1">
+                <Bed className="w-3.5 h-3.5" /> {unit.rooms} {t("rooms")}
               </span>
-              <span className="bg-slate-100 px-3 py-1.5 rounded-full text-sm font-medium">
-                📐 {unit.area} m²
+              <span className="bg-slate-100 px-3 py-1.5 rounded-full text-sm font-medium inline-flex items-center gap-1">
+                <Ruler className="w-3.5 h-3.5" /> {unit.area} m²
               </span>
-              <span className="bg-slate-100 px-3 py-1.5 rounded-full text-sm font-medium">
-                🏢 {unit.floorNumber}-{t("floor").toLowerCase()}
+              <span className="bg-slate-100 px-3 py-1.5 rounded-full text-sm font-medium inline-flex items-center gap-1">
+                <Building2 className="w-3.5 h-3.5" /> {unit.floorNumber}-{t("floor").toLowerCase()}
               </span>
               <span className={`px-3 py-1.5 rounded-full text-xs font-semibold ${statusChip(unit.status)}`}>
                 {t(unit.status as "available" | "reserved" | "sold")}
               </span>
             </div>
 
-            {/* Price */}
-            <div className="bg-emerald-50 rounded-xl px-4 py-3">
-              <p className="text-xs text-emerald-600 font-medium uppercase tracking-wide">{t("totalPrice")}</p>
-              <p className="text-2xl font-bold text-emerald-800">{formatPrice(totalPrice)}</p>
-            </div>
 
             {/* Photos */}
             {photos.length > 0 && (
@@ -142,9 +146,9 @@ export default function UnitDetailModal({ unit, onClose }: Props) {
                   <button
                     key={i}
                     onClick={() => setLightbox(photo)}
-                    className="relative aspect-video bg-slate-100 rounded-xl overflow-hidden hover:opacity-90 active:scale-95 transition group"
+                    className="relative aspect-square bg-slate-50 rounded-xl overflow-hidden hover:opacity-90 active:scale-95 transition group"
                   >
-                    <img src={getCardImageUrl(photo)} alt={`Photo ${i + 1}`} className="w-full h-full object-cover" loading="lazy" />
+                    <img src={getCardImageUrl(photo)} alt={`Photo ${i + 1}`} className="w-full h-full object-contain p-2" loading="lazy" />
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition flex items-center justify-center">
                       <svg className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition drop-shadow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
@@ -159,7 +163,7 @@ export default function UnitDetailModal({ unit, onClose }: Props) {
             {unit.status === "available" ? (
               submitted ? (
                 <div className="text-center py-6">
-                  <span className="text-4xl block mb-3">✅</span>
+                  <CircleCheck className="w-10 h-10 text-green-500 mx-auto mb-3" />
                   <p className="font-semibold text-green-700 text-lg">{tc("thankYou")}</p>
                   <p className="text-sm text-green-600 mt-1">{tc("willContact")}</p>
                 </div>

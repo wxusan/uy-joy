@@ -39,7 +39,7 @@ interface ProjectData {
         polygonData: string | null;
         labelX: number | null;
         labelY: number | null;
-        sketchImage:  string | null;
+        sketchImage: string | null;
         sketchImage2: string | null;
         sketchImage3: string | null;
         sketchImage4: string | null;
@@ -94,7 +94,7 @@ export default function ExploreClient({ project }: Props) {
 
   // Breadcrumb navigation
   const renderBreadcrumb = () => (
-    <div className="flex items-center gap-2 text-sm text-slate-500 mb-4">
+    <div className="flex items-center gap-2 text-sm text-slate-500 mb-4 flex-wrap">
       <button
         onClick={handleBackToProject}
         className={`hover:text-emerald-600 transition ${currentStep === "project" ? "text-emerald-600 font-medium" : ""}`}
@@ -124,12 +124,12 @@ export default function ExploreClient({ project }: Props) {
   );
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
+    <div className="max-w-7xl mx-auto px-3 sm:px-4 py-6 sm:py-8">
       {/* Breadcrumb */}
       {renderBreadcrumb()}
 
       {/* Header with legend */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-3">
         <div>
           <h2 className="text-xl font-bold text-slate-800">
             {currentStep === "project" && project.name}
@@ -158,13 +158,13 @@ export default function ExploreClient({ project }: Props) {
         <BuildingViewer
           building={selectedBuilding}
           onFloorSelect={handleFloorSelect}
-          onBack={project.buildings.length > 1 ? handleBackToProject : () => {}}
+          onBack={project.buildings.length > 1 ? handleBackToProject : () => { }}
         />
       )}
 
       {currentStep === "floor" && selectedFloor && (
         <div>
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-2">
             <h3 className="font-semibold text-slate-700">
               {t("floor")} {selectedFloor.number} — {selectedFloor.units.length} {t("apartments")}
             </h3>
@@ -182,6 +182,7 @@ export default function ExploreClient({ project }: Props) {
               units={selectedFloor.units}
               floorPlanImage={selectedFloor.floorPlanImage}
               basePricePerM2={selectedFloor.basePricePerM2}
+              floorNumber={selectedFloor.number}
               onUnitClick={(unit) =>
                 setSelectedUnit({
                   ...unit,

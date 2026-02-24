@@ -8,7 +8,12 @@
     --font-poppins: 'Poppins', sans-serif;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     font-family: var(--font-poppins);
   }
 
@@ -60,4 +65,91 @@ html {
 
 .font-body {
   font-family: var(--font-inter);
+}
+
+/* ===== UX Improvement Animations ===== */
+
+/* Pulse ring - sonar wave radiating outward from CTA buttons */
+@keyframes pulse-ring {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+@keyframes pulse-ring-delayed {
+  0% {
+    transform: scale(1);
+    opacity: 0.4;
+  }
+
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+
+.cta-pulse {
+  position: relative;
+  overflow: visible;
+}
+
+.cta-pulse::before,
+.cta-pulse::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 2px solid currentColor;
+  opacity: 0;
+  pointer-events: none;
+  animation: pulse-ring 2.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+.cta-pulse::after {
+  animation: pulse-ring-delayed 2.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+  animation-delay: 0.8s;
+}
+
+/* Cascade highlight - brief flash for floor reveal */
+@keyframes cascade-highlight {
+  0% {
+    background-color: transparent;
+  }
+
+  30% {
+    background-color: rgba(16, 185, 129, 0.4);
+  }
+
+  100% {
+    background-color: transparent;
+  }
+}
+
+.floor-cascade {
+  animation: cascade-highlight 0.6s ease-out forwards;
+}
+
+/* Mild label pulse — very subtle, long cycle */
+@keyframes mild-label-pulse {
+
+  0%,
+  100% {
+    opacity: 0.85;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  }
+
+  50% {
+    opacity: 1;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);
+  }
+}
+
+.label-mild-pulse {
+  animation: mild-label-pulse 4s ease-in-out infinite;
 }

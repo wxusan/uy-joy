@@ -3,7 +3,7 @@
     "home": "Home",
     "admin": "Admin",
     "projectInfo": "Project Info",
-    "explore": "Explore",
+    "explore": "Visual Tour",
     "signOut": "Sign Out",
     "loading": "Loading...",
     "save": "Save",
@@ -19,7 +19,7 @@
   "landing": {
     "premiumResidential": "Premium Residential Complex",
     "exploreDescription": "Explore and choose your dream apartment interactively",
-    "exploreApartments": "Explore Apartments",
+    "exploreApartments": "Visual Tour",
     "viewDetails": "View Details",
     "totalApartments": "Total Apartments",
     "availableNow": "Available Now",
@@ -64,7 +64,10 @@
     "elevator": "Elevator",
     "stairs": "Stairs",
     "room": "room",
-    "rooms": "rooms"
+    "rooms": "rooms",
+    "encourageFloor": "Select a floor",
+    "seeApartments": "See apartments!",
+    "viewBuilding": "View building"
   },
   "unit": {
     "apartment": "Apartment",
@@ -84,7 +87,10 @@
     "availableStatus": "This apartment is currently available",
     "reservedStatus": "This apartment is currently reserved",
     "soldStatus": "This apartment is sold",
-    "learnMore": "Learn more?"
+    "learnMore": "Learn more?",
+    "apartmentNumber": "Apartment number",
+    "expectedYear": "Expected year",
+    "project": "Project"
   },
   "legend": {
     "available": "Available",

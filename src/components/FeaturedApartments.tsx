@@ -20,7 +20,7 @@ interface Unit {
   status: string;
   pricePerM2: number | null;
   totalPrice: number | null;
-  sketchImage:  string | null;
+  sketchImage: string | null;
   sketchImage2: string | null;
   sketchImage3: string | null;
   sketchImage4: string | null;
@@ -35,9 +35,11 @@ interface Unit {
 
 interface Props {
   units: Unit[];
+  projectName?: string;
+  expectedYear?: number | null;
 }
 
-export default function FeaturedApartments({ units }: Props) {
+export default function FeaturedApartments({ units, projectName, expectedYear }: Props) {
   const t = useTranslations("apartments");
   const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
 
@@ -104,6 +106,8 @@ export default function FeaturedApartments({ units }: Props) {
             <ScrollReveal key={unit.id} delay={index * 100}>
               <ApartmentCard
                 unit={unit}
+                projectName={projectName}
+                expectedYear={expectedYear}
                 onClick={() => setSelectedUnit(unit)}
               />
             </ScrollReveal>

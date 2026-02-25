@@ -20,6 +20,7 @@ interface UnitData {
   sketchImage2?: string | null;
   sketchImage3?: string | null;
   sketchImage4?: string | null;
+  buildingName?: string;
 }
 
 interface Props {
@@ -64,7 +65,10 @@ export default function UnitDetailModal({ unit, onClose }: Props) {
           phone: formData.phone,
           unitId: unit?.id,
           unitNumber: unit ? getDisplayNumber(unit.unitNumber, unit.floorNumber) : undefined,
-          projectName: `${t("floor")} ${unit?.floorNumber}`,
+          projectName: unit?.buildingName
+            ? `${unit.buildingName} - ${t("floor")} ${unit?.floorNumber}`
+            : `${t("floor")} ${unit?.floorNumber}`,
+          source: "vizual",
         }),
       });
       setSubmitted(true);

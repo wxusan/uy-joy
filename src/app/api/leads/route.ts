@@ -13,7 +13,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, phone, projectId, projectName, unitId, unitNumber } = body;
+    const { name, phone, projectId, projectName, unitId, unitNumber, source } = body;
 
     if (!name || !phone) {
       return NextResponse.json(
@@ -30,6 +30,7 @@ export async function POST(request: NextRequest) {
         projectName: projectName || null,
         unitId: unitId || null,
         unitNumber: unitNumber || null,
+        source: source || null,
       },
     });
 

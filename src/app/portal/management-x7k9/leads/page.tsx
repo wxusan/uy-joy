@@ -12,6 +12,7 @@ interface Lead {
   projectName: string | null;
   unitNumber: string | null;
   status: string;
+  source: string | null;
   createdAt: string;
 }
 
@@ -55,12 +56,13 @@ export default function LeadsPage() {
   };
 
   const exportToCSV = () => {
-    const headers = ["Name", "Phone", "Project", "Unit", "Status", "Date"];
+    const headers = ["Name", "Phone", "Project", "Unit", "Source", "Status", "Date"];
     const rows = leads.map((l) => [
       l.name,
       l.phone,
       l.projectName || "-",
       l.unitNumber || "-",
+      l.source || "-",
       l.status,
       new Date(l.createdAt).toLocaleDateString(),
     ]);
@@ -125,6 +127,7 @@ export default function LeadsPage() {
                 <th className="text-left p-4 font-medium text-slate-600">{t("phone")}</th>
                 <th className="text-left p-4 font-medium text-slate-600">{t("project")}</th>
                 <th className="text-left p-4 font-medium text-slate-600">{t("unit")}</th>
+                <th className="text-left p-4 font-medium text-slate-600">Manba</th>
                 <th className="text-left p-4 font-medium text-slate-600">{t("status")}</th>
                 <th className="text-left p-4 font-medium text-slate-600">{t("date")}</th>
               </tr>
@@ -140,6 +143,20 @@ export default function LeadsPage() {
                   </td>
                   <td className="p-4 text-slate-600">{lead.projectName || "-"}</td>
                   <td className="p-4 text-slate-600">{lead.unitNumber || "-"}</td>
+                  <td className="p-4">
+                    {lead.source === "kvartiralar" && (
+                      <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700">Kvartiralar</span>
+                    )}
+                    {lead.source === "vizual" && (
+                      <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700">Vizual</span>
+                    )}
+                    {lead.source === "bosh-sahifa" && (
+                      <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700">Bosh sahifa</span>
+                    )}
+                    {!lead.source && (
+                      <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-slate-50 text-slate-500">—</span>
+                    )}
+                  </td>
                   <td className="p-4">
                     <select
                       value={lead.status}

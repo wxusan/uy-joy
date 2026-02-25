@@ -209,7 +209,12 @@ export default function BuildingViewer({ building, onFloorSelect, onBack }: Prop
                         }`}
                     >
                       <span className="text-sm font-bold text-slate-600 w-8">{floor.number}</span>
-                      <span className="flex-1 text-sm text-slate-500 text-left">{t("floor")} {floor.number}</span>
+                      <div className="flex-1 flex justify-between items-center text-left">
+                        <span className="text-sm text-slate-500">{t("floor")} {floor.number}</span>
+                        <span className="text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+                          {getFloorStats(floor).available}/{getFloorStats(floor).total}
+                        </span>
+                      </div>
                     </button>
                   );
                 })}
@@ -239,7 +244,12 @@ export default function BuildingViewer({ building, onFloorSelect, onBack }: Prop
                     : "border-slate-200 hover:border-slate-300"
                   }`}
               >
-                <span className="font-medium">{t("floor")} {floor.number}</span>
+                <div className="flex flex-col text-left">
+                  <span className="font-medium">{t("floor")} {floor.number}</span>
+                  <span className="text-xs text-slate-500 mt-0.5">
+                    {stats.available}/{stats.total} bo'sh
+                  </span>
+                </div>
                 <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>

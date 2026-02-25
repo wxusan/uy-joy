@@ -188,6 +188,7 @@ export default function ExploreClient({ project }: Props) {
                   ...unit,
                   floorNumber: selectedFloor.number,
                   basePricePerM2: selectedFloor.basePricePerM2,
+                  buildingName: selectedBuilding?.name,
                 })
               }
             />
@@ -201,6 +202,7 @@ export default function ExploreClient({ project }: Props) {
                   ...unit,
                   floorNumber: selectedFloor.number,
                   basePricePerM2: selectedFloor.basePricePerM2,
+                  buildingName: selectedBuilding?.name,
                 })
               }
             />

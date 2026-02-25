@@ -14,9 +14,6 @@ export default async function Navbar() {
             <span className="text-emerald-400">Uy</span>Joy
           </Link>
           <div className="flex items-center gap-4">
-            <Link href="/" className="text-sm hover:text-emerald-400 transition">
-              {t("home")}
-            </Link>
             <Link
               href="/vizual"
               className="text-sm hover:text-emerald-400 transition"

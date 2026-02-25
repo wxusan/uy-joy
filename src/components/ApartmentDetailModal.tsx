@@ -64,6 +64,7 @@ export default function ApartmentDetailModal({ unit, onClose }: Props) {
           unitId: unit.id,
           unitNumber: unit.unitNumber,
           projectName: `${unit.floor.building.name} - ${t("floor")} ${unit.floor.number}`,
+          source: "kvartiralar",
         }),
       });
       setSubmitted(true);

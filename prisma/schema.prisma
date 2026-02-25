@@ -103,6 +103,7 @@ model Lead {
   unitNumber  String?
   status      String   @default("new") // new, contacted, converted, closed
   notes       String?
+  source      String?  // "kvartiralar", "vizual", "bosh-sahifa"
   createdAt   DateTime @default(now())
 }
 

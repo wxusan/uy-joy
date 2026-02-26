@@ -17,6 +17,8 @@ interface Building {
   name: string;
   frontViewImage: string | null;
   positionData: string | null;
+  labelX: number | null;
+  labelY: number | null;
   floors: Floor[];
 }
 
@@ -189,7 +191,13 @@ export default function ProjectImagesPage() {
       {showMapper && project?.topViewImage && (
         <TopViewMapper
           imageUrl={project.topViewImage}
-          buildings={project.buildings.map(b => ({ id: b.id, name: b.name, positionData: (b as any).positionData || null }))}
+          buildings={project.buildings.map(b => ({
+            id: b.id,
+            name: b.name,
+            positionData: (b as any).positionData || null,
+            labelX: b.labelX,
+            labelY: b.labelY
+          }))}
           onClose={() => setShowMapper(false)}
           onSaved={async () => { setShowMapper(false); await loadProject(); setMessage({ type: 'success', text: 'Saved building areas' }); }}
         />

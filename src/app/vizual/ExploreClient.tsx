@@ -21,6 +21,8 @@ interface ProjectData {
     backViewImage: string | null;
     leftViewImage: string | null;
     rightViewImage: string | null;
+    labelX: number | null;
+    labelY: number | null;
     floors: {
       id: string;
       number: number;

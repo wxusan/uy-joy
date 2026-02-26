@@ -9,6 +9,8 @@ interface BuildingItem {
   id: string;
   name: string;
   positionData: string | null;
+  labelX?: number | null;
+  labelY?: number | null;
 }
 
 interface Props {
@@ -22,9 +24,11 @@ export default function TopViewMapper({ imageUrl, buildings, onClose, onSaved }:
   const containerRef = useRef<HTMLDivElement>(null);
   const [activeId, setActiveId] = useState<string | null>(buildings[0]?.id || null);
   const [polygons, setPolygons] = useState<Record<string, Point[]>>({});
+  const [labelPositions, setLabelPositions] = useState<Record<string, Point>>({});
   const [currentPoints, setCurrentPoints] = useState<Point[]>([]);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [draggingLabelId, setDraggingLabelId] = useState<string | null>(null);
 
   useEffect(() => {
     const initial: Record<string, Point[]> = {};
@@ -48,6 +52,22 @@ export default function TopViewMapper({ imageUrl, buildings, onClose, onSaved }:
       }
     }
     setPolygons(initial);
+
+    // Initialize label positions
+    const initialLabels: Record<string, Point> = {};
+    for (const b of buildings) {
+      if (b.labelX !== null && b.labelY !== null && b.labelX !== undefined && b.labelY !== undefined) {
+        initialLabels[b.id] = { x: b.labelX, y: b.labelY };
+      } else if (initial[b.id]) {
+        // Default to center if no label provided
+        const pts = initial[b.id];
+        initialLabels[b.id] = {
+          x: pts.reduce((a, p) => a + p.x, 0) / pts.length,
+          y: pts.reduce((a, p) => a + p.y, 0) / pts.length - 10 // Slightly above
+        };
+      }
+    }
+    setLabelPositions(initialLabels);
   }, [buildings]);
 
   const getPoint = (e: React.MouseEvent): Point => {
@@ -67,6 +87,16 @@ export default function TopViewMapper({ imageUrl, buildings, onClose, onSaved }:
   const handleDoubleClick = () => {
     if (!activeId || currentPoints.length < 3) return;
     setPolygons((prev) => ({ ...prev, [activeId]: currentPoints }));
+    // If no label pos yet, set it slightly above center
+    if (!labelPositions[activeId]) {
+      setLabelPositions((prev) => ({
+        ...prev,
+        [activeId]: {
+          x: currentPoints.reduce((a, p) => a + p.x, 0) / currentPoints.length,
+          y: currentPoints.reduce((a, p) => a + p.y, 0) / currentPoints.length - 10
+        }
+      }));
+    }
     setCurrentPoints([]);
   };
 
@@ -89,7 +119,14 @@ export default function TopViewMapper({ imageUrl, buildings, onClose, onSaved }:
     await Promise.all(
       buildings.map(async (b) => {
         const pts = polygons[b.id];
-        const body = { positionData: pts && pts.length >= 3 ? JSON.stringify(pts) : null };
+        const labelPts = labelPositions[b.id];
+
+        const body: any = {
+          positionData: pts && pts.length >= 3 ? JSON.stringify(pts) : null,
+          labelX: labelPts ? labelPts.x : null,
+          labelY: labelPts ? labelPts.y : null,
+        };
+
         await fetch(`/api/buildings/${b.id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -121,10 +158,22 @@ export default function TopViewMapper({ imageUrl, buildings, onClose, onSaved }:
               onClick={handleClick}
               onDoubleClick={handleDoubleClick}
             >
-              <Image src={imageUrl} alt="Top view" fill className="object-cover select-none pointer-events-none" />
+              <Image src={imageUrl} alt="Top view" fill className="object-cover select-none pointer-events-none" draggable={false} />
 
               {/* SVG overlay for polygons */}
-              <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+              <svg
+                className="absolute inset-0 w-full h-full"
+                viewBox="0 0 100 100"
+                preserveAspectRatio="none"
+                onMouseMove={(e) => {
+                  if (draggingLabelId) {
+                    const pt = getPoint(e);
+                    setLabelPositions(prev => ({ ...prev, [draggingLabelId]: pt }));
+                  }
+                }}
+                onMouseUp={() => setDraggingLabelId(null)}
+                onMouseLeave={() => setDraggingLabelId(null)}
+              >
                 {/* Completed polygons */}
                 {Object.entries(polygons).map(([id, pts]) => {
                   const isActive = id === activeId;
@@ -143,18 +192,45 @@ export default function TopViewMapper({ imageUrl, buildings, onClose, onSaved }:
                         style={{ cursor: "pointer" }}
                         onClick={(e) => { e.stopPropagation(); setActiveId(id); }}
                       />
-                      {/* Label */}
-                      {(isActive || isHovered) && pts.length > 0 && (
-                        <text
-                          x={pts.reduce((a, p) => a + p.x, 0) / pts.length}
-                          y={pts.reduce((a, p) => a + p.y, 0) / pts.length}
-                          textAnchor="middle"
-                          dominantBaseline="middle"
-                          className="text-[3px] font-bold fill-white pointer-events-none"
-                          style={{ textShadow: "0 0 2px rgba(0,0,0,0.8)" }}
+                      {/* Connector Line */}
+                      {(isActive || isHovered) && pts.length > 0 && labelPositions[id] && (
+                        <line
+                          x1={labelPositions[id].x}
+                          y1={labelPositions[id].y}
+                          x2={pts.reduce((a, p) => a + p.x, 0) / pts.length}
+                          y2={pts.reduce((a, p) => a + p.y, 0) / pts.length}
+                          stroke="#10b981"
+                          strokeWidth={isActive ? 0.3 : 0.2}
+                          className="pointer-events-none"
+                        />
+                      )}
+
+                      {/* Draggable Label Box */}
+                      {(isActive || isHovered) && pts.length > 0 && labelPositions[id] && (
+                        <g
+                          onMouseDown={(e) => { e.stopPropagation(); setDraggingLabelId(id); }}
+                          style={{ cursor: draggingLabelId === id ? 'grabbing' : 'grab' }}
                         >
-                          {building?.name}
-                        </text>
+                          <rect
+                            x={labelPositions[id].x - 10}
+                            y={labelPositions[id].y - 3}
+                            width="20"
+                            height="6"
+                            fill={isActive ? "white" : "#059669"}
+                            stroke="#059669"
+                            strokeWidth="0.2"
+                            rx="0.5"
+                          />
+                          <text
+                            x={labelPositions[id].x}
+                            y={labelPositions[id].y}
+                            textAnchor="middle"
+                            dominantBaseline="middle"
+                            className={`text-[2.5px] font-bold select-none ${isActive ? 'fill-emerald-700' : 'fill-white'}`}
+                          >
+                            {building?.name}
+                          </text>
+                        </g>
                       )}
                     </g>
                   );
@@ -179,6 +255,8 @@ export default function TopViewMapper({ imageUrl, buildings, onClose, onSaved }:
             </div>
             <p className="text-xs text-slate-500 mt-2">
               O&apos;ng tomondan binoni tanlang, keyin rasmda nuqtalarni bosib polygon chizing. Yakunlash uchun ikki marta bosing.
+              <br />
+              <b>Yangi:</b> Binoning belgisini (to&apos;rtburchakni) sichqoncha bilan ushlab, ixtiyoriy joyga surib qoldirishingiz mumkin.
             </p>
           </div>
           <div className="col-span-4 space-y-2">

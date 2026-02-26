@@ -11,6 +11,8 @@ interface Building {
   id: string;
   name: string;
   positionData: string | null;
+  labelX: number | null;
+  labelY: number | null;
   floors: { units: { status: string }[] }[];
 }
 
@@ -108,13 +110,13 @@ export default function ProjectTopView({ topViewImage, buildings, onBuildingSele
       <h3 className="font-semibold text-slate-700 mb-4 text-center">{t("selectBuilding")}</h3>
 
       {/* Aerial view container - full on mobile, 75% on desktop */}
-      <div className="relative w-full sm:w-3/4 mx-auto aspect-[4/3] bg-slate-100 rounded-lg overflow-hidden">
+      <div className="relative w-full lg:w-4/5 xl:w-[85%] mx-auto aspect-[4/3] bg-slate-100 rounded-lg overflow-hidden border border-slate-200 shadow-inner">
         <Image
           src={topViewImage}
           alt="Project aerial view"
           fill
           className="object-cover"
-          sizes="(max-width: 768px) 100vw, 800px"
+          sizes="(max-width: 1024px) 100vw, 85vw"
         />
 
         {/* SVG overlay for polygon building areas + labels with arrows */}
@@ -126,10 +128,24 @@ export default function ProjectTopView({ topViewImage, buildings, onBuildingSele
             const stats = getBuildingStats(building);
             const isHovered = hoveredBuilding === building.id;
             const center = getCenter(polygon);
-            const labelPos = getLabelPosition(center, index, buildings.length);
+
+            // Use admin-defined coordinates, fallback to auto
+            const labelPos = (building.labelX !== null && building.labelY !== null && building.labelX !== undefined && building.labelY !== undefined)
+              ? { x: building.labelX, y: building.labelY }
+              : getLabelPosition(center, index, buildings.length);
+
+            // Calculate where the line should attach to the label box
+            // The foreignObject is 22 wide and 7.5 high, centered at x,y
+            const boxLeft = labelPos.x - 11;
+            const boxRight = labelPos.x + 11;
+            const isLabelLeftOfBuilding = labelPos.x < center.x;
+
+            // Connect to the edge closest to the building
+            const lineStartX = isLabelLeftOfBuilding ? boxRight + 0.5 : boxLeft - 0.5;
+            const lineStartY = labelPos.y;
 
             return (
-              <g key={building.id}>
+              <g key={building.id} className="transition-opacity duration-300" style={{ opacity: hoveredBuilding && !isHovered ? 0.6 : 1 }}>
                 {/* Building polygon */}
                 <path
                   d={toSvgPath(polygon)}
@@ -142,42 +158,51 @@ export default function ProjectTopView({ topViewImage, buildings, onBuildingSele
                   onClick={() => onBuildingSelect(building.id)}
                 />
 
+                {/* Center dot */}
+                <circle
+                  cx={center.x}
+                  cy={center.y}
+                  r={isHovered ? 0.8 : 0.6}
+                  fill={isHovered ? "#fff" : "#10b981"}
+                  stroke={isHovered ? "#10b981" : "transparent"}
+                  strokeWidth={0.2}
+                  className="pointer-events-none transition-all duration-300"
+                />
+
                 {/* Connector line from label to building center */}
                 <line
-                  x1={labelPos.x}
-                  y1={labelPos.y + 3.5}
+                  x1={lineStartX}
+                  y1={lineStartY}
                   x2={center.x}
                   y2={center.y}
                   stroke={isHovered ? "#059669" : "#10b981"}
-                  strokeWidth={isHovered ? 0.45 : 0.3}
-                  strokeLinecap="round"
-                  className="pointer-events-none transition-all duration-200"
+                  strokeWidth={isHovered ? 0.5 : 0.3}
+                  className="pointer-events-none transition-all duration-300"
                 />
 
                 {/* Label box — sharp rectangle */}
                 <foreignObject
-                  x={labelPos.x - 14}
-                  y={labelPos.y - 3.5}
-                  width="28"
-                  height="7"
+                  x={labelPos.x - 11}
+                  y={labelPos.y - 3.75}
+                  width="22"
+                  height="7.5"
                   className="overflow-visible cursor-pointer"
                   onClick={() => onBuildingSelect(building.id)}
                   onMouseEnter={() => setHoveredBuilding(building.id)}
                   onMouseLeave={() => setHoveredBuilding(null)}
                 >
                   <div
-                    className={`label-mild-pulse px-1 py-0.5 text-center whitespace-nowrap transition-all duration-300 ${isHovered
-                      ? "bg-white text-emerald-700 shadow-sm"
-                      : "bg-emerald-600 text-white"
+                    className={`flex flex-col items-center justify-center w-full h-full border transition-all duration-300 shadow-sm ${isHovered
+                      ? "bg-white border-emerald-500 shadow-md transform scale-105"
+                      : "bg-[#2ca36a]/90 backdrop-blur-sm border-[#1e8251]"
                       }`}
-                    style={{
-                      fontSize: "2.2px",
-                      lineHeight: 1.4,
-                      border: isHovered ? "0.3px solid #059669" : "0.3px solid transparent",
-                    }}
                   >
-                    <p className="font-semibold">{building.name}</p>
-                    <p style={{ fontSize: "1.8px" }} className={isHovered ? "text-emerald-500" : "text-emerald-100"}>{stats.available}/{stats.total}</p>
+                    <p className={`font-bold tracking-wide transition-colors ${isHovered ? 'text-emerald-700' : 'text-white'}`} style={{ fontSize: "2.8px", lineHeight: 1.1 }}>
+                      {building.name}
+                    </p>
+                    <p className={`font-medium transition-colors ${isHovered ? 'text-emerald-500' : 'text-emerald-50'}`} style={{ fontSize: "2.0px", lineHeight: 1.1 }}>
+                      {stats.available}/{stats.total}
+                    </p>
                   </div>
                 </foreignObject>
               </g>

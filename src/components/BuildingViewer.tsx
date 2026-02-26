@@ -225,7 +225,6 @@ export default function BuildingViewer({ building, onFloorSelect, onBack }: Prop
 
         {/* Floor list */}
         <div className="space-y-2">
-          <h4 className="font-medium text-slate-700 mb-3">{t("floors")}</h4>
           {sortedFloors.map((floor) => {
             const stats = getFloorStats(floor);
             const isHovered = hoveredFloor === floor.id;

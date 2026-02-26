@@ -187,30 +187,30 @@ export default function ProjectTopView({ topViewImage, buildings, onBuildingSele
                   className="pointer-events-none transition-all duration-300"
                 />
 
-                {/* Label box — matches provided screenshot design */}
+                {/* Label box — simple original styling */}
                 <foreignObject
                   x={labelPos.x - 14}
-                  y={labelPos.y - 4}
+                  y={labelPos.y - 3.5}
                   width="28"
-                  height="8"
+                  height="7"
                   className="overflow-visible cursor-pointer"
                   onClick={() => onBuildingSelect(building.id)}
                   onMouseEnter={() => setHoveredBuilding(building.id)}
                   onMouseLeave={() => setHoveredBuilding(null)}
                 >
-                  <div className={`w-full h-full flex flex-col items-center justify-center shadow-md transition-transform duration-300 origin-center ${isHovered ? 'scale-110' : ''}`}>
-                    {/* Outer dark green box */}
-                    <div className="w-full h-full bg-[#1f7b44] p-[0.6px]">
-                      {/* Inner lighter green box */}
-                      <div className="w-full h-full bg-[#3ca363] flex flex-col items-center justify-center px-1">
-                        <p className="font-bold text-white tracking-wide truncate w-full text-center" style={{ fontSize: "2.8px", lineHeight: 1.1 }}>
-                          {building.name}
-                        </p>
-                        <p className="font-semibold text-white mt-[0.3px]" style={{ fontSize: "2.0px", lineHeight: 1.1 }}>
-                          {stats.available}/{stats.total}
-                        </p>
-                      </div>
-                    </div>
+                  <div
+                    className={`px-1 py-0.5 text-center whitespace-nowrap transition-all duration-300 ${isHovered
+                      ? "bg-white text-emerald-700 shadow-sm"
+                      : "bg-emerald-600 text-white"
+                      }`}
+                    style={{
+                      fontSize: "2.2px",
+                      lineHeight: 1.4,
+                      border: isHovered ? "0.3px solid #059669" : "0.3px solid transparent",
+                    }}
+                  >
+                    <p className="font-semibold" style={{ fontSize: "2.5px" }}>{building.name}</p>
+                    <p style={{ fontSize: "1.8px" }} className={isHovered ? "text-emerald-500" : "text-emerald-100"}>{stats.available}/{stats.total}</p>
                   </div>
                 </foreignObject>
               </g>

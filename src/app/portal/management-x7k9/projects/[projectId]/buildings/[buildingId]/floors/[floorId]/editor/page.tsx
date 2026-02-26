@@ -320,15 +320,11 @@ export default function FloorPlanEditorPage() {
   // Copy layout to all floors
   const handleCopyToAllFloors = async () => {
     if (!floor?.units.length) {
-      alert("No units to copy. Draw some apartments first.");
+      alert(t("noUnitsToCopy"));
       return;
     }
 
-    if (!confirm(
-      "This will copy the current floor plan (image + all units) to ALL other floors in this building.\n\n" +
-      "Existing units on other floors will be DELETED and replaced.\n\n" +
-      "Continue?"
-    )) {
+    if (!confirm(t("confirmCopyToAllFloors"))) {
       return;
     }
 
@@ -340,12 +336,12 @@ export default function FloorPlanEditorPage() {
       const data = await res.json();
 
       if (res.ok) {
-        alert(`${data.message}`);
+        alert(t("layoutCopied", { count: data.copiedCount }));
       } else {
-        throw new Error(data.error || "Copy failed");
+        throw new Error(data.error || t("copyFailed"));
       }
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Copy failed";
+      const message = error instanceof Error ? error.message : t("copyFailed");
       alert(message);
     } finally {
       setCopying(false);
@@ -487,9 +483,9 @@ export default function FloorPlanEditorPage() {
                   onClick={handleCopyToAllFloors}
                   disabled={copying || floor.units.length === 0}
                   className="px-4 py-2 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600 disabled:bg-slate-300 transition"
-                  title="Barcha qavatlarga nusxalash"
+                  title={t("copyToAllFloors")}
                 >
-                  {copying ? "Nusxalanmoqda..." : "Barcha qavatlarga nusxalash"}
+                  {copying ? t("copying") : t("copyToAllFloors")}
                 </button>
                 <button
                   onClick={handleRenumberAll}

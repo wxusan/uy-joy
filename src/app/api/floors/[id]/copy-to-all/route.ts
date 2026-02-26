@@ -54,7 +54,7 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
           polygonData: unit.polygonData,
           labelX: unit.labelX,
           labelY: unit.labelY,
-          sketchImage:  unit.sketchImage,
+          sketchImage: unit.sketchImage,
           sketchImage2: unit.sketchImage2,
           sketchImage3: unit.sketchImage3,
           sketchImage4: unit.sketchImage4,
@@ -70,7 +70,6 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
 
   return NextResponse.json({
     success: true,
-    message: `Layout copied to ${copiedCount} floors`,
     copiedCount,
   });
 }

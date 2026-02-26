@@ -12,6 +12,7 @@ import ScrollReveal from "@/components/ScrollReveal";
 import { getCachedProject, getCachedHeroImages, getCachedFAQs } from "@/lib/cached-queries";
 import { getTranslation, Locale } from "@/lib/translations";
 import { getHeroImageUrl, getCardImageUrl } from "@/lib/cloudinary";
+import Image from "next/image";
 
 // ISR: Revalidate every 60 seconds for faster loading
 export const revalidate = 60;
@@ -157,26 +158,26 @@ export default async function Home() {
                   <p className="text-slate-400">Rasm yuklanmagan</p>
                 </div>
               ) : heroImages.length === 1 ? (
-                <div className="rounded-2xl overflow-hidden h-80">
-                  <img src={getHeroImageUrl(heroImages[0].imageUrl)} alt="Building" className="w-full h-full object-cover" loading="lazy" />
+                <div className="relative rounded-2xl overflow-hidden h-80">
+                  <Image src={getHeroImageUrl(heroImages[0].imageUrl)} alt="Building" fill className="object-cover" loading="lazy" />
                 </div>
               ) : heroImages.length === 2 ? (
                 <div className="grid grid-cols-2 gap-3">
                   {heroImages.map((img, i) => (
-                    <div key={img.id} className="rounded-xl overflow-hidden h-64">
-                      <img src={getCardImageUrl(img.imageUrl)} alt={`Building ${i + 1}`} className="w-full h-full object-cover" loading="lazy" />
+                    <div key={img.id} className="relative rounded-xl overflow-hidden h-64">
+                      <Image src={getCardImageUrl(img.imageUrl)} alt={`Building ${i + 1}`} fill className="object-cover" loading="lazy" />
                     </div>
                   ))}
                 </div>
               ) : (
                 <>
-                  <div className="rounded-2xl overflow-hidden h-56">
-                    <img src={getHeroImageUrl(heroImages[0].imageUrl)} alt="Building" className="w-full h-full object-cover" loading="lazy" />
+                  <div className="relative rounded-2xl overflow-hidden h-56">
+                    <Image src={getHeroImageUrl(heroImages[0].imageUrl)} alt="Building" fill className="object-cover" loading="lazy" />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     {heroImages.slice(1).map((img, i) => (
-                      <div key={img.id} className="rounded-xl overflow-hidden h-28">
-                        <img src={getCardImageUrl(img.imageUrl)} alt={`Building ${i + 2}`} className="w-full h-full object-cover" loading="lazy" />
+                      <div key={img.id} className="relative rounded-xl overflow-hidden h-28">
+                        <Image src={getCardImageUrl(img.imageUrl)} alt={`Building ${i + 2}`} fill className="object-cover" loading="lazy" />
                       </div>
                     ))}
                   </div>

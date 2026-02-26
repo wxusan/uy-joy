@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import TranslatedInput from "@/components/admin/TranslatedInput";
+import Image from "next/image";
 
 interface HeroImage {
   id: string;
@@ -191,8 +192,8 @@ export default function HeroImagesPage() {
           <label
             htmlFor="hero-upload"
             className={`px-6 py-3 rounded-lg font-medium cursor-pointer transition ${images.length >= 3
-                ? "bg-slate-200 text-slate-400 cursor-not-allowed"
-                : "bg-navy-900 text-white hover:bg-navy-800"
+              ? "bg-slate-200 text-slate-400 cursor-not-allowed"
+              : "bg-navy-900 text-white hover:bg-navy-800"
               }`}
           >
             {uploading ? "Yuklanmoqda..." : "+ Rasm qoshish"}
@@ -214,19 +215,20 @@ export default function HeroImagesPage() {
         </div>
       ) : (
         <div className={`grid gap-4 ${images.length === 1 ? "grid-cols-1" :
-            images.length === 2 ? "grid-cols-2" :
-              "grid-cols-3"
+          images.length === 2 ? "grid-cols-2" :
+            "grid-cols-3"
           }`}>
           {images.map((img, index) => (
             <div
               key={img.id}
               className="relative bg-white rounded-xl shadow-sm border overflow-hidden group"
             >
-              <div className="aspect-video">
-                <img
+              <div className="relative aspect-video">
+                <Image
                   src={img.imageUrl}
                   alt={`Hero ${index + 1}`}
-                  className="w-full h-full object-cover"
+                  fill
+                  className="object-cover"
                 />
               </div>
               <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">

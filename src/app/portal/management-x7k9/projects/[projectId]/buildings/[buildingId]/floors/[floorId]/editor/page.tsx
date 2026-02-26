@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import PolygonEditor, { Point, Polygon } from "@/components/admin/PolygonEditor";
+import Image from "next/image";
 import { SHOW_AI } from "@/lib/flags";
 
 interface Unit {
@@ -145,7 +146,7 @@ export default function FloorPlanEditorPage() {
       });
 
       await loadFloor();
-    } catch (error) {
+    } catch {
       alert("Failed to upload image");
     } finally {
       setUploading(false);
@@ -190,7 +191,7 @@ export default function FloorPlanEditorPage() {
 
       await loadFloor();
       setSelectedPolygonId(newUnit.id);
-    } catch (error) {
+    } catch {
       alert("Failed to create unit");
     } finally {
       setSaving(false);
@@ -222,7 +223,7 @@ export default function FloorPlanEditorPage() {
       setPolygons((prev) => prev.filter((p) => p.id !== id));
       setSelectedPolygonId(null);
       await loadFloor();
-    } catch (error) {
+    } catch {
       alert("Failed to delete unit");
     } finally {
       setSaving(false);
@@ -257,7 +258,7 @@ export default function FloorPlanEditorPage() {
       );
 
       await loadFloor();
-    } catch (error) {
+    } catch {
       alert("Failed to save unit");
     } finally {
       setSaving(false);
@@ -591,7 +592,7 @@ export default function FloorPlanEditorPage() {
                         <div key={field} className="relative border rounded-lg overflow-hidden bg-slate-50 aspect-video flex items-center justify-center">
                           {photo ? (
                             <>
-                              <img src={photo} alt={`Photo ${slotNum}`} className="w-full h-full object-cover" />
+                              <Image src={photo} alt={`Photo ${slotNum}`} fill className="object-cover" />
                               <button
                                 onClick={async () => {
                                   await fetch(`/api/units/${selectedPolygonId}`, {

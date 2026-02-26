@@ -247,7 +247,7 @@ export default function BuildingViewer({ building, onFloorSelect, onBack }: Prop
                 <div className="flex flex-col text-left">
                   <span className="font-medium">{t("floor")} {floor.number}</span>
                   <span className="text-xs text-slate-500 mt-0.5">
-                    {stats.available}/{stats.total} bo'sh
+                    {stats.available}/{stats.total} bo&apos;sh
                   </span>
                 </div>
                 <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

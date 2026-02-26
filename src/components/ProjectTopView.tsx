@@ -198,24 +198,15 @@ export default function ProjectTopView({ topViewImage, buildings, onBuildingSele
                   onMouseEnter={() => setHoveredBuilding(building.id)}
                   onMouseLeave={() => setHoveredBuilding(null)}
                 >
-                  <div className="w-full h-full p-0.5">
-                    <div
-                      className={`flex flex-col items-center justify-center w-full h-full transition-all duration-300 shadow-sm relative ${isHovered
-                        ? "bg-[#2ca36a]/90 backdrop-blur-md transform scale-105 border-[0.2px] border-emerald-400"
-                        : "bg-[#2ca36a]/80 backdrop-blur-sm border-[0.2px] border-emerald-600/50"
-                        }`}
-                    >
-                      {/* Left vertical decorator accent */}
-                      <div className="absolute left-[3px] top-[3px] bottom-[3px] w-[0.8px] bg-emerald-800/20" />
-
-                      {/* Right vertical decorator accent */}
-                      <div className="absolute right-[3px] top-[3px] bottom-[3px] w-[0.8px] bg-emerald-800/20" />
-
-                      <div className="flex flex-col items-center z-10 w-full px-2">
-                        <p className="font-exuberant font-bold text-white tracking-wider truncate w-full text-center" style={{ fontSize: "2.6px", lineHeight: 1.1, textShadow: "0px 0.2px 0.5px rgba(0,0,0,0.3)" }}>
+                  <div className={`w-full h-full flex flex-col items-center justify-center shadow-md transition-transform duration-300 origin-center ${isHovered ? 'scale-110' : ''}`}>
+                    {/* Outer dark green box */}
+                    <div className="w-full h-full bg-[#1f7b44] p-[0.6px]">
+                      {/* Inner lighter green box */}
+                      <div className="w-full h-full bg-[#3ca363] flex flex-col items-center justify-center px-1">
+                        <p className="font-bold text-white tracking-wide truncate w-full text-center" style={{ fontSize: "2.8px", lineHeight: 1.1 }}>
                           {building.name}
                         </p>
-                        <p className="font-semibold text-white/90" style={{ fontSize: "1.8px", lineHeight: 1.1, textShadow: "0px 0.2px 0.5px rgba(0,0,0,0.3)" }}>
+                        <p className="font-semibold text-white mt-[0.3px]" style={{ fontSize: "2.0px", lineHeight: 1.1 }}>
                           {stats.available}/{stats.total}
                         </p>
                       </div>

@@ -23,6 +23,8 @@ interface ProjectData {
     rightViewImage: string | null;
     labelX: number | null;
     labelY: number | null;
+    pointX: number | null;
+    pointY: number | null;
     floors: {
       id: string;
       number: number;

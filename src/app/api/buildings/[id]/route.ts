@@ -28,6 +28,8 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   if (body.polygonData !== undefined) data.polygonData = body.polygonData;
   if (body.labelX !== undefined) data.labelX = body.labelX;
   if (body.labelY !== undefined) data.labelY = body.labelY;
+  if (body.pointX !== undefined) data.pointX = body.pointX;
+  if (body.pointY !== undefined) data.pointY = body.pointY;
   if (body.sortOrder !== undefined) data.sortOrder = body.sortOrder;
 
   const building = await prisma.building.update({

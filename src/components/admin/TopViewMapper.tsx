@@ -11,6 +11,8 @@ interface BuildingItem {
   positionData: string | null;
   labelX?: number | null;
   labelY?: number | null;
+  pointX?: number | null;
+  pointY?: number | null;
 }
 
 interface Props {
@@ -25,10 +27,12 @@ export default function TopViewMapper({ imageUrl, buildings, onClose, onSaved }:
   const [activeId, setActiveId] = useState<string | null>(buildings[0]?.id || null);
   const [polygons, setPolygons] = useState<Record<string, Point[]>>({});
   const [labelPositions, setLabelPositions] = useState<Record<string, Point>>({});
+  const [pointPositions, setPointPositions] = useState<Record<string, Point>>({});
   const [currentPoints, setCurrentPoints] = useState<Point[]>([]);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [draggingLabelId, setDraggingLabelId] = useState<string | null>(null);
+  const [draggingPointId, setDraggingPointId] = useState<string | null>(null);
 
   useEffect(() => {
     const initial: Record<string, Point[]> = {};
@@ -68,6 +72,22 @@ export default function TopViewMapper({ imageUrl, buildings, onClose, onSaved }:
       }
     }
     setLabelPositions(initialLabels);
+
+    // Initialize point positions
+    const initialPoints: Record<string, Point> = {};
+    for (const b of buildings) {
+      if (b.pointX !== null && b.pointY !== null && b.pointX !== undefined && b.pointY !== undefined) {
+        initialPoints[b.id] = { x: b.pointX, y: b.pointY };
+      } else if (initial[b.id]) {
+        // Default to center if no point provided
+        const pts = initial[b.id];
+        initialPoints[b.id] = {
+          x: pts.reduce((a, p) => a + p.x, 0) / pts.length,
+          y: pts.reduce((a, p) => a + p.y, 0) / pts.length
+        };
+      }
+    }
+    setPointPositions(initialPoints);
   }, [buildings]);
 
   const getPoint = (e: React.MouseEvent): Point => {
@@ -94,6 +114,16 @@ export default function TopViewMapper({ imageUrl, buildings, onClose, onSaved }:
         [activeId]: {
           x: currentPoints.reduce((a, p) => a + p.x, 0) / currentPoints.length,
           y: currentPoints.reduce((a, p) => a + p.y, 0) / currentPoints.length - 10
+        }
+      }));
+    }
+    // If no point pos yet, set it to center
+    if (!pointPositions[activeId]) {
+      setPointPositions((prev) => ({
+        ...prev,
+        [activeId]: {
+          x: currentPoints.reduce((a, p) => a + p.x, 0) / currentPoints.length,
+          y: currentPoints.reduce((a, p) => a + p.y, 0) / currentPoints.length
         }
       }));
     }
@@ -125,6 +155,8 @@ export default function TopViewMapper({ imageUrl, buildings, onClose, onSaved }:
           positionData: pts && pts.length >= 3 ? JSON.stringify(pts) : null,
           labelX: labelPts ? labelPts.x : null,
           labelY: labelPts ? labelPts.y : null,
+          pointX: pointPositions[b.id] ? pointPositions[b.id].x : null,
+          pointY: pointPositions[b.id] ? pointPositions[b.id].y : null,
         };
 
         await fetch(`/api/buildings/${b.id}`, {
@@ -169,10 +201,19 @@ export default function TopViewMapper({ imageUrl, buildings, onClose, onSaved }:
                   if (draggingLabelId) {
                     const pt = getPoint(e);
                     setLabelPositions(prev => ({ ...prev, [draggingLabelId]: pt }));
+                  } else if (draggingPointId) {
+                    const pt = getPoint(e);
+                    setPointPositions(prev => ({ ...prev, [draggingPointId]: pt }));
                   }
                 }}
-                onMouseUp={() => setDraggingLabelId(null)}
-                onMouseLeave={() => setDraggingLabelId(null)}
+                onMouseUp={() => {
+                  setDraggingLabelId(null);
+                  setDraggingPointId(null);
+                }}
+                onMouseLeave={() => {
+                  setDraggingLabelId(null);
+                  setDraggingPointId(null);
+                }}
               >
                 {/* Completed polygons */}
                 {Object.entries(polygons).map(([id, pts]) => {
@@ -193,15 +234,29 @@ export default function TopViewMapper({ imageUrl, buildings, onClose, onSaved }:
                         onClick={(e) => { e.stopPropagation(); setActiveId(id); }}
                       />
                       {/* Connector Line */}
-                      {(isActive || isHovered) && pts.length > 0 && labelPositions[id] && (
+                      {(isActive || isHovered) && pts.length > 0 && labelPositions[id] && pointPositions[id] && (
                         <line
                           x1={labelPositions[id].x}
                           y1={labelPositions[id].y}
-                          x2={pts.reduce((a, p) => a + p.x, 0) / pts.length}
-                          y2={pts.reduce((a, p) => a + p.y, 0) / pts.length}
+                          x2={pointPositions[id].x}
+                          y2={pointPositions[id].y}
                           stroke="#10b981"
                           strokeWidth={isActive ? 0.3 : 0.2}
                           className="pointer-events-none"
+                        />
+                      )}
+
+                      {/* Draggable Point (Dot) */}
+                      {(isActive || isHovered) && pts.length > 0 && pointPositions[id] && (
+                        <circle
+                          cx={pointPositions[id].x}
+                          cy={pointPositions[id].y}
+                          r={isActive ? 1.2 : 0.8}
+                          fill={isActive ? "white" : "#059669"}
+                          stroke="#059669"
+                          strokeWidth="0.3"
+                          style={{ cursor: draggingPointId === id ? 'grabbing' : 'grab' }}
+                          onMouseDown={(e) => { e.stopPropagation(); setDraggingPointId(id); }}
                         />
                       )}
 
@@ -256,7 +311,7 @@ export default function TopViewMapper({ imageUrl, buildings, onClose, onSaved }:
             <p className="text-xs text-slate-500 mt-2">
               O&apos;ng tomondan binoni tanlang, keyin rasmda nuqtalarni bosib polygon chizing. Yakunlash uchun ikki marta bosing.
               <br />
-              <b>Yangi:</b> Binoning belgisini (to&apos;rtburchakni) sichqoncha bilan ushlab, ixtiyoriy joyga surib qoldirishingiz mumkin.
+              <b>Yangi:</b> Binoning belgisini (yozuvli to&apos;rtburchak va nuqtani) sichqoncha bilan ushlab, ixtiyoriy joyga surib qoldirishingiz mumkin.
             </p>
           </div>
           <div className="col-span-4 space-y-2">

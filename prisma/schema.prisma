@@ -49,6 +49,8 @@ model Building {
   polygonData    String?  // JSON: [{x, y}, ...] polygon coordinates on aerial view (as % of image)
   labelX         Float?   // Label position X (as % of image width)
   labelY         Float?   // Label position Y (as % of image height)
+  pointX         Float?   // Point (dot) position X (as % of image width)
+  pointY         Float?   // Point (dot) position Y (as % of image height)
   sortOrder      Int      @default(0)  // For ordering buildings A, B, C...
   createdAt      DateTime @default(now())
 }

@@ -13,6 +13,8 @@ interface Building {
   positionData: string | null;
   labelX: number | null;
   labelY: number | null;
+  pointX: number | null;
+  pointY: number | null;
   floors: { units: { status: string }[] }[];
 }
 
@@ -127,18 +129,23 @@ export default function ProjectTopView({ topViewImage, buildings, onBuildingSele
 
             const stats = getBuildingStats(building);
             const isHovered = hoveredBuilding === building.id;
-            const center = getCenter(polygon);
+            const polygonCenter = getCenter(polygon);
 
             // Use admin-defined coordinates, fallback to auto
             const labelPos = (building.labelX !== null && building.labelY !== null && building.labelX !== undefined && building.labelY !== undefined)
               ? { x: building.labelX, y: building.labelY }
-              : getLabelPosition(center, index, buildings.length);
+              : getLabelPosition(polygonCenter, index, buildings.length);
+
+            // Use admin-defined point, fallback to polygon center
+            const pointPos = (building.pointX !== null && building.pointY !== null && building.pointX !== undefined && building.pointY !== undefined)
+              ? { x: building.pointX, y: building.pointY }
+              : polygonCenter;
 
             // Calculate where the line should attach to the label box
             // The foreignObject is 22 wide and 7.5 high, centered at x,y
             const boxLeft = labelPos.x - 11;
             const boxRight = labelPos.x + 11;
-            const isLabelLeftOfBuilding = labelPos.x < center.x;
+            const isLabelLeftOfBuilding = labelPos.x < pointPos.x;
 
             // Connect to the edge closest to the building
             const lineStartX = isLabelLeftOfBuilding ? boxRight + 0.5 : boxLeft - 0.5;
@@ -160,8 +167,8 @@ export default function ProjectTopView({ topViewImage, buildings, onBuildingSele
 
                 {/* Center dot */}
                 <circle
-                  cx={center.x}
-                  cy={center.y}
+                  cx={pointPos.x}
+                  cy={pointPos.y}
                   r={isHovered ? 0.8 : 0.6}
                   fill={isHovered ? "#fff" : "#10b981"}
                   stroke={isHovered ? "#10b981" : "transparent"}
@@ -173,36 +180,46 @@ export default function ProjectTopView({ topViewImage, buildings, onBuildingSele
                 <line
                   x1={lineStartX}
                   y1={lineStartY}
-                  x2={center.x}
-                  y2={center.y}
-                  stroke={isHovered ? "#059669" : "#10b981"}
+                  x2={pointPos.x}
+                  y2={pointPos.y}
+                  stroke={isHovered ? "#34d399" : "#10b981"}
                   strokeWidth={isHovered ? 0.5 : 0.3}
                   className="pointer-events-none transition-all duration-300"
                 />
 
-                {/* Label box — sharp rectangle */}
+                {/* Label box — matches provided screenshot design */}
                 <foreignObject
-                  x={labelPos.x - 11}
-                  y={labelPos.y - 3.75}
-                  width="22"
-                  height="7.5"
+                  x={labelPos.x - 14}
+                  y={labelPos.y - 4}
+                  width="28"
+                  height="8"
                   className="overflow-visible cursor-pointer"
                   onClick={() => onBuildingSelect(building.id)}
                   onMouseEnter={() => setHoveredBuilding(building.id)}
                   onMouseLeave={() => setHoveredBuilding(null)}
                 >
-                  <div
-                    className={`flex flex-col items-center justify-center w-full h-full border transition-all duration-300 shadow-sm ${isHovered
-                      ? "bg-white border-emerald-500 shadow-md transform scale-105"
-                      : "bg-[#2ca36a]/90 backdrop-blur-sm border-[#1e8251]"
-                      }`}
-                  >
-                    <p className={`font-bold tracking-wide transition-colors ${isHovered ? 'text-emerald-700' : 'text-white'}`} style={{ fontSize: "2.8px", lineHeight: 1.1 }}>
-                      {building.name}
-                    </p>
-                    <p className={`font-medium transition-colors ${isHovered ? 'text-emerald-500' : 'text-emerald-50'}`} style={{ fontSize: "2.0px", lineHeight: 1.1 }}>
-                      {stats.available}/{stats.total}
-                    </p>
+                  <div className="w-full h-full p-0.5">
+                    <div
+                      className={`flex flex-col items-center justify-center w-full h-full transition-all duration-300 shadow-sm relative ${isHovered
+                        ? "bg-[#2ca36a]/90 backdrop-blur-md transform scale-105 border-[0.2px] border-emerald-400"
+                        : "bg-[#2ca36a]/80 backdrop-blur-sm border-[0.2px] border-emerald-600/50"
+                        }`}
+                    >
+                      {/* Left vertical decorator accent */}
+                      <div className="absolute left-[3px] top-[3px] bottom-[3px] w-[0.8px] bg-emerald-800/20" />
+
+                      {/* Right vertical decorator accent */}
+                      <div className="absolute right-[3px] top-[3px] bottom-[3px] w-[0.8px] bg-emerald-800/20" />
+
+                      <div className="flex flex-col items-center z-10 w-full px-2">
+                        <p className="font-exuberant font-bold text-white tracking-wider truncate w-full text-center" style={{ fontSize: "2.6px", lineHeight: 1.1, textShadow: "0px 0.2px 0.5px rgba(0,0,0,0.3)" }}>
+                          {building.name}
+                        </p>
+                        <p className="font-semibold text-white/90" style={{ fontSize: "1.8px", lineHeight: 1.1, textShadow: "0px 0.2px 0.5px rgba(0,0,0,0.3)" }}>
+                          {stats.available}/{stats.total}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </foreignObject>
               </g>

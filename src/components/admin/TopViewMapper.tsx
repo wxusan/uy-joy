@@ -246,17 +246,34 @@ export default function TopViewMapper({ imageUrl, buildings, onClose, onSaved }:
                         onClick={(e) => { e.stopPropagation(); setActiveId(id); }}
                       />
                       {/* Connector Line */}
-                      {(isActive || isHovered) && pts.length > 0 && labelPositions[id] && pointPositions[id] && (
-                        <line
-                          x1={labelPositions[id].x}
-                          y1={labelPositions[id].y}
-                          x2={pointPositions[id].x}
-                          y2={pointPositions[id].y}
-                          stroke="#10b981"
-                          strokeWidth={isActive ? 0.3 : 0.2}
-                          className="pointer-events-none"
-                        />
-                      )}
+                      {(() => {
+                        if (!(isActive || isHovered) || pts.length === 0 || !labelPositions[id] || !pointPositions[id]) return null;
+
+                        const scale = labelScales[id] || 1.0;
+                        // The rect in TopViewMapper has width=20, height=6
+                        const boxWidth = 20 * scale;
+                        const boxHeight = 6 * scale;
+
+                        const boxLeft = labelPositions[id].x - (boxWidth / 2);
+                        const boxRight = labelPositions[id].x + (boxWidth / 2);
+                        const boxBottom = labelPositions[id].y + (boxHeight / 2);
+
+                        const isLabelLeftOfBuilding = labelPositions[id].x < pointPositions[id].x;
+                        const lineStartX = isLabelLeftOfBuilding ? boxRight + 0.5 : boxLeft - 0.5;
+                        const lineStartY = boxBottom;
+
+                        return (
+                          <line
+                            x1={lineStartX}
+                            y1={lineStartY}
+                            x2={pointPositions[id].x}
+                            y2={pointPositions[id].y}
+                            stroke="#10b981"
+                            strokeWidth={isActive ? 0.3 : 0.2}
+                            className="pointer-events-none"
+                          />
+                        );
+                      })()}
 
                       {/* Draggable Point (Dot) */}
                       {(isActive || isHovered) && pts.length > 0 && pointPositions[id] && (

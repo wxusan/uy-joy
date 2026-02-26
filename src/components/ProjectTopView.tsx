@@ -149,11 +149,12 @@ export default function ProjectTopView({ topViewImage, buildings, onBuildingSele
             // Calculate where the line should attach to the label box
             const boxLeft = labelPos.x - (boxWidth / 2);
             const boxRight = labelPos.x + (boxWidth / 2);
+            const boxBottom = labelPos.y + (boxHeight / 2);
             const isLabelLeftOfBuilding = labelPos.x < pointPos.x;
 
-            // Connect to the edge closest to the building
-            const lineStartX = isLabelLeftOfBuilding ? boxRight + 0.5 : boxLeft - 0.5;
-            const lineStartY = labelPos.y;
+            // Connect to the bottom corner closest to the building
+            const lineStartX = isLabelLeftOfBuilding ? boxRight : boxLeft;
+            const lineStartY = boxBottom;
 
             return (
               <g key={building.id} className="transition-opacity duration-300" style={{ opacity: hoveredBuilding && !isHovered ? 0.6 : 1 }}>

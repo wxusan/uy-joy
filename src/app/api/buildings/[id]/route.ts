@@ -30,6 +30,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   if (body.labelY !== undefined) data.labelY = body.labelY;
   if (body.pointX !== undefined) data.pointX = body.pointX;
   if (body.pointY !== undefined) data.pointY = body.pointY;
+  if (body.labelScale !== undefined) data.labelScale = body.labelScale;
   if (body.sortOrder !== undefined) data.sortOrder = body.sortOrder;
 
   const building = await prisma.building.update({

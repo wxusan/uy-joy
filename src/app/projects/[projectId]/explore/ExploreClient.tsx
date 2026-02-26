@@ -25,6 +25,7 @@ interface ProjectData {
     labelY: number | null;
     pointX: number | null;
     pointY: number | null;
+    labelScale: number | null;
     floors: {
       id: string;
       number: number;

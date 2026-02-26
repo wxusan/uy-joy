@@ -13,6 +13,7 @@ interface BuildingItem {
   labelY?: number | null;
   pointX?: number | null;
   pointY?: number | null;
+  labelScale?: number | null;
 }
 
 interface Props {
@@ -28,6 +29,7 @@ export default function TopViewMapper({ imageUrl, buildings, onClose, onSaved }:
   const [polygons, setPolygons] = useState<Record<string, Point[]>>({});
   const [labelPositions, setLabelPositions] = useState<Record<string, Point>>({});
   const [pointPositions, setPointPositions] = useState<Record<string, Point>>({});
+  const [labelScales, setLabelScales] = useState<Record<string, number>>({});
   const [currentPoints, setCurrentPoints] = useState<Point[]>([]);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -88,6 +90,15 @@ export default function TopViewMapper({ imageUrl, buildings, onClose, onSaved }:
       }
     }
     setPointPositions(initialPoints);
+
+    // Initialize label scales
+    const initialScales: Record<string, number> = {};
+    for (const b of buildings) {
+      if (b.labelScale) {
+        initialScales[b.id] = b.labelScale;
+      }
+    }
+    setLabelScales(initialScales);
   }, [buildings]);
 
   const getPoint = (e: React.MouseEvent): Point => {
@@ -157,6 +168,7 @@ export default function TopViewMapper({ imageUrl, buildings, onClose, onSaved }:
           labelY: labelPts ? labelPts.y : null,
           pointX: pointPositions[b.id] ? pointPositions[b.id].x : null,
           pointY: pointPositions[b.id] ? pointPositions[b.id].y : null,
+          labelScale: labelScales[b.id] || 1.0,
         };
 
         await fetch(`/api/buildings/${b.id}`, {
@@ -264,7 +276,11 @@ export default function TopViewMapper({ imageUrl, buildings, onClose, onSaved }:
                       {(isActive || isHovered) && pts.length > 0 && labelPositions[id] && (
                         <g
                           onMouseDown={(e) => { e.stopPropagation(); setDraggingLabelId(id); }}
-                          style={{ cursor: draggingLabelId === id ? 'grabbing' : 'grab' }}
+                          style={{
+                            cursor: draggingLabelId === id ? 'grabbing' : 'grab',
+                            transformOrigin: `${labelPositions[id].x}px ${labelPositions[id].y}px`,
+                            transform: `scale(${labelScales[id] || 1.0})`
+                          }}
                         >
                           <rect
                             x={labelPositions[id].x - 10}
@@ -317,27 +333,45 @@ export default function TopViewMapper({ imageUrl, buildings, onClose, onSaved }:
           <div className="col-span-4 space-y-2">
             <h3 className="font-medium">Binolar</h3>
             {buildings.map((b) => (
-              <div
-                key={b.id}
-                className={`flex items-center justify-between px-3 py-2 rounded-lg border transition ${activeId === b.id ? "border-emerald-500 bg-emerald-50" : "border-slate-200 hover:bg-slate-50"
-                  }`}
-              >
-                <button
-                  onClick={() => { setActiveId(b.id); setCurrentPoints([]); }}
-                  className="flex-1 text-left"
+              <div key={b.id} className="flex flex-col gap-2">
+                <div
+                  className={`flex items-center justify-between px-3 py-2 rounded-lg border transition ${activeId === b.id ? "border-emerald-500 bg-emerald-50" : "border-slate-200 hover:bg-slate-50"
+                    }`}
                 >
-                  <span className="font-medium">{b.name}</span>
-                  <span className={`ml-2 text-xs ${polygons[b.id] ? "text-emerald-600" : "text-slate-400"}`}>
-                    {polygons[b.id] ? `✓ ${polygons[b.id].length} nuqta` : "Belgilanmagan"}
-                  </span>
-                </button>
-                {polygons[b.id] && (
                   <button
-                    onClick={() => clearBuilding(b.id)}
-                    className="text-red-500 hover:text-red-700 text-sm px-2"
+                    onClick={() => { setActiveId(b.id); setCurrentPoints([]); }}
+                    className="flex-1 text-left"
                   >
-                    ✕
+                    <span className="font-medium">{b.name}</span>
+                    <span className={`ml-2 text-xs ${polygons[b.id] ? "text-emerald-600" : "text-slate-400"}`}>
+                      {polygons[b.id] ? `✓ ${polygons[b.id].length} nuqta` : "Belgilanmagan"}
+                    </span>
                   </button>
+                  {polygons[b.id] && (
+                    <button
+                      onClick={() => clearBuilding(b.id)}
+                      className="text-red-500 hover:text-red-700 text-sm px-2"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+                {/* Scale Slider for active building */}
+                {activeId === b.id && polygons[b.id] && (
+                  <div className="ml-2 pl-2 border-l-2 border-slate-200 mt-2">
+                    <label className="text-xs text-slate-500 block mb-1">
+                      Yozuv o&apos;lchami: <span className="font-semibold">{labelScales[b.id] || 1}x</span>
+                    </label>
+                    <input
+                      type="range"
+                      min="0.5"
+                      max="2.0"
+                      step="0.05"
+                      value={labelScales[b.id] || 1}
+                      onChange={(e) => setLabelScales(prev => ({ ...prev, [b.id]: parseFloat(e.target.value) }))}
+                      className="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer"
+                    />
+                  </div>
                 )}
               </div>
             ))}
@@ -357,6 +391,6 @@ export default function TopViewMapper({ imageUrl, buildings, onClose, onSaved }:
           </div>
         </div>
       </div>
-    </div>
+    </div >
   );
 }

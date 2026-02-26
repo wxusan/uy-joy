@@ -15,6 +15,7 @@ interface Building {
   labelY: number | null;
   pointX: number | null;
   pointY: number | null;
+  labelScale: number | null;
   floors: { units: { status: string }[] }[];
 }
 
@@ -141,10 +142,13 @@ export default function ProjectTopView({ topViewImage, buildings, onBuildingSele
               ? { x: building.pointX, y: building.pointY }
               : polygonCenter;
 
+            const scale = building.labelScale || 1.0;
+            const boxWidth = 28 * scale;
+            const boxHeight = 7 * scale;
+
             // Calculate where the line should attach to the label box
-            // The foreignObject is 22 wide and 7.5 high, centered at x,y
-            const boxLeft = labelPos.x - 11;
-            const boxRight = labelPos.x + 11;
+            const boxLeft = labelPos.x - (boxWidth / 2);
+            const boxRight = labelPos.x + (boxWidth / 2);
             const isLabelLeftOfBuilding = labelPos.x < pointPos.x;
 
             // Connect to the edge closest to the building
@@ -189,28 +193,28 @@ export default function ProjectTopView({ topViewImage, buildings, onBuildingSele
 
                 {/* Label box — simple original styling */}
                 <foreignObject
-                  x={labelPos.x - 14}
-                  y={labelPos.y - 3.5}
-                  width="28"
-                  height="7"
+                  x={boxLeft}
+                  y={labelPos.y - (boxHeight / 2)}
+                  width={boxWidth}
+                  height={boxHeight}
                   className="overflow-visible cursor-pointer"
                   onClick={() => onBuildingSelect(building.id)}
                   onMouseEnter={() => setHoveredBuilding(building.id)}
                   onMouseLeave={() => setHoveredBuilding(null)}
                 >
                   <div
-                    className={`px-1 py-0.5 text-center whitespace-nowrap transition-all duration-300 ${isHovered
+                    className={`h-full w-full flex flex-col justify-center px-1 py-0.5 text-center whitespace-nowrap transition-all duration-300 ${isHovered
                       ? "bg-white text-emerald-700 shadow-sm"
                       : "bg-emerald-600 text-white"
                       }`}
                     style={{
-                      fontSize: "2.2px",
-                      lineHeight: 1.4,
-                      border: isHovered ? "0.3px solid #059669" : "0.3px solid transparent",
+                      fontSize: `${2.2 * scale}px`,
+                      lineHeight: 1.2,
+                      border: isHovered ? `${0.3 * scale}px solid #059669` : `${0.3 * scale}px solid transparent`,
                     }}
                   >
-                    <p className="font-semibold" style={{ fontSize: "2.5px" }}>{building.name}</p>
-                    <p style={{ fontSize: "1.8px" }} className={isHovered ? "text-emerald-500" : "text-emerald-100"}>{stats.available}/{stats.total}</p>
+                    <p className="font-semibold" style={{ fontSize: `${2.5 * scale}px` }}>{building.name}</p>
+                    <p style={{ fontSize: `${1.8 * scale}px`, marginTop: `-${0.3 * scale}px` }} className={isHovered ? "text-emerald-500" : "text-emerald-100"}>{stats.available}/{stats.total}</p>
                   </div>
                 </foreignObject>
               </g>

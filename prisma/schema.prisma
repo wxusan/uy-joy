@@ -51,6 +51,7 @@ model Building {
   labelY         Float?   // Label position Y (as % of image height)
   pointX         Float?   // Point (dot) position X (as % of image width)
   pointY         Float?   // Point (dot) position Y (as % of image height)
+  labelScale     Float?   // Scale multiplier for the label box (default 1.0)
   sortOrder      Int      @default(0)  // For ordering buildings A, B, C...
   createdAt      DateTime @default(now())
 }

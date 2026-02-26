@@ -21,6 +21,7 @@ interface Building {
   labelY: number | null;
   pointX: number | null;
   pointY: number | null;
+  labelScale: number | null;
   floors: Floor[];
 }
 
@@ -200,7 +201,8 @@ export default function ProjectImagesPage() {
             labelX: b.labelX,
             labelY: b.labelY,
             pointX: b.pointX,
-            pointY: b.pointY
+            pointY: b.pointY,
+            labelScale: b.labelScale
           }))}
           onClose={() => setShowMapper(false)}
           onSaved={async () => { setShowMapper(false); await loadProject(); setMessage({ type: 'success', text: 'Saved building areas' }); }}

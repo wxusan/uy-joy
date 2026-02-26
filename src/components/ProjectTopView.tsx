@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import Image from "next/image";
-import { Building2, ArrowRight } from "lucide-react";
+import { Building2 } from "lucide-react";
 
 type Point = { x: number; y: number };
 

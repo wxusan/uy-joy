@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import Image from "next/image";
 
 export interface Point {
   x: number; // Percentage 0-100
@@ -195,10 +196,11 @@ export default function PolygonEditor({
       >
         {/* Background image */}
         {imageUrl ? (
-          <img
+          <Image
             src={imageUrl}
             alt="Floor plan"
-            className="absolute inset-0 w-full h-full object-contain pointer-events-none"
+            fill
+            className="object-contain pointer-events-none"
             draggable={false}
           />
         ) : (

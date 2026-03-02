@@ -32,9 +32,8 @@ export default function FloorSelector({ floors, selectedFloorId, onFloorSelect }
             <button
               key={floor.id}
               onClick={() => onFloorSelect(floor)}
-              className={`w-full flex items-center gap-3 px-4 py-3 text-left transition hover:bg-slate-50 ${
-                isSelected ? "bg-emerald-50 border-l-4 border-emerald-500" : ""
-              }`}
+              className={`w-full flex items-center gap-3 px-4 py-3 text-left transition hover:bg-slate-50 ${isSelected ? "bg-emerald-50 border-l-4 border-emerald-500" : ""
+                }`}
             >
               <div className="text-lg font-bold text-slate-700 w-8 text-center">{floor.number}</div>
 

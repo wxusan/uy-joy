@@ -147,7 +147,7 @@ export default function ExploreClient({ project }: Props) {
             {currentStep === "floor" && `${selectedFloor?.units.length} ${t("apartments")}`}
           </p>
         </div>
-        <PriceLegend />
+        {currentStep === "floor" && <PriceLegend />}
       </div>
 
       {/* Main content based on current step */}

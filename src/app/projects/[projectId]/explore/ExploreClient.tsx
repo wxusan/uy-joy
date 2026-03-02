@@ -142,12 +142,12 @@ export default function ExploreClient({ project }: Props) {
             {currentStep === "floor" && `${t("floor")} ${selectedFloor?.number}`}
           </h2>
           <p className="text-sm text-slate-500">
-            {currentStep === "project" && t("selectBuilding")}
-            {currentStep === "building" && t("selectFloor")}
-            {currentStep === "floor" && `${selectedFloor?.units.length} ${t("apartments")}`}
+            {currentStep === "project" && "Qaysi bino sotuvini ko'rishni xohlaysiz?"}
+            {currentStep === "building" && "Kvartiralarni ko'rish uchun qavatni tanlang"}
+            {currentStep === "floor" && `Jami ${selectedFloor?.units.length} ta kvartira`}
           </p>
         </div>
-        <PriceLegend />
+        {currentStep === "floor" && <PriceLegend />}
       </div>
 
       {/* Main content based on current step */}

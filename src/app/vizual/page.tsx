@@ -9,7 +9,11 @@ import { getCachedProject } from "@/lib/cached-queries";
 // ISR: Revalidate every 60 seconds for faster loading
 export const revalidate = 60;
 
-export default async function KvartiralarniKorishPage() {
+export default async function KvartiralarniKorishPage({
+  searchParams,
+}: {
+  searchParams: { buildingId?: string };
+}) {
   const t = await getTranslations();
   const cookieStore = await cookies();
   const locale = (cookieStore.get("locale")?.value || "uz") as Locale;
@@ -42,7 +46,10 @@ export default async function KvartiralarniKorishPage() {
             <p className="text-slate-400 text-sm">{projectAddress}</p>
           </div>
         </div>
-        <ExploreClient project={JSON.parse(JSON.stringify(project))} />
+        <ExploreClient 
+          project={JSON.parse(JSON.stringify(project))} 
+          initialBuildingId={searchParams.buildingId}
+        />
       </main>
       <Footer />
     </>

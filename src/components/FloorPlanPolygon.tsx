@@ -150,7 +150,7 @@ export default function FloorPlanPolygon({
     <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
       <div
         ref={containerRef}
-        className="relative w-3/4 mx-auto aspect-[4/3] bg-slate-100"
+        className="relative w-[70%] sm:w-[50%] mx-auto aspect-[4/3] bg-slate-100"
       >
         {/* Background image */}
         {floorPlanImage && (

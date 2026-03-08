@@ -2,8 +2,9 @@
 
 import { useState, useMemo } from "react";
 import { useTranslations } from "next-intl";
-import ApartmentCard from "@/components/ApartmentCard";
-import ApartmentDetailModal from "@/components/ApartmentDetailModal";
+import GroupedApartmentCard from "@/components/GroupedApartmentCard";
+import GroupedApartmentModal from "@/components/GroupedApartmentModal";
+import type { GroupedUnit } from "@/components/GroupedApartmentCard";
 
 interface Unit {
   id: string;
@@ -40,31 +41,58 @@ interface Props {
 
 export default function ApartmentsClient({ units, filterOptions, projectName, expectedYear }: Props) {
   const t = useTranslations("apartments");
-  const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
+  const [selectedGroup, setSelectedGroup] = useState<GroupedUnit | null>(null);
 
   // Filter state
   const [selectedRooms, setSelectedRooms] = useState<number | null>(null);
   const [areaMin, setAreaMin] = useState<string>("");
   const [areaMax, setAreaMax] = useState<string>("");
 
-
-  // Filter and sort units
-  const filteredUnits = useMemo(() => {
+  // Filter units first, then group
+  const { groupedUnits, totalFilteredCount } = useMemo(() => {
+    // Step 1: Filter
     const filtered = units.filter((unit) => {
-
-      // Rooms filter
       if (selectedRooms !== null && unit.rooms !== selectedRooms) return false;
-
-      // Area filter
       const minArea = parseFloat(areaMin) || 0;
       const maxArea = parseFloat(areaMax) || Infinity;
       if (unit.area < minArea || unit.area > maxArea) return false;
-
       return true;
     });
 
-    // Sort by area ascending
-    return [...filtered].sort((a, b) => a.area - b.area);
+    // Step 2: Group by layout type (rooms + area)
+    const groups = new Map<string, Unit[]>();
+    filtered.forEach((unit) => {
+      const key = `${unit.rooms}-${unit.area}`;
+      const existing = groups.get(key) || [];
+      groups.set(key, [...existing, unit]);
+    });
+
+    // Step 3: Transform to GroupedUnit objects
+    const result: GroupedUnit[] = [];
+    groups.forEach((groupUnits, key) => {
+      const first = groupUnits[0];
+      const floorNumbers = groupUnits.map(u => u.floor.number);
+      const availableCount = groupUnits.filter(u => u.status === "available").length;
+
+      result.push({
+        key,
+        rooms: first.rooms,
+        area: first.area,
+        unitNumber: first.unitNumber,
+        sketchImage: first.sketchImage,
+        units: groupUnits,
+        availableCount,
+        totalCount: groupUnits.length,
+        floorMin: Math.min(...floorNumbers),
+        floorMax: Math.max(...floorNumbers),
+        buildingName: first.floor.building.name,
+      });
+    });
+
+    // Sort by rooms ascending, then by area ascending
+    result.sort((a, b) => a.rooms - b.rooms || a.area - b.area);
+
+    return { groupedUnits: result, totalFilteredCount: filtered.length };
   }, [units, selectedRooms, areaMin, areaMax]);
 
   const clearFilters = () => {
@@ -130,7 +158,6 @@ export default function ApartmentsClient({ units, filterOptions, projectName, ex
             </div>
           </div>
 
-
           {/* Clear filters */}
           {hasActiveFilters && (
             <button
@@ -145,12 +172,13 @@ export default function ApartmentsClient({ units, filterOptions, projectName, ex
 
         {/* Results count */}
         <div className="mt-3 pt-3 border-t text-sm text-slate-500">
-          {t("found")}: <span className="font-semibold text-slate-700">{filteredUnits.length}</span> {t("apartments")}
+          {t("found")}: <span className="font-semibold text-slate-700">{groupedUnits.length}</span> {t("layouts") || "ta xonadon turi"}
+          <span className="text-slate-400 ml-2">({totalFilteredCount} {t("totalUnits") || "ta kvartira jami"})</span>
         </div>
       </div>
 
       {/* Units grid */}
-      {filteredUnits.length === 0 ? (
+      {groupedUnits.length === 0 ? (
         <div className="bg-slate-50 rounded-xl p-12 text-center">
           <span className="text-4xl mb-4 block text-slate-300">—</span>
           <p className="text-slate-500">{t("noResults")}</p>
@@ -163,24 +191,22 @@ export default function ApartmentsClient({ units, filterOptions, projectName, ex
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filteredUnits.map((unit) => (
-            <ApartmentCard
-              key={unit.id}
-              unit={unit}
-              projectName={projectName}
-              expectedYear={expectedYear}
-              onClick={() => setSelectedUnit(unit)}
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {groupedUnits.map((group) => (
+            <GroupedApartmentCard
+              key={group.key}
+              group={group}
+              onClick={() => setSelectedGroup(group)}
             />
           ))}
         </div>
       )}
 
-      {/* Detail Modal */}
-      {selectedUnit && (
-        <ApartmentDetailModal
-          unit={selectedUnit}
-          onClose={() => setSelectedUnit(null)}
+      {/* Grouped Detail Modal */}
+      {selectedGroup && (
+        <GroupedApartmentModal
+          group={selectedGroup}
+          onClose={() => setSelectedGroup(null)}
         />
       )}
     </div>

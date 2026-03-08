@@ -144,10 +144,10 @@ export default function BuildingViewer({ building, onFloorSelect, onBack }: Prop
       })()}
 
       <div className="grid md:grid-cols-3 gap-4">
-        {/* Building view image with floor overlays - 75% size */}
+        {/* Building view image with floor overlays */}
         <div className="md:col-span-2 flex justify-center">
           {currentImage ? (
-            <div className="relative w-full sm:w-3/4 aspect-[3/4] bg-slate-100 rounded-lg overflow-hidden">
+            <div className="relative w-[75%] sm:w-[50%] aspect-[3/4] bg-slate-100 rounded-lg overflow-hidden">
               <Image
                 src={currentImage}
                 alt={`${building.name} ${currentView} view`}

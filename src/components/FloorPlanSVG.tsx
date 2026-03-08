@@ -43,7 +43,7 @@ export default function FloorPlanSVG({ units, basePricePerM2, onUnitClick }: Pro
 
   return (
     <div className="bg-white rounded-xl shadow-sm border p-4 overflow-auto">
-      <svg viewBox="0 0 600 470" className="w-full max-w-2xl mx-auto" style={{ minWidth: 400 }}>
+      <svg viewBox="0 0 600 470" className="w-full max-w-md mx-auto" style={{ minWidth: 280 }}>
         {/* Building outline */}
         <rect x="10" y="10" width="580" height="450" fill="none" stroke="#334155" strokeWidth="3" rx="4" />
 

@@ -9,6 +9,7 @@ import FAQ from "@/components/FAQ";
 import HomeStats from "@/components/HomeStats";
 import FeaturedApartments from "@/components/FeaturedApartments";
 import ScrollReveal from "@/components/ScrollReveal";
+import ExploreClient from "@/components/ExploreClient";
 import { getCachedProject, getCachedHeroImages, getCachedFAQs } from "@/lib/cached-queries";
 import { getTranslation, Locale } from "@/lib/translations";
 import { getHeroImageUrl, getCardImageUrl } from "@/lib/cloudinary";
@@ -103,10 +104,10 @@ export default async function Home() {
               </h1>
               <p className="text-lg text-slate-300 mb-2">{projectAddress}</p>
               <p className="text-sm text-slate-400 mb-8 max-w-2xl mx-auto">{projectDescription}</p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
                 <Link
-                  href="/vizual"
-                  className="cta-pulse inline-block bg-emerald-500 text-emerald-200 px-8 py-3 rounded-lg font-semibold hover:bg-emerald-400 transition"
+                  href="/#explore"
+                  className="bg-shine inline-block bg-emerald-500 text-emerald-100 px-6 py-2.5 sm:px-8 sm:py-3 text-sm sm:text-base rounded-lg font-semibold hover:bg-emerald-400 transition"
                 >
                   {t("landing.exploreApartments")}
                 </Link>
@@ -128,6 +129,13 @@ export default async function Home() {
             sold: t("project.sold"),
           }}
         />
+
+        {/* Interactive Master Plan / Visual Tour */}
+        <section id="explore" className="bg-slate-50 border-t border-slate-200 pt-8 pb-16">
+          <div className="max-w-7xl mx-auto">
+            <ExploreClient project={JSON.parse(JSON.stringify(project))} />
+          </div>
+        </section>
 
         {/* About */}
         <section id="about" className="max-w-6xl mx-auto px-4 py-16">
@@ -241,11 +249,11 @@ export default async function Home() {
         <section className="bg-emerald-600 text-white py-12">
           <div className="max-w-6xl mx-auto px-4 text-center">
             <ScrollReveal>
-              <h2 className="text-3xl font-bold mb-4">{t("project.findPerfectApartment")}</h2>
-              <p className="text-emerald-100 mb-8">{t("project.useInteractiveFloorPlan")}</p>
+              <h2 className="text-2xl sm:text-3xl font-bold mb-4">{t("project.findPerfectApartment")}</h2>
+              <p className="text-emerald-100 mb-8 text-sm sm:text-base">{t("project.useInteractiveFloorPlan")}</p>
               <Link
-                href="/vizual"
-                className="cta-pulse inline-block bg-white text-emerald-700 px-8 py-3 rounded-lg font-semibold hover:bg-emerald-50 transition"
+                href="/#explore"
+                className="bg-shine inline-block bg-white text-emerald-700 px-6 py-2.5 sm:px-8 sm:py-3 text-sm sm:text-base rounded-lg font-semibold hover:bg-emerald-50 transition"
               >
                 {t("project.exploreFloorPlans")} →
               </Link>

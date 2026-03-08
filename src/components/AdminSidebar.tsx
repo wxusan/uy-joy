@@ -45,8 +45,8 @@ export default function AdminSidebar({ isOpen, onClose }: Props) {
   return (
     <aside
       className={`
-        fixed md:static inset-y-0 left-0 z-50
-        w-56 bg-slate-900 text-slate-400 min-h-screen flex flex-col
+        fixed inset-y-0 left-0 z-50
+        w-56 bg-slate-900 text-slate-400 h-screen flex flex-col overflow-y-auto
         transition-transform duration-300 ease-in-out
         ${isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
       `}
@@ -84,8 +84,8 @@ export default function AdminSidebar({ isOpen, onClose }: Props) {
                 href={item.href}
                 onClick={onClose}
                 className={`flex items-center gap-3 px-4 py-2.5 mx-2 rounded-lg text-sm transition-all ${isActive
-                    ? "bg-emerald-600 text-white font-medium"
-                    : "text-slate-400 hover:text-white hover:bg-slate-800"
+                  ? "bg-emerald-600 text-white font-medium"
+                  : "text-slate-400 hover:text-white hover:bg-slate-800"
                   }`}
               >
                 <span>{iconMap[item.icon]}</span>

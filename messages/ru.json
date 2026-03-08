@@ -253,7 +253,12 @@
     "apartments": "квартир",
     "noResults": "Квартиры не найдены",
     "viewMore": "Показать ещё",
-    "featuredApartments": "Избранные квартиры"
+    "featuredApartments": "Избранные квартиры",
+    "layouts": "типов планировок",
+    "totalUnits": "квартир всего",
+    "floorsAvailable": "Этажи",
+    "selectFloor": "Выберите этаж",
+    "backToFloors": "Назад к этажам"
   },
   "contact": {
     "title": "Хотите, чтобы мы связались с вами?",

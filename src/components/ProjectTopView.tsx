@@ -112,8 +112,8 @@ export default function ProjectTopView({ topViewImage, buildings, onBuildingSele
     <div className="bg-white rounded-xl shadow-sm border p-3 sm:p-4">
       <h3 className="font-semibold text-slate-700 mb-4 text-center">{t("selectBuilding")}</h3>
 
-      {/* Aerial view container - full on mobile, 75% on desktop */}
-      <div className="relative w-full lg:w-4/5 xl:w-[85%] mx-auto aspect-[4/3] bg-slate-100 rounded-lg overflow-hidden border border-slate-200 shadow-inner">
+      {/* Aerial view container */}
+      <div className="relative w-[90%] md:w-[75%] lg:w-[60%] xl:w-[60%] mx-auto aspect-[4/3] bg-slate-100 rounded-lg overflow-hidden border border-slate-200 shadow-inner">
         <Image
           src={topViewImage}
           alt="Project aerial view"
@@ -143,8 +143,8 @@ export default function ProjectTopView({ topViewImage, buildings, onBuildingSele
               : polygonCenter;
 
             const scale = building.labelScale || 1.0;
-            const boxWidth = 28 * scale;
-            const boxHeight = 7 * scale;
+            const boxWidth = 22 * scale;
+            const boxHeight = 5.5 * scale;
 
             // Calculate where the line should attach to the label box
             const boxLeft = labelPos.x - (boxWidth / 2);
@@ -162,8 +162,8 @@ export default function ProjectTopView({ topViewImage, buildings, onBuildingSele
                 <path
                   d={toSvgPath(polygon)}
                   fill={isHovered ? "rgba(16, 185, 129, 0.35)" : "transparent"}
-                  stroke={isHovered ? "rgba(16, 185, 129, 0.8)" : "transparent"}
-                  strokeWidth={isHovered ? 0.4 : 0}
+                  stroke="transparent"
+                  strokeWidth={0}
                   className="cursor-pointer transition-all duration-200"
                   onMouseEnter={() => setHoveredBuilding(building.id)}
                   onMouseLeave={() => setHoveredBuilding(null)}
@@ -209,13 +209,13 @@ export default function ProjectTopView({ topViewImage, buildings, onBuildingSele
                       : "bg-emerald-600 text-white"
                       }`}
                     style={{
-                      fontSize: `${2.2 * scale}px`,
+                      fontSize: `${1.8 * scale}px`,
                       lineHeight: 1.2,
-                      border: isHovered ? `${0.3 * scale}px solid #059669` : `${0.3 * scale}px solid transparent`,
+                      border: "none",
                     }}
                   >
-                    <p className="font-semibold" style={{ fontSize: `${2.5 * scale}px` }}>{building.name}</p>
-                    <p style={{ fontSize: `${1.8 * scale}px`, marginTop: `-${0.3 * scale}px` }} className={isHovered ? "text-emerald-500" : "text-emerald-100"}>{stats.available}/{stats.total}</p>
+                    <p className="font-semibold" style={{ fontSize: `${2.0 * scale}px` }}>{building.name}</p>
+                    <p style={{ fontSize: `${1.4 * scale}px`, marginTop: `-${0.3 * scale}px` }} className={isHovered ? "text-emerald-500" : "text-emerald-100"}>{stats.available}/{stats.total}</p>
                   </div>
                 </foreignObject>
               </g>

@@ -61,7 +61,7 @@ function AdminGuard({ children }: { children: React.ReactNode }) {
       )}
 
       <AdminSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <main className="flex-1 bg-slate-50 p-4 md:p-8 overflow-auto mt-14 md:mt-0">{children}</main>
+      <main className="flex-1 bg-slate-50 p-4 md:p-8 overflow-auto mt-14 md:mt-0 md:ml-56">{children}</main>
     </div>
   );
 }

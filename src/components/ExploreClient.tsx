@@ -133,15 +133,12 @@ export default function ExploreClient({ project, initialBuildingId }: Props) {
   );
 
   return (
-    <div
-      className="max-w-4xl mx-auto px-2 sm:px-4 py-2 sm:py-4 origin-top transition-all"
-      style={{ zoom: 0.8 }}
-    >
+    <div className="max-w-7xl mx-auto px-3 sm:px-4 py-6 sm:py-8">
       {/* Breadcrumb */}
       {renderBreadcrumb()}
 
       {/* Header with legend */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-3 gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-3">
         <div>
           <h2 className="text-xl font-bold text-slate-800">
             {currentStep === "project" && project.name}

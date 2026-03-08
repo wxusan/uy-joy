@@ -241,7 +241,12 @@
     "apartments": "ta kvartira",
     "noResults": "Kvartiralar topilmadi",
     "viewMore": "Ko'proq ko'rish",
-    "featuredApartments": "Tanlangan kvartiralar"
+    "featuredApartments": "Tanlangan kvartiralar",
+    "layouts": "ta xonadon turi",
+    "totalUnits": "ta kvartira jami",
+    "floorsAvailable": "Qavatlar",
+    "selectFloor": "Qavatni tanlang",
+    "backToFloors": "Qavatlarga qaytish"
   },
   "contact": {
     "title": "Siz bilan bog'lanishimizni xohlaysizmi?",

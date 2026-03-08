@@ -7,7 +7,7 @@ export default async function Navbar() {
   const locale = await getLocale();
 
   return (
-    <nav className="bg-slate-900 text-white">
+    <nav className="bg-slate-900 text-white relative z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <Link href="/" className="text-xl font-bold tracking-tight">
@@ -15,11 +15,12 @@ export default async function Navbar() {
           </Link>
           <div className="flex items-center gap-4">
             <Link
-              href="/vizual"
+              href="/#explore"
               className="text-sm hover:text-emerald-400 transition"
             >
               {t("explore")}
             </Link>
+
             <LanguageSwitcher currentLocale={locale} />
           </div>
         </div>

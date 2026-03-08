@@ -253,7 +253,12 @@
     "apartments": "apartments",
     "noResults": "No apartments found",
     "viewMore": "View more",
-    "featuredApartments": "Featured Apartments"
+    "featuredApartments": "Featured Apartments",
+    "layouts": "layout types",
+    "totalUnits": "apartments total",
+    "floorsAvailable": "Floors",
+    "selectFloor": "Select a floor",
+    "backToFloors": "Back to floors"
   },
   "contact": {
     "title": "Want us to contact you?",

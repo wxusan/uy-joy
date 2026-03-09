@@ -8,7 +8,7 @@ type Point = { x: number; y: number };
 interface BuildingItem {
   id: string;
   name: string;
-  positionData: string | null;
+  polygonData?: Point[] | null;
   labelX?: number | null;
   labelY?: number | null;
   pointX?: number | null;
@@ -39,22 +39,8 @@ export default function TopViewMapper({ imageUrl, buildings, onClose, onSaved }:
   useEffect(() => {
     const initial: Record<string, Point[]> = {};
     for (const b of buildings) {
-      if (b.positionData) {
-        try {
-          const data = JSON.parse(b.positionData);
-          // Support both old rect format and new polygon format
-          if (Array.isArray(data)) {
-            initial[b.id] = data;
-          } else if (data.x !== undefined) {
-            // Convert old rect to polygon
-            initial[b.id] = [
-              { x: data.x, y: data.y },
-              { x: data.x + data.width, y: data.y },
-              { x: data.x + data.width, y: data.y + data.height },
-              { x: data.x, y: data.y + data.height },
-            ];
-          }
-        } catch { }
+      if (b.polygonData && Array.isArray(b.polygonData) && b.polygonData.length >= 3) {
+        initial[b.id] = b.polygonData;
       }
     }
     setPolygons(initial);
@@ -163,7 +149,7 @@ export default function TopViewMapper({ imageUrl, buildings, onClose, onSaved }:
         const labelPts = labelPositions[b.id];
 
         const body: any = {
-          positionData: pts && pts.length >= 3 ? JSON.stringify(pts) : null,
+          polygonData: pts && pts.length >= 3 ? pts : null,
           labelX: labelPts ? labelPts.x : null,
           labelY: labelPts ? labelPts.y : null,
           pointX: pointPositions[b.id] ? pointPositions[b.id].x : null,

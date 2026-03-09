@@ -16,7 +16,7 @@ interface Unit {
   status: string;
   pricePerM2: number | null;
   totalPrice: number | null;
-  polygonData: string | null;
+  polygonData: Point[] | null;
   labelX: number | null;
   labelY: number | null;
   sketchImage: string | null;
@@ -79,7 +79,7 @@ export default function FloorPlanEditorPage() {
       .filter((u: Unit) => u.polygonData)
       .map((u: Unit) => ({
         id: u.id,
-        points: JSON.parse(u.polygonData!),
+        points: u.polygonData as Point[],
         unitId: u.id,
         color: getStatusColor(u.status),
         label: u.unitNumber,
@@ -172,7 +172,7 @@ export default function FloorPlanEditorPage() {
           rooms: 1,
           area: 50,
           status: "available",
-          polygonData: JSON.stringify(points),
+          polygonData: points,
         }),
       });
       const newUnit = await res.json();
@@ -209,7 +209,7 @@ export default function FloorPlanEditorPage() {
     await fetch(`/api/units/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ polygonData: JSON.stringify(points) }),
+      body: JSON.stringify({ polygonData: points }),
     });
   };
 
@@ -362,7 +362,7 @@ export default function FloorPlanEditorPage() {
         let cx = 0, cy = 0;
         if (u.polygonData) {
           try {
-            const pts = JSON.parse(u.polygonData);
+            const pts = u.polygonData as { x: number; y: number }[];
             cx = pts.reduce((s: number, p: { x: number }) => s + p.x, 0) / pts.length;
             cy = pts.reduce((s: number, p: { y: number }) => s + p.y, 0) / pts.length;
           } catch { /* ignore */ }

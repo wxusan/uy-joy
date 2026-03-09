@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
 
 export async function POST(_req: Request, { params }: { params: { id: string } }) {
@@ -51,7 +52,7 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
           area: unit.area,
           status: "available", // Reset status for new floors
           pricePerM2: unit.pricePerM2,
-          polygonData: unit.polygonData,
+          polygonData: unit.polygonData ?? Prisma.JsonNull,
           labelX: unit.labelX,
           labelY: unit.labelY,
           sketchImage: unit.sketchImage,
@@ -60,7 +61,7 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
           sketchImage4: unit.sketchImage4,
           description: unit.description,
           descriptionTranslations: unit.descriptionTranslations,
-          features: unit.features,
+          features: unit.features ?? Prisma.JsonNull,
         },
       });
     }

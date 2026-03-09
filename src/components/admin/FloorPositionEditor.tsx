@@ -7,13 +7,13 @@ import { SHOW_AI } from "@/lib/flags";
 interface Floor {
   id: string;
   number: number;
-  positionData: string | null;
+  positionData: { yStart: number; yEnd: number } | null;
 }
 
 interface Props {
   buildingImage: string;
   floors: Floor[];
-  onSave: (floorPositions: { floorId: string; positionData: string }[]) => void;
+  onSave: (floorPositions: { floorId: string; positionData: { yStart: number; yEnd: number } }[]) => void;
   onCancel: () => void;
 }
 
@@ -41,13 +41,8 @@ export default function FloorPositionEditor({ buildingImage, floors, onSave, onC
       let yEnd = 0;
       
       if (floor.positionData) {
-        try {
-          const data = JSON.parse(floor.positionData);
-          yStart = data.yStart ?? 0;
-          yEnd = data.yEnd ?? 0;
-        } catch {
-          // Invalid JSON, use defaults
-        }
+        yStart = floor.positionData.yStart ?? 0;
+        yEnd = floor.positionData.yEnd ?? 0;
       }
       
       return {
@@ -97,7 +92,7 @@ export default function FloorPositionEditor({ buildingImage, floors, onSave, onC
   const handleSave = () => {
     const floorPositions = positions.map((p) => ({
       floorId: p.floorId,
-      positionData: JSON.stringify({ yStart: p.yStart, yEnd: p.yEnd }),
+      positionData: { yStart: p.yStart, yEnd: p.yEnd },
     }));
     onSave(floorPositions);
   };

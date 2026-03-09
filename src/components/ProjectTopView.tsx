@@ -10,7 +10,7 @@ type Point = { x: number; y: number };
 interface Building {
   id: string;
   name: string;
-  positionData: string | null;
+  polygonData: Point[] | null;
   labelX: number | null;
   labelY: number | null;
   pointX: number | null;
@@ -29,25 +29,9 @@ export default function ProjectTopView({ topViewImage, buildings, onBuildingSele
   const t = useTranslations("explore");
   const [hoveredBuilding, setHoveredBuilding] = useState<string | null>(null);
 
-  // Parse position data - supports both polygon array and old rect format
   const getBuildingPolygon = (building: Building): Point[] | null => {
-    if (!building.positionData) return null;
-    try {
-      const data = JSON.parse(building.positionData);
-      if (Array.isArray(data)) return data;
-      // Old rect format - convert to polygon
-      if (data.x !== undefined) {
-        return [
-          { x: data.x, y: data.y },
-          { x: data.x + data.width, y: data.y },
-          { x: data.x + data.width, y: data.y + data.height },
-          { x: data.x, y: data.y + data.height },
-        ];
-      }
-      return null;
-    } catch {
-      return null;
-    }
+    if (!building.polygonData || !Array.isArray(building.polygonData)) return null;
+    return building.polygonData;
   };
 
   // Calculate building stats

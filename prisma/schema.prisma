@@ -28,7 +28,7 @@ model Project {
   topViewImage String?   // Aerial view of entire complex
   latitude    Float?     // GPS latitude
   longitude   Float?     // GPS longitude
-  infrastructure String? // JSON: nearby places data
+  infrastructure Json?   // nearby places data
   expectedYear Int?      // Expected year of project completion (e.g., 2028)
   buildings   Building[]
   createdAt   DateTime   @default(now())
@@ -45,8 +45,7 @@ model Building {
   backViewImage  String?  // Back facade image
   leftViewImage  String?  // Left side image
   rightViewImage String?  // Right side image
-  positionData   String?  // DEPRECATED: use polygonData instead
-  polygonData    String?  // JSON: [{x, y}, ...] polygon coordinates on aerial view (as % of image)
+  polygonData    Json?    // [{x, y}, ...] polygon coordinates on aerial view (as % of image)
   labelX         Float?   // Label position X (as % of image width)
   labelY         Float?   // Label position Y (as % of image height)
   pointX         Float?   // Point (dot) position X (as % of image width)
@@ -63,7 +62,7 @@ model Floor {
   building       Building @relation(fields: [buildingId], references: [id], onDelete: Cascade)
   basePricePerM2 Float?
   floorPlanImage String?  // Interior floor plan image
-  positionData   String?  // JSON: {yStart, yEnd} for clickable area on building view
+  positionData   Json?    // {yStart, yEnd} for clickable area on building view
   units          Unit[]
   createdAt      DateTime @default(now())
 }
@@ -78,8 +77,7 @@ model Unit {
   status      String   @default("available")
   pricePerM2  Float?
   totalPrice  Float?
-  svgPathId   String?  // DEPRECATED: use polygonData instead
-  polygonData String?  // JSON: [{x, y}, ...] polygon coordinates on floor plan (as % of image)
+  polygonData Json?    // [{x, y}, ...] polygon coordinates on floor plan (as % of image)
   labelX      Float?   // Label position X (as % of image width)
   labelY      Float?   // Label position Y (as % of image height)
   sketchImage  String?  // Unit layout/sketch image (photo 1)
@@ -88,7 +86,7 @@ model Unit {
   sketchImage4 String?  // Photo 4
   description String?
   descriptionTranslations String?  // JSON for translations
-  features    String?  // JSON: additional features like balcony, view, etc.
+  features    Json?    // additional features like balcony, view, etc.
   // Reservation/Sale details
   customerName  String?
   customerPhone String?

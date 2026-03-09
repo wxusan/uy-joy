@@ -1,4 +1,5 @@
 import { unstable_cache } from "next/cache";
+import { Prisma } from "@prisma/client";
 import prisma from "./prisma";
 
 // Cache project data for 60 seconds (matches ISR revalidation)
@@ -32,7 +33,7 @@ export const getCachedProjectWithPolygonUnits = unstable_cache(
               include: {
                 units: {
                   where: {
-                    polygonData: { not: null },
+                    polygonData: { not: Prisma.DbNull },
                   },
                 },
               },

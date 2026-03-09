@@ -91,7 +91,7 @@ export default function AdminProjects() {
       {showMapper && project.topViewImage && (
         <TopViewMapper
           imageUrl={project.topViewImage}
-          buildings={project.buildings.map((b: any) => ({ id: b.id, name: b.name, positionData: b.positionData || null }))}
+          buildings={project.buildings.map((b: any) => ({ id: b.id, name: b.name, polygonData: b.polygonData || null }))}
           onClose={() => setShowMapper(false)}
           onSaved={async () => { setShowMapper(false); await loadProject(); }}
         />

@@ -24,7 +24,6 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   if (body.backViewImage !== undefined) data.backViewImage = body.backViewImage;
   if (body.leftViewImage !== undefined) data.leftViewImage = body.leftViewImage;
   if (body.rightViewImage !== undefined) data.rightViewImage = body.rightViewImage;
-  if (body.positionData !== undefined) data.positionData = body.positionData;
   if (body.polygonData !== undefined) data.polygonData = body.polygonData;
   if (body.labelX !== undefined) data.labelX = body.labelX;
   if (body.labelY !== undefined) data.labelY = body.labelY;

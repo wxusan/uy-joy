@@ -7,7 +7,6 @@ export interface UnitWithFloor {
   status: string;
   pricePerM2: number | null;
   totalPrice: number | null;
-  svgPathId: string | null;
   description: string | null;
   floor: {
     id: string;
@@ -32,8 +31,7 @@ export interface FloorWithUnits {
     status: string;
     pricePerM2: number | null;
     totalPrice: number | null;
-    svgPathId: string | null;
-  }[];
+    }[];
 }
 
 export interface BuildingWithFloors {

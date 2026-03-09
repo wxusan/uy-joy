@@ -11,7 +11,7 @@ interface Floor {
   number: number;
   basePricePerM2: number | null;
   floorPlanImage: string | null;
-  positionData: string | null;
+  positionData: { yStart: number; yEnd: number } | null;
   units: { id: string; status: string }[];
 }
 
@@ -123,7 +123,7 @@ export default function FloorsPage() {
   };
 
   const handleSaveFloorPositions = async (
-    floorPositions: { floorId: string; positionData: string }[]
+    floorPositions: { floorId: string; positionData: { yStart: number; yEnd: number } }[]
   ) => {
     setLoading(true);
     await fetch(`/api/buildings/${params.buildingId}/floor-positions`, {

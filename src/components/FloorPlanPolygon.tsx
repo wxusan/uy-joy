@@ -16,7 +16,7 @@ interface UnitData {
   status: string;
   pricePerM2: number | null;
   totalPrice: number | null;
-  polygonData: string | null;
+  polygonData: Point[] | null;
   labelX: number | null;
   labelY: number | null;
   sketchImage: string | null;
@@ -72,13 +72,9 @@ export default function FloorPlanPolygon({
   );
 
   // Parse polygon data
-  const parsePolygon = (polygonData: string | null): Point[] => {
-    if (!polygonData) return [];
-    try {
-      return JSON.parse(polygonData);
-    } catch {
-      return [];
-    }
+  const parsePolygon = (polygonData: Point[] | null): Point[] => {
+    if (!polygonData || !Array.isArray(polygonData)) return [];
+    return polygonData;
   };
 
   // Get polygon path string

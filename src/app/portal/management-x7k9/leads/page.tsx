@@ -32,19 +32,27 @@ export default function LeadsPage() {
   const tc = useTranslations("common");
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [pages, setPages] = useState(1);
+  const LIMIT = 20;
 
-  const loadLeads = () => {
-    fetch("/api/leads")
+  const loadLeads = (p: number) => {
+    setLoading(true);
+    fetch(`/api/leads?page=${p}&limit=${LIMIT}`)
       .then((res) => res.json())
       .then((data) => {
-        setLeads(data);
+        setLeads(data.data);
+        setTotal(data.total);
+        setPages(data.pages);
         setLoading(false);
       });
   };
 
   useEffect(() => {
-    loadLeads();
-  }, []);
+    loadLeads(page);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]);
 
   const updateLeadStatus = async (leadId: string, newStatus: string) => {
     await fetch(`/api/leads/${leadId}`, {
@@ -52,12 +60,16 @@ export default function LeadsPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: newStatus }),
     });
-    loadLeads();
+    loadLeads(page);
   };
 
-  const exportToCSV = () => {
+  const exportToCSV = async () => {
+    // Fetch all leads for export
+    const res = await fetch(`/api/leads?page=1&limit=10000`);
+    const data = await res.json();
+    const allLeads: Lead[] = data.data;
     const headers = ["Name", "Phone", "Project", "Unit", "Source", "Status", "Date"];
-    const rows = leads.map((l) => [
+    const rows = allLeads.map((l) => [
       l.name,
       l.phone,
       l.projectName || "-",
@@ -92,12 +104,12 @@ export default function LeadsPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold">{t("leadsInquiries")}</h1>
-          <p className="text-slate-500 text-sm">{t("totalLeads", { count: leads.length })}</p>
+          <p className="text-slate-500 text-sm">{t("totalLeads", { count: total })}</p>
         </div>
         <div className="flex gap-3">
           <button
             onClick={exportToCSV}
-            disabled={leads.length === 0}
+            disabled={total === 0}
             className="px-4 py-2 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 disabled:bg-slate-300 transition"
           >
             📥 {t("exportCSV")}
@@ -177,6 +189,31 @@ export default function LeadsPage() {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Pagination */}
+      {pages > 1 && (
+        <div className="flex items-center justify-between mt-4">
+          <p className="text-sm text-slate-500">
+            Page {page} of {pages} — {total} total
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1}
+              className="px-3 py-1.5 text-sm bg-white border rounded-lg hover:bg-slate-50 disabled:opacity-40 transition"
+            >
+              ← Prev
+            </button>
+            <button
+              onClick={() => setPage((p) => Math.min(pages, p + 1))}
+              disabled={page >= pages}
+              className="px-3 py-1.5 text-sm bg-white border rounded-lg hover:bg-slate-50 disabled:opacity-40 transition"
+            >
+              Next →
+            </button>
+          </div>
         </div>
       )}
     </div>

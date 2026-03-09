@@ -16,7 +16,7 @@ interface Building {
   id: string;
   name: string;
   frontViewImage: string | null;
-  positionData: string | null;
+  polygonData: unknown;
   labelX: number | null;
   labelY: number | null;
   pointX: number | null;

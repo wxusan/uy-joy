@@ -20,6 +20,29 @@ export async function GET(req: Request) {
     };
   }
 
+  const pageParam = searchParams.get("page");
+  const limitParam = searchParams.get("limit");
+
+  // Paginate only when page param is explicitly provided
+  if (pageParam !== null) {
+    const page = Math.max(1, parseInt(pageParam || "1"));
+    const limit = Math.min(200, Math.max(1, parseInt(limitParam || "50")));
+    const skip = (page - 1) * limit;
+
+    const [units, total] = await Promise.all([
+      prisma.unit.findMany({
+        where,
+        include: { floor: { include: { building: true } } },
+        orderBy: [{ floor: { number: "asc" } }, { unitNumber: "asc" }],
+        take: limit,
+        skip,
+      }),
+      prisma.unit.count({ where }),
+    ]);
+
+    return NextResponse.json({ data: units, total, page, pages: Math.ceil(total / limit) });
+  }
+
   const units = await prisma.unit.findMany({
     where,
     include: {

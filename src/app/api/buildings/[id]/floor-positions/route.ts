@@ -18,7 +18,7 @@ export async function PUT(
 
     // Update each floor's position
     const updates = floorPositions.map(
-      (fp: { floorId: string; positionData: string }) =>
+      (fp: { floorId: string; positionData: { yStart: number; yEnd: number } }) =>
         prisma.floor.update({
           where: { id: fp.floorId },
           data: { positionData: fp.positionData },

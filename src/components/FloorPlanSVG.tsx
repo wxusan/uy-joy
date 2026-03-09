@@ -11,7 +11,6 @@ interface UnitData {
   status: string;
   pricePerM2: number | null;
   totalPrice: number | null;
-  svgPathId: string | null;
 }
 
 interface Props {
@@ -35,11 +34,9 @@ export default function FloorPlanSVG({ units, basePricePerM2, onUnitClick }: Pro
   const [tooltip, setTooltip] = useState<{ x: number; y: number; text: string } | null>(null);
 
   // Match units to positions
-  const sortedUnits = units.slice().sort((a, b) => {
-    const posA = parseInt(a.svgPathId?.split("-").pop() || "0");
-    const posB = parseInt(b.svgPathId?.split("-").pop() || "0");
-    return posA - posB;
-  });
+  const sortedUnits = units.slice().sort((a, b) =>
+    a.unitNumber.localeCompare(b.unitNumber, undefined, { numeric: true })
+  );
 
   return (
     <div className="bg-white rounded-xl shadow-sm border p-4 overflow-auto">

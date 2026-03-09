@@ -17,7 +17,7 @@ interface ProjectData {
   buildings: {
     id: string;
     name: string;
-    positionData: string | null;
+    polygonData: { x: number; y: number }[] | null;
     frontViewImage: string | null;
     backViewImage: string | null;
     leftViewImage: string | null;
@@ -31,7 +31,7 @@ interface ProjectData {
       id: string;
       number: number;
       basePricePerM2: number | null;
-      positionData: string | null;
+      positionData: { yStart: number; yEnd: number } | null;
       floorPlanImage: string | null;
       units: {
         id: string;
@@ -41,8 +41,7 @@ interface ProjectData {
         status: string;
         pricePerM2: number | null;
         totalPrice: number | null;
-        svgPathId: string | null;
-        polygonData: string | null;
+        polygonData: { x: number; y: number }[] | null;
         labelX: number | null;
         labelY: number | null;
         sketchImage: string | null;

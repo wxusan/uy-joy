@@ -51,8 +51,6 @@ async function main() {
     data: {
       name: "Block A",
       projectId: project.id,
-      // Position on aerial view image (as percentage)
-      positionData: JSON.stringify({ x: 20, y: 30, width: 25, height: 40 }),
       // Building facade images - admin can upload
       frontViewImage: null,
       backViewImage: null,
@@ -88,7 +86,6 @@ async function main() {
     // Create 6 units per floor
     for (const template of unitTemplates) {
       const unitNum = `${floorNum}0${template.position + 1}`;
-      const svgPathId = `unit-${floorNum}-${template.position}`;
       const status = statuses[Math.floor(Math.random() * statuses.length)];
 
       // Corner units (position 0 and 5) get 15% premium
@@ -103,7 +100,6 @@ async function main() {
           area: template.area,
           status,
           pricePerM2: priceOverride,
-          svgPathId,
         },
       });
     }

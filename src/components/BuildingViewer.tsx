@@ -9,7 +9,7 @@ type ViewType = "front" | "back" | "left" | "right";
 interface Floor {
   id: string;
   number: number;
-  positionData: string | null;
+  positionData: { yStart: number; yEnd: number } | null;
   basePricePerM2: number | null;
   units: { status: string }[];
 }
@@ -87,15 +87,8 @@ export default function BuildingViewer({ building, onFloorSelect, onBack }: Prop
 
     return sortedFloors.map((floor, index) => {
       // Try to use stored position data first
-      if (floor.positionData) {
-        try {
-          const data = JSON.parse(floor.positionData);
-          if (data.yStart !== undefined && data.yEnd !== undefined && data.yEnd > data.yStart) {
-            return { floor, position: { yStart: data.yStart, yEnd: data.yEnd } };
-          }
-        } catch {
-          // Invalid JSON, fall through to auto-generate
-        }
+      if (floor.positionData && floor.positionData.yEnd > floor.positionData.yStart) {
+        return { floor, position: { yStart: floor.positionData.yStart, yEnd: floor.positionData.yEnd } };
       }
 
       // Auto-generate position if not stored

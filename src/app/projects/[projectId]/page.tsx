@@ -164,7 +164,7 @@ export default async function ProjectPage({ params }: { params: { projectId: str
           <LocationInfrastructure
             latitude={project.latitude}
             longitude={project.longitude}
-            infrastructure={project.infrastructure ? JSON.parse(project.infrastructure) : undefined}
+            infrastructure={project.infrastructure as any ?? undefined}
             address={projectAddress}
           />
         ) : (

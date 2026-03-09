@@ -1,12 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
-// GET - List all leads (admin only)
-export async function GET() {
-  const leads = await prisma.lead.findMany({
-    orderBy: { createdAt: "desc" },
+// GET - List leads with pagination
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
+  const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "20")));
+  const skip = (page - 1) * limit;
+
+  const [leads, total] = await Promise.all([
+    prisma.lead.findMany({
+      orderBy: { createdAt: "desc" },
+      take: limit,
+      skip,
+    }),
+    prisma.lead.count(),
+  ]);
+
+  return NextResponse.json({
+    data: leads,
+    total,
+    page,
+    pages: Math.ceil(total / limit),
   });
-  return NextResponse.json(leads);
 }
 
 // POST - Create a new lead

@@ -6,10 +6,11 @@ import { authOptions } from "@/lib/auth";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
-  if (!session || (session.user as any).role !== "superadmin") {
+  if (!session || ((session.user as any).role !== "superadmin" && (session.user as any).role !== "developer")) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
   const users = await prisma.user.findMany({
+    where: { role: { not: "developer" } },
     select: { id: true, email: true, name: true, role: true, createdAt: true },
   });
   return NextResponse.json(users);
@@ -17,7 +18,7 @@ export async function GET() {
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
-  if (!session || (session.user as any).role !== "superadmin") {
+  if (!session || ((session.user as any).role !== "superadmin" && (session.user as any).role !== "developer")) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
   const body = await req.json();
@@ -36,7 +37,7 @@ export async function POST(req: Request) {
 
 export async function DELETE(req: Request) {
   const session = await getServerSession(authOptions);
-  if (!session || (session.user as any).role !== "superadmin") {
+  if (!session || ((session.user as any).role !== "superadmin" && (session.user as any).role !== "developer")) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
   const { searchParams } = new URL(req.url);

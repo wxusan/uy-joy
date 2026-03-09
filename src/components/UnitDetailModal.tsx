@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import posthog from "posthog-js";
+import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { calculateUnitPrice } from "@/lib/utils";
 import { getCardImageUrl, getFullImageUrl } from "@/lib/cloudinary";
@@ -54,6 +55,19 @@ export default function UnitDetailModal({ unit, onClose }: Props) {
   const [submitted, setSubmitted] = useState(false);
   const [lightbox, setLightbox] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (unit) {
+      posthog.capture("Viewed Apartment", {
+        block: unit.buildingName || "Unknown",
+        apartment_number: getDisplayNumber(unit.unitNumber, unit.floorNumber),
+        floor: unit.floorNumber,
+        square_meters: unit.area,
+        rooms: unit.rooms,
+        source: "3D Visualizer"
+      });
+    }
+  }, [unit]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
@@ -72,6 +86,18 @@ export default function UnitDetailModal({ unit, onClose }: Props) {
           source: "vizual",
         }),
       });
+
+      if (unit) {
+        posthog.capture("Contacted Sales", {
+          block: unit.buildingName || "Unknown",
+          apartment_number: getDisplayNumber(unit.unitNumber, unit.floorNumber),
+          floor: unit.floorNumber,
+          square_meters: unit.area,
+          rooms: unit.rooms,
+          source: "3D Visualizer"
+        });
+      }
+
       setSubmitted(true);
     } catch {
       alert(tc("error"));

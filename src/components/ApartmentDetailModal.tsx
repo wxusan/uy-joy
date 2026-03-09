@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import posthog from "posthog-js";
+import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { getCardImageUrl, getFullImageUrl } from "@/lib/cloudinary";
 import { CircleCheck } from "lucide-react";
@@ -49,6 +50,17 @@ export default function ApartmentDetailModal({ unit, onClose }: Props) {
 
   const photos = [unit.sketchImage, unit.sketchImage2, unit.sketchImage3, unit.sketchImage4].filter(Boolean) as string[];
 
+  useEffect(() => {
+    posthog.capture("Viewed Apartment", {
+      block: unit.floor.building.name,
+      apartment_number: unit.unitNumber,
+      floor: unit.floor.number,
+      square_meters: unit.area,
+      rooms: unit.rooms,
+      source: "List View"
+    });
+  }, [unit]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
@@ -65,6 +77,16 @@ export default function ApartmentDetailModal({ unit, onClose }: Props) {
           source: "kvartiralar",
         }),
       });
+
+      posthog.capture("Contacted Sales", {
+        block: unit.floor.building.name,
+        apartment_number: unit.unitNumber,
+        floor: unit.floor.number,
+        square_meters: unit.area,
+        rooms: unit.rooms,
+        source: "List View"
+      });
+
       setSubmitted(true);
     } catch {
       alert(tc("error"));

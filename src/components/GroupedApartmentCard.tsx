@@ -88,16 +88,11 @@ export default function GroupedApartmentCard({ group, onClick }: Props) {
 
             {/* Bottom availability badge */}
             <div className="px-4 pb-4">
-                <div className="flex items-center justify-between bg-slate-50 rounded-xl px-3 py-2">
-                    <span className="text-xs text-slate-500">
-                        {group.totalCount} {ta("totalUnits") || "ta kvartira jami"}
-                    </span>
-                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${group.availableCount > 0
-                            ? "bg-emerald-100 text-emerald-700"
-                            : "bg-red-100 text-red-600"
-                        }`}>
-                        {group.availableCount} {ta("available") || "mavjud"}
-                    </span>
+                <div className={`text-center text-xs font-semibold py-2 rounded-xl ${group.availableCount > 0
+                    ? "bg-emerald-100 text-emerald-700"
+                    : "bg-red-100 text-red-600"
+                    }`}>
+                    {group.availableCount} ta mavjud
                 </div>
             </div>
         </button>

@@ -1,5 +1,6 @@
 "use client";
 
+import posthog from "posthog-js";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import ProjectTopView from "@/components/ProjectTopView";
@@ -80,12 +81,31 @@ export default function ExploreClient({ project, initialBuildingId }: Props) {
 
   // Handlers
   const handleBuildingSelect = (buildingId: string) => {
+    const building = project.buildings.find(b => b.id === buildingId);
+    if (building) {
+      posthog.capture("Viewed Block", {
+        block: building.name,
+        project_name: project.name,
+        source: "3D Visualizer"
+      });
+    }
+
     setSelectedBuildingId(buildingId);
     setSelectedFloorId(null);
     setCurrentStep("building");
   };
 
   const handleFloorSelect = (floorId: string) => {
+    const floor = selectedBuilding?.floors.find(f => f.id === floorId);
+    if (floor && selectedBuilding) {
+      posthog.capture("Viewed Floor", {
+        block: selectedBuilding.name,
+        floor: floor.number,
+        project_name: project.name,
+        source: "3D Visualizer"
+      });
+    }
+
     setSelectedFloorId(floorId);
     setCurrentStep("floor");
   };

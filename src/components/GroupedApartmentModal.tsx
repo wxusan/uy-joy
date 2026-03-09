@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import posthog from "posthog-js";
+import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { getCardImageUrl, getFullImageUrl } from "@/lib/cloudinary";
 import { CircleCheck } from "lucide-react";
@@ -34,6 +35,17 @@ export default function GroupedApartmentModal({ group, onClose }: Props) {
         ? [previewUnit.sketchImage, previewUnit.sketchImage2, previewUnit.sketchImage3, previewUnit.sketchImage4].filter(Boolean) as string[]
         : [];
 
+    useEffect(() => {
+        posthog.capture("Viewed Apartment", {
+            block: group.buildingName,
+            apartment_number: previewUnit?.unitNumber || "Multiple",
+            floor: selectedFloorNumber || previewUnit?.floor.number || "Multiple",
+            square_meters: group.area,
+            rooms: group.rooms,
+            source: "List View"
+        });
+    }, [group, selectedFloorNumber, previewUnit]);
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         // Use selected unit or first available
@@ -56,6 +68,16 @@ export default function GroupedApartmentModal({ group, onClose }: Props) {
                     source: "kvartiralar",
                 }),
             });
+
+            posthog.capture("Contacted Sales", {
+                block: targetUnit.floor.building.name,
+                apartment_number: targetUnit.unitNumber,
+                floor: targetUnit.floor.number,
+                square_meters: group.area,
+                rooms: group.rooms,
+                source: "List View"
+            });
+
             setSubmitted(true);
         } catch {
             alert(tc("error"));
@@ -158,8 +180,8 @@ export default function GroupedApartmentModal({ group, onClose }: Props) {
                                                 selectedFloorNumber === unit.floor.number ? null : unit.floor.number
                                             )}
                                             className={`flex items-center justify-center w-11 h-11 rounded-lg text-sm font-bold transition-all duration-150 active:scale-95 ${selectedFloorNumber === unit.floor.number
-                                                    ? "bg-emerald-500 text-white shadow-md"
-                                                    : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                                                ? "bg-emerald-500 text-white shadow-md"
+                                                : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                                                 }`}
                                         >
                                             {unit.floor.number}

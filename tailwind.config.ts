@@ -11,7 +11,7 @@ const config: Config = {
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
-        // Design System Colors
+        // Original Design Colors
         navy: {
           50: "#f0f4f8",
           100: "#d9e2ec",
@@ -43,15 +43,23 @@ const config: Config = {
         },
       },
       fontFamily: {
-        heading: ["Poppins", "sans-serif"],
-        body: ["Inter", "sans-serif"],
+        heading: ["'Plus Jakarta Sans'", "sans-serif"],
+        body: ["'DM Sans'", "sans-serif"],
+        mono: ["'JetBrains Mono'", "monospace"],
       },
       boxShadow: {
+        xs: "0 1px 2px rgba(0, 0, 0, 0.04)",
+        sm: "0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04)",
+        md: "0 4px 16px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04)",
+        lg: "0 8px 32px rgba(0, 0, 0, 0.10), 0 4px 8px rgba(0, 0, 0, 0.04)",
+        xl: "0 16px 48px rgba(0, 0, 0, 0.12), 0 8px 16px rgba(0, 0, 0, 0.06)",
         soft: "0 2px 8px rgba(0, 0, 0, 0.05)",
         card: "0 4px 12px rgba(0, 0, 0, 0.08)",
+        inset: "inset 0 2px 4px rgba(0, 0, 0, 0.04)",
       },
       borderRadius: {
         btn: "10px",
+        card: "16px",
       },
     },
   },

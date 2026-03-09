@@ -42,7 +42,7 @@ export default function AdminUsers() {
     loadUsers();
   };
 
-  if ((session?.user as any)?.role !== "superadmin") {
+  if ((session?.user as any)?.role !== "superadmin" && (session?.user as any)?.role !== "developer") {
     return <p className="text-slate-500">{t("accessDenied")}</p>;
   }
 
@@ -119,9 +119,8 @@ export default function AdminUsers() {
                 <td className="px-4 py-3 text-slate-500">{user.email}</td>
                 <td className="px-4 py-3">
                   <span
-                    className={`text-xs px-2 py-1 rounded-full font-medium ${
-                      user.role === "superadmin" ? "bg-purple-100 text-purple-800" : "bg-slate-100 text-slate-700"
-                    }`}
+                    className={`text-xs px-2 py-1 rounded-full font-medium ${user.role === "superadmin" ? "bg-purple-100 text-purple-800" : "bg-slate-100 text-slate-700"
+                      }`}
                   >
                     {user.role === "superadmin" ? t("superadmin") : "Admin"}
                   </span>

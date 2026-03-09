@@ -6,18 +6,20 @@ import { useSession, signOut } from "next-auth/react";
 import { useTranslations, useLocale } from "next-intl";
 import { useState, useTransition } from "react";
 import { locales, localeNames, Locale } from "@/lib/locales";
-import { BarChart3, Building2, Users } from "lucide-react";
+import { BarChart3, Building2, Users, Activity } from "lucide-react";
 
 const navItemsConfig = [
   { href: "/portal/management-x7k9", labelKey: "dashboard", icon: "dashboard" },
   { href: "/portal/management-x7k9/projects", labelKey: "projects", icon: "projects" },
   { href: "/portal/management-x7k9/users", labelKey: "users", icon: "users", superadminOnly: true },
+  { href: "/portal/management-x7k9/analytics", labelKey: "analytics", icon: "analytics", developerOnly: true },
 ];
 
 const iconMap: Record<string, React.ReactNode> = {
   dashboard: <BarChart3 className="w-4 h-4" />,
   projects: <Building2 className="w-4 h-4" />,
   users: <Users className="w-4 h-4" />,
+  analytics: <Activity className="w-4 h-4" />,
 };
 
 interface Props {
@@ -72,7 +74,11 @@ export default function AdminSidebar({ isOpen, onClose }: Props) {
       {/* Nav */}
       <nav className="flex-1 py-4">
         {navItemsConfig
-          .filter((item) => !item.superadminOnly || role === "superadmin")
+          .filter((item) => {
+            if (item.superadminOnly && role !== "superadmin" && role !== "developer") return false;
+            if (item.developerOnly && role !== "developer") return false;
+            return true;
+          })
           .map((item) => {
             const isActive =
               item.href === "/portal/management-x7k9"

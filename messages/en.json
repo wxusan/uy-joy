@@ -87,7 +87,7 @@
     "availableStatus": "This apartment is currently available",
     "reservedStatus": "This apartment is currently reserved",
     "soldStatus": "This apartment is sold",
-    "learnMore": "Learn more?",
+    "learnMore": "Learn pricing & get consultation",
     "apartmentNumber": "Apartment number",
     "expectedYear": "Expected year",
     "project": "Project"
@@ -268,7 +268,7 @@
     "phone": "Phone number",
     "message": "Message",
     "messagePlaceholder": "Your questions...",
-    "submit": "SUBMIT REQUEST",
+    "submit": "GET CONSULTATION",
     "sending": "Sending...",
     "success": "Thank you! We will contact you soon.",
     "error": "Something went wrong. Please try again.",

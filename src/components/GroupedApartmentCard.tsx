@@ -52,7 +52,7 @@ export default function GroupedApartmentCard({ group, onClick }: Props) {
     return (
         <button
             onClick={onClick}
-            className="group bg-white rounded-2xl shadow-sm border border-slate-100 hover:shadow-lg hover:border-emerald-200 active:scale-[0.98] transition-all duration-200 overflow-hidden text-left w-full flex flex-col"
+            className="group bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-slate-100/50 hover:shadow-[0_20px_50px_rgba(8,112,184,0.08)] hover:border-indigo-100/50 active:scale-[0.98] hover:-translate-y-1.5 transition-all duration-300 overflow-hidden text-left w-full flex flex-col relative"
         >
             {/* Image */}
             <div className="relative bg-slate-50 p-4 pb-2">

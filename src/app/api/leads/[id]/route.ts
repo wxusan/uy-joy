@@ -9,13 +9,15 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await request.json();
-    const { status, notes } = body;
+    const { status, notes, assignedTo, nextFollowUp } = body;
 
     const lead = await prisma.lead.update({
       where: { id },
       data: {
         ...(status && { status }),
         ...(notes !== undefined && { notes }),
+        ...(assignedTo !== undefined && { assignedTo: assignedTo || null }),
+        ...(nextFollowUp !== undefined && { nextFollowUp: nextFollowUp ? new Date(nextFollowUp) : null }),
       },
     });
 

@@ -1,8 +1,9 @@
+import { Suspense } from "react";
 import prisma from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import ExploreClient from "./ExploreClient";
+import ExploreClient from "@/components/ExploreClient";
 
 export const dynamic = "force-dynamic";
 
@@ -33,7 +34,9 @@ export default async function ExplorePage({ params }: { params: { projectId: str
             <p className="text-slate-400 text-sm">{project.address}</p>
           </div>
         </div>
-        <ExploreClient project={JSON.parse(JSON.stringify(project))} />
+        <Suspense>
+          <ExploreClient project={JSON.parse(JSON.stringify(project))} />
+        </Suspense>
       </main>
       <Footer />
     </>

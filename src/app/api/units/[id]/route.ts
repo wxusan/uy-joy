@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import prisma from "@/lib/prisma";
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
@@ -50,6 +51,9 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
       },
     },
   });
+
+  // Immediately bust the public site cache so users see the update in real time
+  revalidateTag("project");
 
   return NextResponse.json(unit);
 }

@@ -122,11 +122,11 @@ export default function ApartmentDetailModal({ unit, onClose }: Props) {
 
       {/* Modal */}
       <div
-        className="fixed inset-0 bg-black/60 z-40 flex items-end sm:items-center justify-center"
+        className="fixed inset-0 bg-slate-900/40 backdrop-blur-md z-50 flex items-end sm:items-center justify-center transition-opacity duration-300"
         onClick={onClose}
       >
         <div
-          className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md shadow-2xl max-h-[92vh] overflow-y-auto"
+          className="bg-white/95 backdrop-blur-xl rounded-t-3xl sm:rounded-3xl w-full sm:max-w-md shadow-[0_20px_50px_rgba(8,112,184,0.1)] border border-white/50 max-h-[92vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Drag handle (mobile) */}
@@ -135,9 +135,9 @@ export default function ApartmentDetailModal({ unit, onClose }: Props) {
           </div>
 
           {/* Sticky header */}
-          <div className="flex items-start justify-between px-4 pt-3 pb-2 border-b sticky top-0 bg-white z-10">
+          <div className="flex items-start justify-between px-5 pt-4 pb-3 border-b border-slate-100/50 sticky top-0 bg-white/90 backdrop-blur-md z-10">
             <div>
-              <h2 className="font-bold text-lg text-slate-900">№{unit.unitNumber}</h2>
+              <h2 className="font-bold text-xl text-slate-900 tracking-tight">№{unit.unitNumber}</h2>
               <p className="text-xs text-slate-500">
                 {unit.floor.building.name} · {t("floor")} {unit.floor.number} · {unit.rooms} {t("rooms")} · {unit.area} m²
               </p>
@@ -209,7 +209,7 @@ export default function ApartmentDetailModal({ unit, onClose }: Props) {
                     />
                     <button
                       type="submit" disabled={submitting}
-                      className="w-full py-3 bg-navy-900 text-white rounded-xl font-semibold hover:bg-navy-800 disabled:bg-navy-400 transition"
+                      className="bg-shine w-full py-3 bg-navy-900 text-white rounded-xl font-semibold hover:bg-navy-800 disabled:bg-navy-400 transition"
                     >
                       {submitting ? tc("sending") : tc("submit")}
                     </button>

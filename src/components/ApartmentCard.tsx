@@ -29,7 +29,13 @@ interface Props {
   onClick: () => void;
 }
 
-export default function ApartmentCard({ unit, projectName, expectedYear, onClick }: Props) {
+const STATUS_STYLES: Record<string, { bg: string; text: string; label: string }> = {
+  available: { bg: "bg-teal-500/90", text: "text-white", label: "Sotuvda" },
+  reserved:  { bg: "bg-amber-500/90", text: "text-white", label: "Band" },
+  sold:      { bg: "bg-slate-500/90", text: "text-white", label: "Sotilgan" },
+};
+
+export default function ApartmentCard({ unit, onClick }: Props) {
   const t = useTranslations("unit");
 
   // Auto-construct display number
@@ -41,54 +47,59 @@ export default function ApartmentCard({ unit, projectName, expectedYear, onClick
   };
 
   const displayNumber = getDisplayNumber(unit.unitNumber, unit.floor.number);
+  const statusStyle = STATUS_STYLES[unit.status] ?? STATUS_STYLES.available;
 
   return (
     <button
       onClick={onClick}
-      className="group bg-white rounded-2xl shadow-sm border border-slate-100 hover:shadow-lg hover:border-emerald-200 active:scale-[0.98] transition-all duration-200 overflow-hidden text-left w-full"
+      className="group bg-white rounded-2xl shadow-sm border border-slate-100 hover:shadow-[0_16px_48px_rgba(0,0,0,0.10)] hover:-translate-y-1 active:scale-[0.98] transition-all duration-300 overflow-hidden text-left w-full"
     >
-      {/* Image — full visible, not cropped */}
-      <div className="relative bg-slate-50 p-4 pb-2">
+      {/* Image — full bleed, no padding */}
+      <div className="relative w-full aspect-[4/3] bg-slate-50 overflow-hidden">
         {unit.sketchImage ? (
-          <div className="relative w-full aspect-square">
-            <Image
-              src={getCardImageUrl(unit.sketchImage)}
-              alt={`№${displayNumber}`}
-              fill
-              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-              className="object-contain group-hover:scale-105 transition-transform duration-300"
-            />
-          </div>
+          <Image
+            src={getCardImageUrl(unit.sketchImage)}
+            alt={`№${displayNumber}`}
+            fill
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+            className="object-contain group-hover:scale-[1.03] transition-transform duration-300 p-3"
+          />
         ) : (
-          <div className="w-full aspect-square flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-slate-50 to-slate-100 rounded-lg">
-            <svg className="w-12 h-12 text-slate-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+            <svg className="w-10 h-10 text-slate-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
             </svg>
-            <span className="text-xs text-slate-300">{unit.area} m²</span>
+            <span className="text-xs text-slate-300 font-medium">{unit.area} m²</span>
           </div>
         )}
+
+        {/* Status badge — top right overlay */}
+        <span className={`absolute top-2.5 right-2.5 ${statusStyle.bg} ${statusStyle.text} text-[10px] font-bold px-2.5 py-1 rounded-full backdrop-blur-sm`}>
+          {statusStyle.label}
+        </span>
+
+        {/* Unit number — top left */}
+        <span className="absolute top-2.5 left-2.5 bg-white/90 backdrop-blur-sm text-slate-800 text-[11px] font-bold px-2.5 py-1 rounded-full">
+          №{displayNumber}
+        </span>
       </div>
 
-      {/* Info — dotted line rows */}
-      <div className="px-4 pb-4 pt-2 space-y-2">
-        <InfoRow label={t("apartmentNumber") || "Kvartira raqami"} value={displayNumber} />
+      {/* Specs — compact, below image */}
+      <div className="px-4 py-3 space-y-1.5">
         <InfoRow label={t("area") || "Maydon"} value={`${unit.area} m²`} />
-        <InfoRow label={t("rooms") || "Xonalar"} value={String(unit.rooms)} />
-        <InfoRow label={t("floor") || "Qavat"} value={String(unit.floor.number)} />
+        <InfoRow label={t("rooms") || "Xonalar"} value={`${unit.rooms} xona`} />
+        <InfoRow label={t("floor") || "Qavat"} value={`${unit.floor.number}-qavat`} />
       </div>
     </button>
   );
 }
 
-/** Single info row with dotted separator */
-function InfoRow({ label, value, bold }: { label: string; value: string; bold?: boolean }) {
+function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-baseline gap-1">
-      <span className="text-sm text-slate-500 whitespace-nowrap">{label}</span>
-      <span className="flex-1 border-b border-dotted border-slate-300 min-w-[20px] relative top-[-3px]" />
-      <span className={`text-sm whitespace-nowrap ${bold ? "font-bold text-slate-900" : "font-semibold text-slate-700"}`}>
-        {value}
-      </span>
+      <span className="text-xs text-slate-400 whitespace-nowrap">{label}</span>
+      <span className="flex-1 border-b border-dotted border-slate-200 min-w-[12px] relative top-[-2px]" />
+      <span className="text-xs font-semibold text-slate-700 whitespace-nowrap">{value}</span>
     </div>
   );
 }

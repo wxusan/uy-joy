@@ -137,17 +137,17 @@ export default function UnitDetailModal({ unit, onClose }: Props) {
 
       {/* Modal */}
       <div
-        className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+        className="fixed inset-0 bg-slate-900/40 backdrop-blur-md z-50 flex items-center justify-center p-4 transition-opacity duration-300"
         onClick={onClose}
       >
         <div
-          className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto"
+          className="bg-white/95 backdrop-blur-xl rounded-3xl w-full max-w-md shadow-[0_20px_50px_rgba(8,112,184,0.1)] border border-white/50 max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Sticky header */}
-          <div className="flex items-start justify-between px-5 pt-5 pb-3 border-b sticky top-0 bg-white z-10">
+          <div className="flex items-start justify-between px-5 pt-5 pb-3 border-b border-slate-100/50 sticky top-0 bg-white/90 backdrop-blur-md z-10">
             <div>
-              <h2 className="font-bold text-xl text-slate-900">№{getDisplayNumber(unit.unitNumber, unit.floorNumber)}</h2>
+              <h2 className="font-bold text-xl text-slate-900 tracking-tight">№{getDisplayNumber(unit.unitNumber, unit.floorNumber)}</h2>
               <p className="text-sm text-slate-500 mt-0.5">{t("floor")} {unit.floorNumber}</p>
             </div>
             <button onClick={onClose} className="text-slate-400 hover:text-slate-600 p-1 -mr-1 text-xl">✕</button>
@@ -232,7 +232,7 @@ export default function UnitDetailModal({ unit, onClose }: Props) {
                     />
                     <button
                       type="submit" disabled={submitting}
-                      className="w-full py-3 bg-navy-900 text-white rounded-xl font-semibold hover:bg-navy-800 disabled:bg-navy-400 transition"
+                      className="bg-shine w-full py-3 bg-navy-900 text-white rounded-xl font-semibold hover:bg-navy-800 disabled:bg-navy-400 transition"
                     >
                       {submitting ? tc("sending") : tc("submit")}
                     </button>

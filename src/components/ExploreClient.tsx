@@ -1,8 +1,9 @@
 "use client";
 
 import posthog from "posthog-js";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import ProjectTopView from "@/components/ProjectTopView";
 import BuildingViewer from "@/components/BuildingViewer";
 import FloorPlanSVG from "@/components/FloorPlanSVG";
@@ -62,62 +63,98 @@ type ViewStep = "project" | "building" | "floor";
 
 export default function ExploreClient({ project, initialBuildingId }: Props) {
   const t = useTranslations("explore");
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
-  const isInitialValid = initialBuildingId && project.buildings.some(b => b.id === initialBuildingId);
+  // Read initial selection from URL (or prop fallback)
+  const urlBuilding = searchParams.get("building");
+  const urlFloor = searchParams.get("floor");
 
-  const [currentStep, setCurrentStep] = useState<ViewStep>(
-    isInitialValid ? "building" : (project.buildings.length === 1 ? "building" : "project")
-  );
-  const [selectedBuildingId, setSelectedBuildingId] = useState<string | null>(
-    isInitialValid ? initialBuildingId! : (project.buildings.length === 1 ? project.buildings[0].id : null)
-  );
-  const [selectedFloorId, setSelectedFloorId] = useState<string | null>(null);
+  const resolvedInitialBuilding =
+    urlBuilding && project.buildings.some((b) => b.id === urlBuilding)
+      ? urlBuilding
+      : initialBuildingId && project.buildings.some((b) => b.id === initialBuildingId)
+      ? initialBuildingId
+      : project.buildings.length === 1
+      ? project.buildings[0].id
+      : null;
+
+  const resolvedInitialFloor =
+    urlFloor && resolvedInitialBuilding
+      ? (() => {
+          const b = project.buildings.find((b) => b.id === resolvedInitialBuilding);
+          return b?.floors.some((f) => f.id === urlFloor) ? urlFloor : null;
+        })()
+      : null;
+
+  const initialStep: ViewStep = resolvedInitialFloor
+    ? "floor"
+    : resolvedInitialBuilding
+    ? "building"
+    : "project";
+
+  const [currentStep, setCurrentStep] = useState<ViewStep>(initialStep);
+  const [selectedBuildingId, setSelectedBuildingId] = useState<string | null>(resolvedInitialBuilding);
+  const [selectedFloorId, setSelectedFloorId] = useState<string | null>(resolvedInitialFloor);
   const [selectedUnit, setSelectedUnit] = useState<any>(null);
 
+  // Update URL whenever navigation changes — so links are shareable
+  const updateURL = (buildingId: string | null, floorId: string | null) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (buildingId) params.set("building", buildingId);
+    else params.delete("building");
+    if (floorId) params.set("floor", floorId);
+    else params.delete("floor");
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  };
+
   // Get current building and floor
-  const selectedBuilding = project.buildings.find(b => b.id === selectedBuildingId);
-  const selectedFloor = selectedBuilding?.floors.find(f => f.id === selectedFloorId);
+  const selectedBuilding = project.buildings.find((b) => b.id === selectedBuildingId);
+  const selectedFloor = selectedBuilding?.floors.find((f) => f.id === selectedFloorId);
 
   // Handlers
   const handleBuildingSelect = (buildingId: string) => {
-    const building = project.buildings.find(b => b.id === buildingId);
+    const building = project.buildings.find((b) => b.id === buildingId);
     if (building) {
       posthog.capture("Viewed Block", {
         block: building.name,
         project_name: project.name,
-        source: "3D Visualizer"
+        source: "3D Visualizer",
       });
     }
-
     setSelectedBuildingId(buildingId);
     setSelectedFloorId(null);
     setCurrentStep("building");
+    updateURL(buildingId, null);
   };
 
   const handleFloorSelect = (floorId: string) => {
-    const floor = selectedBuilding?.floors.find(f => f.id === floorId);
+    const floor = selectedBuilding?.floors.find((f) => f.id === floorId);
     if (floor && selectedBuilding) {
       posthog.capture("Viewed Floor", {
         block: selectedBuilding.name,
         floor: floor.number,
         project_name: project.name,
-        source: "3D Visualizer"
+        source: "3D Visualizer",
       });
     }
-
     setSelectedFloorId(floorId);
     setCurrentStep("floor");
+    updateURL(selectedBuildingId, floorId);
   };
 
   const handleBackToProject = () => {
     setSelectedBuildingId(null);
     setSelectedFloorId(null);
     setCurrentStep("project");
+    updateURL(null, null);
   };
 
   const handleBackToBuilding = () => {
     setSelectedFloorId(null);
     setCurrentStep("building");
+    updateURL(selectedBuildingId, null);
   };
 
   // Breadcrumb navigation
@@ -186,7 +223,7 @@ export default function ExploreClient({ project, initialBuildingId }: Props) {
         <BuildingViewer
           building={selectedBuilding}
           onFloorSelect={handleFloorSelect}
-          onBack={project.buildings.length > 1 ? handleBackToProject : () => { }}
+          onBack={project.buildings.length > 1 ? handleBackToProject : () => {}}
         />
       )}
 
@@ -204,8 +241,7 @@ export default function ExploreClient({ project, initialBuildingId }: Props) {
             </button>
           </div>
 
-          {/* Use polygon-based floor plan if units have polygon data, otherwise fallback */}
-          {selectedFloor.units.some(u => u.polygonData) || selectedFloor.floorPlanImage ? (
+          {selectedFloor.units.some((u) => u.polygonData) || selectedFloor.floorPlanImage ? (
             <FloorPlanPolygon
               units={selectedFloor.units}
               floorPlanImage={selectedFloor.floorPlanImage}
@@ -221,7 +257,6 @@ export default function ExploreClient({ project, initialBuildingId }: Props) {
               }
             />
           ) : (
-            /* Fallback to old SVG floor plan for legacy data */
             <FloorPlanSVG
               units={selectedFloor.units}
               basePricePerM2={selectedFloor.basePricePerM2}

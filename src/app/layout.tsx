@@ -4,6 +4,7 @@ import { Plus_Jakarta_Sans, DM_Sans, JetBrains_Mono } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages, getLocale } from "next-intl/server";
 import FloatingContact from "@/components/FloatingContact";
+import IntentPopup from "@/components/IntentPopup";
 import PostHogProvider from "@/components/PostHogProvider";
 import "./globals.css";
 
@@ -44,6 +45,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             </PostHogProvider>
           </Suspense>
           <FloatingContact />
+          <IntentPopup />
         </NextIntlClientProvider>
       </body>
     </html>

@@ -113,20 +113,20 @@ export default function FloorPlanPolygon({
     });
   };
 
-  // Get status fill colors
+  // Get status fill colors — premium palette
   const getStatusFill = (status: string, isHovered: boolean) => {
-    const opacity = isHovered ? 0.7 : 0.5;
-    const soldOpacity = isHovered ? 0.5 : 0.35;
+    const opacity = isHovered ? 0.72 : 0.48;
+    const soldOpacity = isHovered ? 0.42 : 0.28;
 
     switch (status) {
       case "available":
-        return `rgba(34, 197, 94, ${opacity})`; // green
+        return `rgba(20, 184, 166, ${opacity})`; // teal-500 — premium, calm
       case "reserved":
-        return `rgba(234, 179, 8, ${opacity})`; // yellow
+        return `rgba(245, 158, 11, ${opacity})`; // amber-500 — warm, not alarming
       case "sold":
-        return `rgba(239, 68, 68, ${soldOpacity})`; // red
+        return `rgba(100, 116, 139, ${soldOpacity})`; // slate-500 — neutral gray, sold = done
       default:
-        return `rgba(100, 116, 139, ${opacity})`; // slate
+        return `rgba(100, 116, 139, ${opacity})`;
     }
   };
 
@@ -174,9 +174,10 @@ export default function FloorPlanPolygon({
                   <path
                     d={getPathString(points)}
                     fill={getStatusFill(unit.status, isHovered)}
-                    stroke={isHovered ? "#ffffff" : "#ffffff"}
-                    strokeWidth={isHovered ? 3.5 : 3}
-                    className="cursor-pointer transition-all duration-150"
+                    stroke="#ffffff"
+                    strokeWidth={isHovered ? 3 : 2}
+                    style={{ transition: "fill 0.18s ease, stroke-width 0.15s ease" }}
+                    className="cursor-pointer"
                     onClick={() => onUnitClick(unit)}
                     onMouseEnter={() => setHoveredId(unit.id)}
                     onMouseLeave={() => setHoveredId(null)}
@@ -215,15 +216,15 @@ export default function FloorPlanPolygon({
       {/* Legend */}
       <div className="flex justify-center gap-6 py-3 border-t bg-slate-50">
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded bg-green-500/50" />
+          <div className="w-4 h-4 rounded bg-teal-500/50" />
           <span className="text-xs text-slate-600">Available</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded bg-yellow-500/50" />
+          <div className="w-4 h-4 rounded bg-amber-500/50" />
           <span className="text-xs text-slate-600">Reserved</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded bg-red-500/35" />
+          <div className="w-4 h-4 rounded bg-slate-400/40" />
           <span className="text-xs text-slate-600">Sold</span>
         </div>
       </div>

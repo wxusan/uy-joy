@@ -29,6 +29,7 @@
     "openai": "^6.22.0",
     "posthog-js": "^1.359.1",
     "prisma": "^5.22.0",
+    "puppeteer": "^24.38.0",
     "react": "^18",
     "react-dom": "^18",
     "sharp": "^0.34.5"

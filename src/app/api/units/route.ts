@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import prisma from "@/lib/prisma";
 
 export async function GET(req: Request) {
@@ -79,4 +80,39 @@ export async function POST(req: Request) {
   });
 
   return NextResponse.json(unit);
+}
+
+// Bulk update units
+export async function PATCH(req: Request) {
+  try {
+    const body = await req.json();
+    const { unitIds, data } = body;
+
+    if (!unitIds || !Array.isArray(unitIds) || unitIds.length === 0) {
+      return NextResponse.json({ error: "No unit IDs provided" }, { status: 400 });
+    }
+
+    const updateData: any = {};
+    if (data.status !== undefined) {
+      updateData.status = data.status;
+      updateData.statusChangedAt = new Date();
+    }
+    if (data.pricePerM2 !== undefined) updateData.pricePerM2 = data.pricePerM2;
+    if (data.totalPrice !== undefined) updateData.totalPrice = data.totalPrice;
+
+    // We use Prisma's updateMany for bulk operations
+    const result = await prisma.unit.updateMany({
+      where: {
+        id: { in: unitIds }
+      },
+      data: updateData
+    });
+
+    revalidateTag("project");
+
+    return NextResponse.json({ success: true, count: result.count });
+  } catch (error) {
+    console.error("Bulk update error:", error);
+    return NextResponse.json({ error: "Failed to update units" }, { status: 500 });
+  }
 }

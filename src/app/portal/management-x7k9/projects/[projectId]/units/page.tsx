@@ -43,6 +43,12 @@ export default function AdminUnits() {
   const [filterRooms, setFilterRooms] = useState("");
   const [reservationModal, setReservationModal] = useState<Unit | null>(null);
 
+  // Bulk edit state
+  const [selectedUnits, setSelectedUnits] = useState<string[]>([]);
+  const [bulkPricing, setBulkPricing] = useState("");
+  const [bulkStatus, setBulkStatus] = useState("");
+  const [isBulkLoading, setIsBulkLoading] = useState(false);
+
   // Load project data including buildings
   useEffect(() => {
     fetch(`/api/projects/${params.projectId}`)
@@ -144,11 +150,10 @@ export default function AdminUnits() {
             <button
               key={building.id}
               onClick={() => setSelectedBuildingId(building.id)}
-              className={`p-4 rounded-xl border-2 text-left transition ${
-                isSelected
+              className={`p-4 rounded-xl border-2 text-left transition ${isSelected
                   ? "border-emerald-500 bg-emerald-50"
                   : "border-slate-200 hover:border-emerald-300 bg-white"
-              }`}
+                }`}
             >
               <h3 className="font-semibold text-lg">{building.name}</h3>
               <div className="flex gap-3 mt-2 text-xs">
@@ -201,38 +206,61 @@ export default function AdminUnits() {
         <div className="space-y-4">
           {groupedByFloor.map(({ floor, units: floorUnits }) => (
             <div key={floor} className="bg-white rounded-xl shadow-sm border overflow-hidden">
-              <div className="bg-slate-50 px-4 py-2 border-b flex items-center justify-between">
-                <h3 className="font-semibold text-slate-700">{t("floor")} {floor}</h3>
+              <div className="bg-slate-50 px-4 py-3 border-b flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                    checked={floorUnits.length > 0 && floorUnits.every(u => selectedUnits.includes(u.id))}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedUnits(prev => Array.from(new Set([...prev, ...floorUnits.map(u => u.id)])));
+                      } else {
+                        setSelectedUnits(prev => prev.filter(id => !floorUnits.find(u => u.id === id)));
+                      }
+                    }}
+                  />
+                  <h3 className="font-semibold text-slate-700">{t("floor")} {floor}</h3>
+                </div>
                 <span className="text-xs text-slate-500">{floorUnits.length} {t("units")}</span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 p-4">
                 {floorUnits.map((unit) => {
                   const pricePerM2 = unit.pricePerM2 || unit.floor.basePricePerM2 || 0;
                   const totalPrice = unit.totalPrice || pricePerM2 * unit.area;
-                  
+
                   return (
                     <div
                       key={unit.id}
-                      className={`p-3 rounded-lg border ${
-                        unit.status === "available"
+                      className={`p-3 rounded-lg border ${unit.status === "available"
                           ? "border-emerald-200 bg-emerald-50"
                           : unit.status === "reserved"
-                          ? "border-yellow-200 bg-yellow-50"
-                          : "border-red-200 bg-red-50"
-                      }`}
+                            ? "border-yellow-200 bg-yellow-50"
+                            : "border-red-200 bg-red-50"
+                        }`}
                     >
                       <div className="flex items-center justify-between mb-2">
-                        <span className="font-bold">№{unit.unitNumber}</span>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                            checked={selectedUnits.includes(unit.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) setSelectedUnits(prev => [...prev, unit.id]);
+                              else setSelectedUnits(prev => prev.filter(id => id !== unit.id));
+                            }}
+                          />
+                          <span className="font-bold">№{unit.unitNumber}</span>
+                        </div>
                         <select
                           value={unit.status}
                           onChange={(e) => handleStatusChange(unit, e.target.value)}
-                          className={`text-xs font-medium px-2 py-1 rounded-full border-0 cursor-pointer ${
-                            unit.status === "available"
+                          className={`text-xs font-medium px-2 py-1 rounded-full border-0 cursor-pointer ${unit.status === "available"
                               ? "bg-emerald-200 text-emerald-800"
                               : unit.status === "reserved"
-                              ? "bg-yellow-200 text-yellow-800"
-                              : "bg-red-200 text-red-800"
-                          }`}
+                                ? "bg-yellow-200 text-yellow-800"
+                                : "bg-red-200 text-red-800"
+                            }`}
                         >
                           <option value="available">{t("available")}</option>
                           <option value="reserved">{t("reserved")}</option>
@@ -281,6 +309,77 @@ export default function AdminUnits() {
             cancel: tc("cancel"),
           }}
         />
+      )}
+
+      {/* Floating Bulk Action Drawer */}
+      {selectedUnits.length > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] p-4 z-[100] transform transition-transform animate-in slide-in-from-bottom flex justify-end">
+          <div className="max-w-7xl mx-auto w-full flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <span className="bg-indigo-100 text-indigo-700 font-bold px-4 py-2 rounded-xl">
+                {selectedUnits.length} ta xonadon tanlandi
+              </span>
+              <button
+                onClick={() => setSelectedUnits([])}
+                className="text-sm font-semibold text-slate-500 hover:text-slate-700 transition"
+              >
+                Bekor qilish
+              </button>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+              <select
+                value={bulkStatus}
+                onChange={(e) => setBulkStatus(e.target.value)}
+                className="px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-medium"
+              >
+                <option value="">Statusni o'zgartirish</option>
+                <option value="available">Sotuvda (Available)</option>
+                <option value="reserved">Band qilingan (Reserved)</option>
+                <option value="sold">Sotilgan (Sold)</option>
+              </select>
+
+              <input
+                type="number"
+                placeholder="Yangi 1 m² narxi (so'm)"
+                value={bulkPricing}
+                onChange={(e) => setBulkPricing(e.target.value)}
+                className="px-4 py-2.5 w-48 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-medium"
+              />
+
+              <button
+                onClick={async () => {
+                  if (!bulkStatus && !bulkPricing) return alert("Narx yoki statusni kiriting");
+                  setIsBulkLoading(true);
+                  const data: any = {};
+                  if (bulkStatus) data.status = bulkStatus;
+                  if (bulkPricing) data.pricePerM2 = parseInt(bulkPricing);
+
+                  try {
+                    await fetch("/api/units", {
+                      method: "PATCH",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ unitIds: selectedUnits, data })
+                    });
+
+                    setSelectedUnits([]);
+                    setBulkStatus("");
+                    setBulkPricing("");
+                    loadUnits();
+                  } catch (e) {
+                    alert("Xatolik yuz berdi");
+                  } finally {
+                    setIsBulkLoading(false);
+                  }
+                }}
+                disabled={isBulkLoading || (!bulkStatus && !bulkPricing)}
+                className="bg-indigo-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-indigo-700 hover:shadow-lg disabled:opacity-50 transition-all cursor-pointer"
+              >
+                {isBulkLoading ? "Saqlanmoqda..." : "Ommaviy Saqlash"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -385,11 +484,10 @@ function ReservationModal({
             <button
               type="submit"
               disabled={saving}
-              className={`flex-1 px-4 py-2 text-white rounded-lg font-medium transition ${
-                isReserved
+              className={`flex-1 px-4 py-2 text-white rounded-lg font-medium transition ${isReserved
                   ? "bg-yellow-500 hover:bg-yellow-600"
                   : "bg-red-500 hover:bg-red-600"
-              } disabled:opacity-50`}
+                } disabled:opacity-50`}
             >
               {saving ? tr.saving : isReserved ? tr.reserve : tr.sell}
             </button>

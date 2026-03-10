@@ -256,7 +256,7 @@
     "phone": "Telefon raqamingiz",
     "message": "Xabar",
     "messagePlaceholder": "Qo'shimcha savollaringiz...",
-    "submit": "ARIZA QOLDIRISH",
+    "submit": "Konsultatsiya olish",
     "sending": "Yuborilmoqda...",
     "success": "Rahmat! Tez orada siz bilan bog'lanamiz.",
     "error": "Xatolik yuz berdi. Qaytadan urinib ko'ring.",
@@ -285,7 +285,7 @@
     "availableStatus": "Bu kvartira hozirda mavjud",
     "reservedStatus": "Bu kvartira hozirda band qilingan",
     "soldStatus": "Bu kvartira sotilgan",
-    "learnMore": "Ko'proq bilish?",
+    "learnMore": "Bepul konsultatsiya va narxlar haqida bilish",
     "apartmentNumber": "Kvartira raqami",
     "expectedYear": "Topshirish yili",
     "project": "Loyiha"

@@ -6,9 +6,9 @@ export default function PriceLegend() {
   const t = useTranslations("legend");
 
   const items = [
-    { key: "available", color: "bg-green-500" },
-    { key: "reserved", color: "bg-yellow-500" },
-    { key: "sold", color: "bg-red-500" },
+    { key: "available", color: "bg-teal-500" },
+    { key: "reserved", color: "bg-amber-500" },
+    { key: "sold", color: "bg-slate-400" },
   ];
 
   return (

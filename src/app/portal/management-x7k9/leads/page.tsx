@@ -13,6 +13,9 @@ interface Lead {
   unitNumber: string | null;
   status: string;
   source: string | null;
+  notes: string | null;
+  assignedTo: string | null;
+  nextFollowUp: string | null;
   createdAt: string;
 }
 
@@ -54,21 +57,20 @@ export default function LeadsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page]);
 
-  const updateLeadStatus = async (leadId: string, newStatus: string) => {
+  const updateLead = async (leadId: string, patch: Partial<Pick<Lead, "status" | "assignedTo" | "nextFollowUp">>) => {
     await fetch(`/api/leads/${leadId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: newStatus }),
+      body: JSON.stringify(patch),
     });
     loadLeads(page);
   };
 
   const exportToCSV = async () => {
-    // Fetch all leads for export
     const res = await fetch(`/api/leads?page=1&limit=10000`);
     const data = await res.json();
     const allLeads: Lead[] = data.data;
-    const headers = ["Name", "Phone", "Project", "Unit", "Source", "Status", "Date"];
+    const headers = ["Name", "Phone", "Project", "Unit", "Source", "Status", "Assigned To", "Follow-up", "Date"];
     const rows = allLeads.map((l) => [
       l.name,
       l.phone,
@@ -76,6 +78,8 @@ export default function LeadsPage() {
       l.unitNumber || "-",
       l.source || "-",
       l.status,
+      l.assignedTo || "-",
+      l.nextFollowUp ? new Date(l.nextFollowUp).toLocaleDateString() : "-",
       new Date(l.createdAt).toLocaleDateString(),
     ]);
 
@@ -98,6 +102,13 @@ export default function LeadsPage() {
     notInterested: "bg-red-100 text-red-700",
     closed: "bg-slate-100 text-slate-700",
   };
+
+  const isOverdue = (followUp: string | null) => {
+    if (!followUp) return false;
+    return new Date(followUp) < new Date();
+  };
+
+  const today = new Date().toISOString().split("T")[0];
 
   return (
     <div>
@@ -131,8 +142,8 @@ export default function LeadsPage() {
           <p className="text-slate-500">{t("noLeadsYet")}</p>
         </div>
       ) : (
-        <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
-          <table className="w-full">
+        <div className="bg-white rounded-xl shadow-sm border overflow-x-auto">
+          <table className="w-full min-w-[900px]">
             <thead className="bg-slate-50 border-b">
               <tr>
                 <th className="text-left p-4 font-medium text-slate-600">{t("name")}</th>
@@ -141,52 +152,86 @@ export default function LeadsPage() {
                 <th className="text-left p-4 font-medium text-slate-600">{t("unit")}</th>
                 <th className="text-left p-4 font-medium text-slate-600">Manba</th>
                 <th className="text-left p-4 font-medium text-slate-600">{t("status")}</th>
+                <th className="text-left p-4 font-medium text-slate-600">Mas'ul</th>
+                <th className="text-left p-4 font-medium text-slate-600">Qo'ng'iroq</th>
                 <th className="text-left p-4 font-medium text-slate-600">{t("date")}</th>
               </tr>
             </thead>
             <tbody>
-              {leads.map((lead) => (
-                <tr key={lead.id} className="border-b hover:bg-slate-50">
-                  <td className="p-4 font-medium">{lead.name}</td>
-                  <td className="p-4">
-                    <a href={`tel:${lead.phone}`} className="text-emerald-600 hover:underline">
-                      {lead.phone}
-                    </a>
-                  </td>
-                  <td className="p-4 text-slate-600">{lead.projectName || "-"}</td>
-                  <td className="p-4 text-slate-600">{lead.unitNumber || "-"}</td>
-                  <td className="p-4">
-                    {lead.source === "kvartiralar" && (
-                      <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700">Kvartiralar</span>
-                    )}
-                    {lead.source === "vizual" && (
-                      <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700">Vizual</span>
-                    )}
-                    {lead.source === "bosh-sahifa" && (
-                      <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700">Bosh sahifa</span>
-                    )}
-                    {!lead.source && (
-                      <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-slate-50 text-slate-500">—</span>
-                    )}
-                  </td>
-                  <td className="p-4">
-                    <select
-                      value={lead.status}
-                      onChange={(e) => updateLeadStatus(lead.id, e.target.value)}
-                      className={`px-2 py-1 rounded-full text-xs font-medium border-0 cursor-pointer ${statusColors[lead.status] || statusColors.new}`}
-                    >
-                      {LEAD_STATUSES.map((status) => (
-                        <option key={status} value={status}>
-                          {t(status)}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                  <td className="p-4 text-slate-500 text-sm">
-                    {new Date(lead.createdAt).toLocaleDateString()} {new Date(lead.createdAt).toLocaleTimeString()}
-                  </td>
-                </tr>
-              ))}
+              {leads.map((lead) => {
+                const overdue = isOverdue(lead.nextFollowUp);
+                return (
+                  <tr key={lead.id} className={`border-b hover:bg-slate-50 ${overdue ? "bg-red-50/40" : ""}`}>
+                    <td className="p-4 font-medium">{lead.name}</td>
+                    <td className="p-4">
+                      <a href={`tel:${lead.phone}`} className="text-emerald-600 hover:underline">
+                        {lead.phone}
+                      </a>
+                    </td>
+                    <td className="p-4 text-slate-600">{lead.projectName || "-"}</td>
+                    <td className="p-4 text-slate-600">{lead.unitNumber || "-"}</td>
+                    <td className="p-4">
+                      {lead.source === "kvartiralar" && (
+                        <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700">Kvartiralar</span>
+                      )}
+                      {lead.source === "vizual" && (
+                        <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700">Vizual</span>
+                      )}
+                      {lead.source === "bosh-sahifa" && (
+                        <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700">Bosh sahifa</span>
+                      )}
+                      {!lead.source && (
+                        <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-slate-50 text-slate-500">—</span>
+                      )}
+                    </td>
+                    <td className="p-4">
+                      <select
+                        value={lead.status}
+                        onChange={(e) => updateLead(lead.id, { status: e.target.value })}
+                        className={`px-2 py-1 rounded-full text-xs font-medium border-0 cursor-pointer ${statusColors[lead.status] || statusColors.new}`}
+                      >
+                        {LEAD_STATUSES.map((status) => (
+                          <option key={status} value={status}>
+                            {t(status)}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    {/* Assigned to — inline editable */}
+                    <td className="p-4">
+                      <input
+                        type="text"
+                        defaultValue={lead.assignedTo || ""}
+                        placeholder="Kim?"
+                        className="w-24 text-xs px-2 py-1 border border-slate-200 rounded focus:outline-none focus:border-indigo-400 bg-transparent"
+                        onBlur={(e) => {
+                          if (e.target.value !== (lead.assignedTo || "")) {
+                            updateLead(lead.id, { assignedTo: e.target.value || null });
+                          }
+                        }}
+                      />
+                    </td>
+                    {/* Next follow-up — date picker */}
+                    <td className="p-4">
+                      <div className="flex items-center gap-1">
+                        {overdue && <span className="text-red-500 text-xs font-bold" title="Muddati o'tgan">!</span>}
+                        <input
+                          type="date"
+                          defaultValue={lead.nextFollowUp ? lead.nextFollowUp.split("T")[0] : ""}
+                          min={today}
+                          className={`text-xs px-2 py-1 border rounded focus:outline-none focus:border-indigo-400 bg-transparent ${overdue ? "border-red-300 text-red-600" : "border-slate-200"}`}
+                          onChange={(e) => {
+                            updateLead(lead.id, { nextFollowUp: e.target.value || null });
+                          }}
+                        />
+                      </div>
+                    </td>
+                    <td className="p-4 text-slate-500 text-sm whitespace-nowrap">
+                      {new Date(lead.createdAt).toLocaleDateString()} {new Date(lead.createdAt).toLocaleTimeString()}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

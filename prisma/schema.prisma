@@ -97,17 +97,19 @@ model Unit {
 }
 
 model Lead {
-  id          String   @id @default(cuid())
-  name        String
-  phone       String
-  projectId   String?
-  projectName String?
-  unitId      String?  // Optional: if they selected a specific unit
-  unitNumber  String?
-  status      String   @default("new") // new, contacted, converted, closed
-  notes       String?
-  source      String?  // "kvartiralar", "vizual", "bosh-sahifa"
-  createdAt   DateTime @default(now())
+  id            String    @id @default(cuid())
+  name          String
+  phone         String
+  projectId     String?
+  projectName   String?
+  unitId        String?   // Optional: if they selected a specific unit
+  unitNumber    String?
+  status        String    @default("new") // new, contacted, converted, closed
+  notes         String?
+  source        String?   // "kvartiralar", "vizual", "bosh-sahifa"
+  assignedTo    String?   // Name of the team member handling this lead
+  nextFollowUp  DateTime? // When to call this person back
+  createdAt     DateTime  @default(now())
 }
 
 model HeroImage {

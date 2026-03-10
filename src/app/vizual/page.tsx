@@ -1,8 +1,9 @@
+import { Suspense } from "react";
 import { cookies } from "next/headers";
 import { getTranslations } from "next-intl/server";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import ExploreClient from "./ExploreClient";
+import ExploreClient from "@/components/ExploreClient";
 import { getTranslation, Locale } from "@/lib/translations";
 import { getCachedProject } from "@/lib/cached-queries";
 
@@ -46,10 +47,12 @@ export default async function KvartiralarniKorishPage({
             <p className="text-slate-400 text-sm">{projectAddress}</p>
           </div>
         </div>
-        <ExploreClient 
-          project={JSON.parse(JSON.stringify(project))} 
-          initialBuildingId={searchParams.buildingId}
-        />
+        <Suspense>
+          <ExploreClient
+            project={JSON.parse(JSON.stringify(project))}
+            initialBuildingId={searchParams.buildingId}
+          />
+        </Suspense>
       </main>
       <Footer />
     </>

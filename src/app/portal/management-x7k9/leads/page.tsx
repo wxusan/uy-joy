@@ -152,8 +152,8 @@ export default function LeadsPage() {
                 <th className="text-left p-4 font-medium text-slate-600">{t("unit")}</th>
                 <th className="text-left p-4 font-medium text-slate-600">Manba</th>
                 <th className="text-left p-4 font-medium text-slate-600">{t("status")}</th>
-                <th className="text-left p-4 font-medium text-slate-600">Mas'ul</th>
-                <th className="text-left p-4 font-medium text-slate-600">Qo'ng'iroq</th>
+                <th className="text-left p-4 font-medium text-slate-600">Mas&apos;ul</th>
+                <th className="text-left p-4 font-medium text-slate-600">Qo&apos;ng&apos;iroq</th>
                 <th className="text-left p-4 font-medium text-slate-600">{t("date")}</th>
               </tr>
             </thead>

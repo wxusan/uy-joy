@@ -333,7 +333,7 @@ export default function AdminUnits() {
                 onChange={(e) => setBulkStatus(e.target.value)}
                 className="px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-medium"
               >
-                <option value="">Statusni o'zgartirish</option>
+                <option value="">Statusni o&apos;zgartirish</option>
                 <option value="available">Sotuvda (Available)</option>
                 <option value="reserved">Band qilingan (Reserved)</option>
                 <option value="sold">Sotilgan (Sold)</option>

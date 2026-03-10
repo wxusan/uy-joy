@@ -162,7 +162,7 @@ export default function IntentPopup() {
                                     ← Orqaga
                                 </button>
                                 <h3 className="text-2xl font-bold text-slate-900 mb-2 tracking-tight">Muvaffaqiyatli!</h3>
-                                <p className="text-slate-500 mb-6 font-medium leading-relaxed">Ekspertlarimiz sizga {rooms} xonadon bo'yicha to'liq ma'lumot berish uchun tez orada bog'lanishadi.</p>
+                                <p className="text-slate-500 mb-6 font-medium leading-relaxed">Ekspertlarimiz sizga {rooms} xonadon bo&apos;yicha to&apos;liq ma&apos;lumot berish uchun tez orada bog&apos;lanishadi.</p>
 
                                 <form onSubmit={handleSubmit} className="space-y-4">
                                     <div>
@@ -201,7 +201,7 @@ export default function IntentPopup() {
                                     <CheckCircle2 className="w-12 h-12 text-emerald-500 animate-in zoom-in duration-500 delay-150" />
                                 </div>
                                 <h3 className="text-2xl font-bold text-slate-900 mb-3 tracking-tight">Arizangiz qabul qilindi!</h3>
-                                <p className="text-slate-600 mb-8 font-medium leading-relaxed">Tez orada menejerlarimiz siz bilan bog'lanib, so'rovlaringiz bo'yicha eng yaxshi variantlarni yuborishadi.</p>
+                                <p className="text-slate-600 mb-8 font-medium leading-relaxed">Tez orada menejerlarimiz siz bilan bog&apos;lanib, so&apos;rovlaringiz bo&apos;yicha eng yaxshi variantlarni yuborishadi.</p>
                                 <button
                                     onClick={closePopup}
                                     className="px-8 py-3.5 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200 transition-colors"

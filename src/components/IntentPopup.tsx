@@ -93,8 +93,8 @@ export default function IntentPopup() {
         }
     };
 
-    // Floating trigger button when closed
-    if (!isOpen && !hasDismissed) {
+    // Floating trigger button when closed — always visible
+    if (!isOpen) {
         return (
             <button
                 onClick={() => showPopup("manual_click")}

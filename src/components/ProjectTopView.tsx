@@ -106,39 +106,26 @@ export default function ProjectTopView({ topViewImage, buildings, onBuildingSele
           sizes="(max-width: 1024px) 100vw, 85vw"
         />
 
-        {/* SVG overlay for polygon building areas + labels with arrows */}
+        {/* SVG overlay — polygons + connector lines only */}
         <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
           {buildings.map((building, index) => {
             const polygon = getBuildingPolygon(building);
             if (!polygon || polygon.length < 3) return null;
 
-            const stats = getBuildingStats(building);
             const isHovered = hoveredBuilding === building.id;
             const polygonCenter = getCenter(polygon);
 
-            // Use admin-defined coordinates, fallback to auto
             const labelPos = (building.labelX !== null && building.labelY !== null && building.labelX !== undefined && building.labelY !== undefined)
               ? { x: building.labelX, y: building.labelY }
               : getLabelPosition(polygonCenter, index, buildings.length);
 
-            // Use admin-defined point, fallback to polygon center
             const pointPos = (building.pointX !== null && building.pointY !== null && building.pointX !== undefined && building.pointY !== undefined)
               ? { x: building.pointX, y: building.pointY }
               : polygonCenter;
 
-            const scale = building.labelScale || 1.0;
-            const boxWidth = 22 * scale;
-            const boxHeight = 5.5 * scale;
-
-            // Calculate where the line should attach to the label box
-            const boxLeft = labelPos.x - (boxWidth / 2);
-            const boxRight = labelPos.x + (boxWidth / 2);
-            const boxBottom = labelPos.y + (boxHeight / 2);
             const isLabelLeftOfBuilding = labelPos.x < pointPos.x;
-
-            // Connect to the bottom corner closest to the building
-            const lineStartX = isLabelLeftOfBuilding ? boxRight : boxLeft;
-            const lineStartY = boxBottom;
+            const lineStartX = isLabelLeftOfBuilding ? labelPos.x + 11 : labelPos.x - 11;
+            const lineStartY = labelPos.y + 3;
 
             return (
               <g key={building.id} className="transition-opacity duration-300" style={{ opacity: hoveredBuilding && !isHovered ? 0.6 : 1 }}>
@@ -165,7 +152,7 @@ export default function ProjectTopView({ topViewImage, buildings, onBuildingSele
                   className="pointer-events-none transition-all duration-300"
                 />
 
-                {/* Connector line from label to building center */}
+                {/* Connector line */}
                 <line
                   x1={lineStartX}
                   y1={lineStartY}
@@ -175,37 +162,46 @@ export default function ProjectTopView({ topViewImage, buildings, onBuildingSele
                   strokeWidth={isHovered ? 0.5 : 0.3}
                   className="pointer-events-none transition-all duration-300"
                 />
-
-                {/* Label box — simple original styling */}
-                <foreignObject
-                  x={boxLeft}
-                  y={labelPos.y - (boxHeight / 2)}
-                  width={boxWidth}
-                  height={boxHeight}
-                  className="overflow-visible cursor-pointer"
-                  onClick={() => onBuildingSelect(building.id)}
-                  onMouseEnter={() => setHoveredBuilding(building.id)}
-                  onMouseLeave={() => setHoveredBuilding(null)}
-                >
-                  <div
-                    className={`h-full w-full flex flex-col justify-center px-1 py-0.5 text-center whitespace-nowrap transition-all duration-300 ${isHovered
-                      ? "bg-white text-emerald-700 shadow-sm"
-                      : "bg-emerald-600 text-white"
-                      }`}
-                    style={{
-                      fontSize: `${1.8 * scale}px`,
-                      lineHeight: 1.2,
-                      border: "none",
-                    }}
-                  >
-                    <p className="font-semibold" style={{ fontSize: `${2.0 * scale}px` }}>{building.name}</p>
-                    <p style={{ fontSize: `${1.4 * scale}px`, marginTop: `-${0.3 * scale}px` }} className={isHovered ? "text-emerald-500" : "text-emerald-100"}>{stats.available}/{stats.total}</p>
-                  </div>
-                </foreignObject>
               </g>
             );
           })}
         </svg>
+
+        {/* HTML labels — positioned absolutely so they scale naturally on all screen sizes */}
+        {buildings.map((building, index) => {
+          const polygon = getBuildingPolygon(building);
+          if (!polygon || polygon.length < 3) return null;
+
+          const stats = getBuildingStats(building);
+          const isHovered = hoveredBuilding === building.id;
+          const polygonCenter = getCenter(polygon);
+
+          const labelPos = (building.labelX !== null && building.labelY !== null && building.labelX !== undefined && building.labelY !== undefined)
+            ? { x: building.labelX, y: building.labelY }
+            : getLabelPosition(polygonCenter, index, buildings.length);
+
+          return (
+            <button
+              key={building.id}
+              className="absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer z-10"
+              style={{ left: `${labelPos.x}%`, top: `${labelPos.y}%` }}
+              onClick={() => onBuildingSelect(building.id)}
+              onMouseEnter={() => setHoveredBuilding(building.id)}
+              onMouseLeave={() => setHoveredBuilding(null)}
+            >
+              <div className={`flex flex-col items-center px-3 py-1.5 rounded-lg text-center whitespace-nowrap transition-all duration-200 shadow-[0_4px_16px_rgba(0,0,0,0.25)] border ${
+                isHovered
+                  ? "bg-white border-emerald-200 text-emerald-700 scale-105"
+                  : "bg-emerald-600/90 border-emerald-500/50 text-white backdrop-blur-sm"
+              }`}>
+                <span className="font-bold text-xs sm:text-sm leading-tight tracking-wide">{building.name}</span>
+                <span className={`text-[10px] sm:text-[11px] font-medium leading-tight mt-0.5 ${isHovered ? "text-emerald-500" : "text-emerald-100"}`}>
+                  {stats.available}/{stats.total}
+                </span>
+              </div>
+            </button>
+          );
+        })}
       </div>
 
       {/* Building legend */}

@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { X, CheckCircle2, Home, TrendingUp, BedDouble } from "lucide-react";
 import posthog from "posthog-js";
 
 export default function IntentPopup() {
+    const pathname = usePathname();
     const [isOpen, setIsOpen] = useState(false);
     const [hasDismissed, setHasDismissed] = useState(false);
     const [step, setStep] = useState(0); // 0 = closed, 1 = rooms, 2 = contact, 3 = success
@@ -17,6 +19,8 @@ export default function IntentPopup() {
     // Triggers
     useEffect(() => {
         if (hasDismissed || isOpen || step > 0) return;
+        // Never show on admin pages
+        if (pathname.startsWith("/portal")) return;
 
         const handleMouseLeave = (e: MouseEvent) => {
             // Trigger if mouse leaves top of screen
@@ -35,7 +39,7 @@ export default function IntentPopup() {
 
         const timer = setTimeout(() => {
             showPopup("time_on_page");
-        }, 45000); // 45 seconds
+        }, 33000); // 33 seconds
 
         document.addEventListener("mouseleave", handleMouseLeave);
         window.addEventListener("scroll", handleScroll, { passive: true });
@@ -94,7 +98,7 @@ export default function IntentPopup() {
         return (
             <button
                 onClick={() => showPopup("manual_click")}
-                className="fixed bottom-6 right-6 z-40 bg-navy-900 text-white px-5 py-3 rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.12)] flex items-center gap-3 hover:bg-navy-800 transition-all hover:-translate-y-1 active:scale-95 group animate-fade-in-up md:bottom-8 md:right-8"
+                className="fixed bottom-6 left-4 z-40 bg-navy-900 text-white px-5 py-3 rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.12)] flex items-center gap-3 hover:bg-navy-800 transition-all hover:-translate-y-1 active:scale-95 group animate-fade-in-up md:bottom-8 md:left-8"
             >
                 <span className="relative flex h-3 w-3">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>

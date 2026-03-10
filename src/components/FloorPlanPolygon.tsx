@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
-import { getStatusColor, formatPrice, calculateUnitPrice } from "@/lib/utils";
+import { useState } from "react";
 
 interface Point {
   x: number;
@@ -36,12 +35,9 @@ interface Props {
 export default function FloorPlanPolygon({
   units,
   floorPlanImage,
-  basePricePerM2,
   floorNumber,
   onUnitClick,
 }: Props) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   // Auto-construct display number: if unitNumber is short (1-2 digits), prefix with floor number
@@ -52,65 +48,25 @@ export default function FloorPlanPolygon({
     return unitNumber;
   };
 
-  // Get container dimensions
-  useEffect(() => {
-    const updateDimensions = () => {
-      if (containerRef.current) {
-        const rect = containerRef.current.getBoundingClientRect();
-        setDimensions({ width: rect.width, height: rect.height });
-      }
-    };
-    updateDimensions();
-    window.addEventListener("resize", updateDimensions);
-    return () => window.removeEventListener("resize", updateDimensions);
-  }, []);
-
-  // Convert percentage to pixel
-  const toPixel = useCallback(
-    (percent: number, total: number) => (percent / 100) * total,
-    []
-  );
-
   // Parse polygon data
   const parsePolygon = (polygonData: Point[] | null): Point[] => {
     if (!polygonData || !Array.isArray(polygonData)) return [];
     return polygonData;
   };
 
-  // Get polygon path string
+  // Get polygon path string — coordinates are 0-100 percentages, matching viewBox "0 0 100 100"
   const getPathString = (points: Point[]) => {
     if (points.length < 3) return "";
-    return (
-      points
-        .map((p, i) => {
-          const x = toPixel(p.x, dimensions.width);
-          const y = toPixel(p.y, dimensions.height);
-          return `${i === 0 ? "M" : "L"} ${x} ${y}`;
-        })
-        .join(" ") + " Z"
-    );
+    return points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ") + " Z";
   };
 
   // Get center of polygon for label
   const getPolygonCenter = (points: Point[]) => {
-    if (points.length === 0) return { x: 0, y: 0 };
-    const sumX = points.reduce((sum, p) => sum + p.x, 0);
-    const sumY = points.reduce((sum, p) => sum + p.y, 0);
+    if (points.length === 0) return { x: 50, y: 50 };
     return {
-      x: toPixel(sumX / points.length, dimensions.width),
-      y: toPixel(sumY / points.length, dimensions.height),
+      x: points.reduce((s, p) => s + p.x, 0) / points.length,
+      y: points.reduce((s, p) => s + p.y, 0) / points.length,
     };
-  };
-
-  // Get fill color based on status
-  const getFillColor = (status: string, isHovered: boolean) => {
-    const baseColor = getStatusColor(status);
-    if (isHovered) {
-      return baseColor.replace("0.5", "0.7").replace("0.4", "0.6");
-    }
-    return baseColor.replace("#", "rgba(").replace(/(..)(..)(..)/, (_, r, g, b) => {
-      return `${parseInt(r, 16)}, ${parseInt(g, 16)}, ${parseInt(b, 16)}`;
-    });
   };
 
   // Get status fill colors — premium palette
@@ -120,11 +76,11 @@ export default function FloorPlanPolygon({
 
     switch (status) {
       case "available":
-        return `rgba(20, 184, 166, ${opacity})`; // teal-500 — premium, calm
+        return `rgba(20, 184, 166, ${opacity})`; // teal-500
       case "reserved":
-        return `rgba(245, 158, 11, ${opacity})`; // amber-500 — warm, not alarming
+        return `rgba(245, 158, 11, ${opacity})`; // amber-500
       case "sold":
-        return `rgba(100, 116, 139, ${soldOpacity})`; // slate-500 — neutral gray, sold = done
+        return `rgba(100, 116, 139, ${soldOpacity})`; // slate-500
       default:
         return `rgba(100, 116, 139, ${opacity})`;
     }
@@ -144,10 +100,7 @@ export default function FloorPlanPolygon({
 
   return (
     <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
-      <div
-        ref={containerRef}
-        className="relative w-[70%] sm:w-[50%] mx-auto aspect-[4/3] bg-slate-100"
-      >
+      <div className="relative w-[70%] sm:w-[50%] mx-auto aspect-[4/3] bg-slate-100">
         {/* Background image */}
         {floorPlanImage && (
           <img
@@ -158,49 +111,51 @@ export default function FloorPlanPolygon({
           />
         )}
 
-        {/* SVG overlay for polygons */}
-        {dimensions.width > 0 && (
-          <svg className="absolute inset-0 w-full h-full">
-            {polygonUnits.map((unit) => {
-              const points = parsePolygon(unit.polygonData);
-              if (points.length < 3) return null;
+        {/* SVG overlay — viewBox matches the admin PolygonEditor exactly (0 0 100 100, preserveAspectRatio="none") */}
+        <svg
+          className="absolute inset-0 w-full h-full"
+          viewBox="0 0 100 100"
+          preserveAspectRatio="none"
+        >
+          {polygonUnits.map((unit) => {
+            const points = parsePolygon(unit.polygonData);
+            if (points.length < 3) return null;
 
-              const isHovered = hoveredId === unit.id;
-              const center = getPolygonCenter(points);
+            const isHovered = hoveredId === unit.id;
+            const center = getPolygonCenter(points);
 
-              return (
-                <g key={unit.id}>
-                  {/* Polygon */}
-                  <path
-                    d={getPathString(points)}
-                    fill={getStatusFill(unit.status, isHovered)}
-                    stroke="#ffffff"
-                    strokeWidth={isHovered ? 3 : 2}
-                    style={{ transition: "fill 0.18s ease, stroke-width 0.15s ease" }}
-                    className="cursor-pointer"
-                    onClick={() => onUnitClick(unit)}
-                    onMouseEnter={() => setHoveredId(unit.id)}
-                    onMouseLeave={() => setHoveredId(null)}
-                  />
+            return (
+              <g key={unit.id}>
+                <path
+                  d={getPathString(points)}
+                  fill={getStatusFill(unit.status, isHovered)}
+                  stroke="#ffffff"
+                  strokeWidth={isHovered ? 0.6 : 0.4}
+                  vectorEffect="non-scaling-stroke"
+                  style={{ transition: "fill 0.18s ease", cursor: "pointer" }}
+                  onClick={() => onUnitClick(unit)}
+                  onMouseEnter={() => setHoveredId(unit.id)}
+                  onMouseLeave={() => setHoveredId(null)}
+                />
 
-                  {/* Unit number only — minimalistic */}
-                  <text
-                    x={center.x}
-                    y={center.y + 4}
-                    textAnchor="middle"
-                    fontSize="14"
-                    fontWeight="bold"
-                    fill={isHovered ? "#ffffff" : "#1e293b"}
-                    className="pointer-events-none"
-                    style={{ textShadow: "0 1px 2px rgba(255,255,255,0.6)" }}
-                  >
-                    {getDisplayNumber(unit.unitNumber)}
-                  </text>
-                </g>
-              );
-            })}
-          </svg>
-        )}
+                {/* Unit number label */}
+                <text
+                  x={center.x}
+                  y={center.y}
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  fontSize="3.5"
+                  fontWeight="bold"
+                  fill={isHovered ? "#ffffff" : "#1e293b"}
+                  vectorEffect="non-scaling-stroke"
+                  style={{ pointerEvents: "none" }}
+                >
+                  {getDisplayNumber(unit.unitNumber)}
+                </text>
+              </g>
+            );
+          })}
+        </svg>
 
         {/* Message when no apartments have been drawn yet */}
         {polygonUnits.length === 0 && (

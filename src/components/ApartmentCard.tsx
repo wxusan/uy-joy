@@ -29,11 +29,6 @@ interface Props {
   onClick: () => void;
 }
 
-const STATUS_STYLES: Record<string, { bg: string; text: string; label: string }> = {
-  available: { bg: "bg-teal-500/90", text: "text-white", label: "Sotuvda" },
-  reserved:  { bg: "bg-amber-500/90", text: "text-white", label: "Band" },
-  sold:      { bg: "bg-slate-500/90", text: "text-white", label: "Sotilgan" },
-};
 
 export default function ApartmentCard({ unit, onClick }: Props) {
   const t = useTranslations("unit");
@@ -47,8 +42,6 @@ export default function ApartmentCard({ unit, onClick }: Props) {
   };
 
   const displayNumber = getDisplayNumber(unit.unitNumber, unit.floor.number);
-  const statusStyle = STATUS_STYLES[unit.status] ?? STATUS_STYLES.available;
-
   return (
     <button
       onClick={onClick}
@@ -72,11 +65,6 @@ export default function ApartmentCard({ unit, onClick }: Props) {
             <span className="text-xs text-slate-300 font-medium">{unit.area} m²</span>
           </div>
         )}
-
-        {/* Status badge — top right overlay */}
-        <span className={`absolute top-2.5 right-2.5 ${statusStyle.bg} ${statusStyle.text} text-[10px] font-bold px-2.5 py-1 rounded-full backdrop-blur-sm`}>
-          {statusStyle.label}
-        </span>
 
         {/* Unit number — top left */}
         <span className="absolute top-2.5 left-2.5 bg-white/90 backdrop-blur-sm text-slate-800 text-[11px] font-bold px-2.5 py-1 rounded-full">

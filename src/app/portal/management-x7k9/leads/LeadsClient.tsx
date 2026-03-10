@@ -58,7 +58,7 @@ export default function LeadsClient({ initialLeads, initialTotal, initialPages }
     loadLeads(p);
   };
 
-  const updateLead = async (leadId: string, patch: Partial<Pick<Lead, "status" | "assignedTo" | "nextFollowUp">>) => {
+  const updateLead = async (leadId: string, patch: Partial<Pick<Lead, "status">>) => {
     await fetch(`/api/leads/${leadId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -71,11 +71,10 @@ export default function LeadsClient({ initialLeads, initialTotal, initialPages }
     const res = await fetch(`/api/leads?page=1&limit=10000`);
     const data = await res.json();
     const allLeads: Lead[] = data.data;
-    const headers = ["Name", "Phone", "Project", "Unit", "Source", "Status", "Assigned To", "Follow-up", "Date"];
+    const headers = ["Name", "Phone", "Project", "Unit", "Source", "Status", "Date"];
     const rows = allLeads.map((l) => [
       l.name, l.phone, l.projectName || "-", l.unitNumber || "-",
-      l.source || "-", l.status, l.assignedTo || "-",
-      l.nextFollowUp ? new Date(l.nextFollowUp).toLocaleDateString() : "-",
+      l.source || "-", l.status,
       new Date(l.createdAt).toLocaleDateString(),
     ]);
     const csv = [headers, ...rows].map((row) => row.join(",")).join("\n");
@@ -97,9 +96,6 @@ export default function LeadsClient({ initialLeads, initialTotal, initialPages }
     notInterested: "bg-red-100 text-red-700",
     closed: "bg-slate-100 text-slate-700",
   };
-
-  const isOverdue = (followUp: string | null) => followUp ? new Date(followUp) < new Date() : false;
-  const today = new Date().toISOString().split("T")[0];
 
   return (
     <div>
@@ -140,16 +136,12 @@ export default function LeadsClient({ initialLeads, initialTotal, initialPages }
                 <th className="text-left p-4 font-medium text-slate-600">{t("unit")}</th>
                 <th className="text-left p-4 font-medium text-slate-600">Manba</th>
                 <th className="text-left p-4 font-medium text-slate-600">{t("status")}</th>
-                <th className="text-left p-4 font-medium text-slate-600">Mas&apos;ul</th>
-                <th className="text-left p-4 font-medium text-slate-600">Qo&apos;ng&apos;iroq</th>
                 <th className="text-left p-4 font-medium text-slate-600">{t("date")}</th>
               </tr>
             </thead>
             <tbody>
-              {leads.map((lead) => {
-                const overdue = isOverdue(lead.nextFollowUp);
-                return (
-                  <tr key={lead.id} className={`border-b hover:bg-slate-50 ${overdue ? "bg-red-50/40" : ""}`}>
+              {leads.map((lead) => (
+                  <tr key={lead.id} className="border-b hover:bg-slate-50">
                     <td className="p-4 font-medium">{lead.name}</td>
                     <td className="p-4">
                       <a href={`tel:${lead.phone}`} className="text-emerald-600 hover:underline">{lead.phone}</a>
@@ -171,37 +163,11 @@ export default function LeadsClient({ initialLeads, initialTotal, initialPages }
                         {LEAD_STATUSES.map((s) => <option key={s} value={s}>{t(s)}</option>)}
                       </select>
                     </td>
-                    <td className="p-4">
-                      <input
-                        type="text"
-                        defaultValue={lead.assignedTo || ""}
-                        placeholder="Kim?"
-                        className="w-24 text-xs px-2 py-1 border border-slate-200 rounded focus:outline-none focus:border-indigo-400 bg-transparent"
-                        onBlur={(e) => {
-                          if (e.target.value !== (lead.assignedTo || "")) {
-                            updateLead(lead.id, { assignedTo: e.target.value || null });
-                          }
-                        }}
-                      />
-                    </td>
-                    <td className="p-4">
-                      <div className="flex items-center gap-1">
-                        {overdue && <span className="text-red-500 text-xs font-bold" title="Muddati o'tgan">!</span>}
-                        <input
-                          type="date"
-                          defaultValue={lead.nextFollowUp ? lead.nextFollowUp.split("T")[0] : ""}
-                          min={today}
-                          className={`text-xs px-2 py-1 border rounded focus:outline-none focus:border-indigo-400 bg-transparent ${overdue ? "border-red-300 text-red-600" : "border-slate-200"}`}
-                          onChange={(e) => updateLead(lead.id, { nextFollowUp: e.target.value || null })}
-                        />
-                      </div>
-                    </td>
                     <td className="p-4 text-slate-500 text-sm whitespace-nowrap">
                       {new Date(lead.createdAt).toLocaleDateString()} {new Date(lead.createdAt).toLocaleTimeString()}
                     </td>
                   </tr>
-                );
-              })}
+              ))}
             </tbody>
           </table>
         </div>

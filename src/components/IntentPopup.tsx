@@ -1,5 +1,6 @@
 "use client";
 
+// Intent popup — exit intent, scroll depth, time on page triggers
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { X, CheckCircle2, Home, TrendingUp, BedDouble } from "lucide-react";

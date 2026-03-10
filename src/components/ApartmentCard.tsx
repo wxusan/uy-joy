@@ -66,10 +66,6 @@ export default function ApartmentCard({ unit, onClick }: Props) {
           </div>
         )}
 
-        {/* Unit number — top left */}
-        <span className="absolute top-2.5 left-2.5 bg-white/90 backdrop-blur-sm text-slate-800 text-[11px] font-bold px-2.5 py-1 rounded-full">
-          №{displayNumber}
-        </span>
       </div>
 
       {/* Specs — compact, below image */}

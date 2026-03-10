@@ -223,7 +223,7 @@ export default function UnitDetailModal({ unit, onClose }: Props) {
                       className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-sm"
                     />
                     <input
-                      type="tel" required
+                      type="tel" inputMode="tel" required
                       value={formData.phone}
                       onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                       placeholder={tc("phone")}

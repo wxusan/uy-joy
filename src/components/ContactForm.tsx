@@ -77,7 +77,7 @@ export default function ContactForm({ projectId, projectName }: Props) {
         />
 
         <input
-          type="tel"
+          type="tel" inputMode="tel"
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
           placeholder={t("phone")}

@@ -178,7 +178,7 @@ export default function IntentPopup() {
                                     <div>
                                         <label className="block text-sm font-bold text-slate-700 mb-2">Telefon raqamingiz</label>
                                         <input
-                                            type="tel" required
+                                            type="tel" inputMode="tel" required
                                             value={phone}
                                             onChange={(e) => setPhone(e.target.value)}
                                             className="w-full px-5 py-3.5 border-2 border-slate-200/80 rounded-2xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 outline-none transition-all font-medium bg-slate-50/50 hover:bg-white focus:bg-white"

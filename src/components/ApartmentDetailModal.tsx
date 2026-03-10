@@ -200,7 +200,7 @@ export default function ApartmentDetailModal({ unit, onClose }: Props) {
                       autoComplete="name"
                     />
                     <input
-                      type="tel" required
+                      type="tel" inputMode="tel" required
                       value={formData.phone}
                       onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                       className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-navy-900 outline-none text-sm"

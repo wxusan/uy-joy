@@ -59,12 +59,12 @@ export default function UnitsClient({ initialUnits, initialBuildings, projectId 
   };
 
   const updateUnit = async (unitId: string, data: Record<string, unknown>) => {
+    setUnits((prev) => prev.map((u) => (u.id === unitId ? { ...u, ...data } : u)));
     await fetch(`/api/units/${unitId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
-    loadUnits();
   };
 
   const handleStatusChange = (unit: Unit, newStatus: string) => {
@@ -277,7 +277,7 @@ export default function UnitsClient({ initialUnits, initialBuildings, projectId 
 function ReservationModal({ unit, onClose, onSave, translations: tr }: {
   unit: Unit;
   onClose: () => void;
-  onSave: (data: Record<string, unknown>) => void;
+  onSave: (data: Record<string, unknown>) => Promise<void>;
   translations: { reserve: string; sell: string; customerName: string; customerPhone: string; customerNotes: string; customerNamePlaceholder: string; customerNotesPlaceholder: string; saving: string; cancel: string; };
 }) {
   const [customerName, setCustomerName] = useState(unit.customerName || "");

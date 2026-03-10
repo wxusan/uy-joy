@@ -59,12 +59,12 @@ export default function LeadsClient({ initialLeads, initialTotal, initialPages }
   };
 
   const updateLead = async (leadId: string, patch: Partial<Pick<Lead, "status">>) => {
+    setLeads((prev) => prev.map((l) => (l.id === leadId ? { ...l, ...patch } : l)));
     await fetch(`/api/leads/${leadId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(patch),
     });
-    loadLeads(page);
   };
 
   const exportToCSV = async () => {

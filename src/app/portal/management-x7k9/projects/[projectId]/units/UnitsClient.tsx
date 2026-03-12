@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { formatPrice } from "@/lib/utils";
 
@@ -47,6 +47,7 @@ export default function UnitsClient({ initialUnits, initialBuildings, projectId 
   const [bulkPricing, setBulkPricing] = useState("");
   const [bulkStatus, setBulkStatus] = useState("");
   const [isBulkLoading, setIsBulkLoading] = useState(false);
+  const isMounted = useRef(false);
 
   const loadUnits = (status: string, rooms: string) => {
     const qs = new URLSearchParams();
@@ -59,6 +60,7 @@ export default function UnitsClient({ initialUnits, initialBuildings, projectId 
   };
 
   useEffect(() => {
+    if (!isMounted.current) { isMounted.current = true; return; }
     loadUnits(filterStatus, filterRooms);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterStatus, filterRooms]);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { formatPrice } from "@/lib/utils";
 
@@ -48,23 +48,32 @@ export default function UnitsClient({ initialUnits, initialBuildings, projectId 
   const [bulkStatus, setBulkStatus] = useState("");
   const [isBulkLoading, setIsBulkLoading] = useState(false);
 
-  const loadUnits = () => {
+  const loadUnits = (status: string, rooms: string) => {
     const qs = new URLSearchParams();
     qs.set("projectId", projectId);
-    if (filterStatus) qs.set("status", filterStatus);
-    if (filterRooms) qs.set("rooms", filterRooms);
+    if (status) qs.set("status", status);
+    if (rooms) qs.set("rooms", rooms);
     fetch(`/api/units?${qs}`)
       .then((r) => r.json())
       .then(setUnits);
   };
 
+  useEffect(() => {
+    loadUnits(filterStatus, filterRooms);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterStatus, filterRooms]);
+
   const updateUnit = async (unitId: string, data: Record<string, unknown>) => {
+    const previous = units.find((u) => u.id === unitId);
     setUnits((prev) => prev.map((u) => (u.id === unitId ? { ...u, ...data } : u)));
-    await fetch(`/api/units/${unitId}`, {
+    const res = await fetch(`/api/units/${unitId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
+    if (!res.ok && previous) {
+      setUnits((prev) => prev.map((u) => (u.id === unitId ? previous : u)));
+    }
   };
 
   const handleStatusChange = (unit: Unit, newStatus: string) => {
@@ -130,14 +139,14 @@ export default function UnitsClient({ initialUnits, initialBuildings, projectId 
       </div>
 
       <div className="flex gap-3 mb-4 flex-wrap items-center">
-        <select value={filterStatus} onChange={(e) => { setFilterStatus(e.target.value); setTimeout(loadUnits, 0); }}
+        <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}
           className="px-3 py-2 border rounded-lg text-sm bg-white">
           <option value="">{t("allStatus")}</option>
           <option value="available">{t("available")}</option>
           <option value="reserved">{t("reserved")}</option>
           <option value="sold">{t("sold")}</option>
         </select>
-        <select value={filterRooms} onChange={(e) => { setFilterRooms(e.target.value); setTimeout(loadUnits, 0); }}
+        <select value={filterRooms} onChange={(e) => setFilterRooms(e.target.value)}
           className="px-3 py-2 border rounded-lg text-sm bg-white">
           <option value="">{t("allRooms")}</option>
           {roomOptions.map((r) => <option key={r} value={r}>{r}</option>)}
@@ -251,16 +260,26 @@ export default function UnitsClient({ initialUnits, initialBuildings, projectId 
                   const data: Record<string, unknown> = {};
                   if (bulkStatus) data.status = bulkStatus;
                   if (bulkPricing) data.pricePerM2 = parseInt(bulkPricing);
+                  const previousUnits = units.filter((u) => selectedUnits.includes(u.id));
+                  setUnits((prev) => prev.map((u) => selectedUnits.includes(u.id) ? { ...u, ...data } : u));
+                  setSelectedUnits([]); setBulkStatus(""); setBulkPricing("");
                   try {
-                    await fetch("/api/units", {
+                    const res = await fetch("/api/units", {
                       method: "PATCH",
                       headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ unitIds: selectedUnits, data }),
+                      body: JSON.stringify({ unitIds: previousUnits.map((u) => u.id), data }),
                     });
-                    setSelectedUnits([]); setBulkStatus(""); setBulkPricing("");
-                    loadUnits();
-                  } catch { alert("Xatolik yuz berdi"); }
-                  finally { setIsBulkLoading(false); }
+                    if (!res.ok) {
+                      previousUnits.forEach((prev) => {
+                        setUnits((units) => units.map((u) => (u.id === prev.id ? prev : u)));
+                      });
+                    }
+                  } catch {
+                    previousUnits.forEach((prev) => {
+                      setUnits((units) => units.map((u) => (u.id === prev.id ? prev : u)));
+                    });
+                    alert("Xatolik yuz berdi");
+                  } finally { setIsBulkLoading(false); }
                 }}
                 disabled={isBulkLoading || (!bulkStatus && !bulkPricing)}
                 className="bg-indigo-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-indigo-700 hover:shadow-lg disabled:opacity-50 transition-all cursor-pointer">

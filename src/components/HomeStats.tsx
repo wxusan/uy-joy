@@ -28,7 +28,7 @@ export default function HomeStats({ total, available, reserved, sold, labels }: 
             <p className="text-sm text-slate-500">{labels.total}</p>
           </div>
         </ScrollReveal>
-        
+
         <ScrollReveal delay={100}>
           <div className="bg-white rounded-xl shadow-lg p-5 text-center hover:shadow-xl transition-shadow">
             <p className="text-3xl font-bold text-emerald-600">
@@ -37,7 +37,7 @@ export default function HomeStats({ total, available, reserved, sold, labels }: 
             <p className="text-sm text-slate-500">{labels.available}</p>
           </div>
         </ScrollReveal>
-        
+
         <ScrollReveal delay={200}>
           <div className="bg-white rounded-xl shadow-lg p-5 text-center hover:shadow-xl transition-shadow">
             <p className="text-3xl font-bold text-yellow-600">
@@ -46,7 +46,7 @@ export default function HomeStats({ total, available, reserved, sold, labels }: 
             <p className="text-sm text-slate-500">{labels.reserved}</p>
           </div>
         </ScrollReveal>
-        
+
         <ScrollReveal delay={300}>
           <div className="bg-white rounded-xl shadow-lg p-5 text-center hover:shadow-xl transition-shadow">
             <p className="text-3xl font-bold text-red-600">

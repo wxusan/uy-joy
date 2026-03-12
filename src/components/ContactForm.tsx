@@ -77,10 +77,11 @@ export default function ContactForm({ projectId, projectName }: Props) {
         />
 
         <input
-          type="tel" inputMode="tel"
+          type="tel"
+          inputMode="numeric"
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
-          placeholder={t("phone")}
+          placeholder="+998 XX XXX XX XX"
           className="w-full px-4 py-2.5 border border-[#E5E7EB] rounded-btn focus:ring-2 focus:ring-navy-900 focus:border-navy-900 outline-none transition text-sm"
           required
         />

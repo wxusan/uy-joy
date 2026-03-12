@@ -14,6 +14,7 @@ import { getCachedProject, getCachedHeroImages, getCachedFAQs } from "@/lib/cach
 import { getTranslation, Locale } from "@/lib/translations";
 import { getHeroImageUrl, getCardImageUrl } from "@/lib/cloudinary";
 import Image from "next/image";
+import { CheckCircle2 } from "lucide-react";
 
 // ISR: Revalidate every 60 seconds for faster loading
 export const revalidate = 60;
@@ -92,8 +93,8 @@ export default async function Home() {
     <>
       <Navbar />
       <main className="flex-1">
-        {/* Hero */}
-        <section className="bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-900 text-white py-20">
+        {/* Hero — navy tokens instead of raw slate */}
+        <section className="bg-gradient-to-br from-navy-900 via-navy-800 to-emerald-900 text-white py-20">
           <div className="max-w-6xl mx-auto px-4 text-center">
             <ScrollReveal>
               <div className="inline-block bg-emerald-500/20 text-emerald-300 px-4 py-2 rounded-full text-sm font-medium mb-6 border border-emerald-500/30">
@@ -102,8 +103,8 @@ export default async function Home() {
               <h1 className="text-4xl md:text-6xl font-bold mb-4 text-white">
                 {projectName}
               </h1>
-              <p className="text-lg text-slate-300 mb-2">{projectAddress}</p>
-              <p className="text-sm text-slate-400 mb-8 max-w-2xl mx-auto">{projectDescription}</p>
+              <p className="text-lg text-navy-200 mb-2">{projectAddress}</p>
+              <p className="text-sm text-navy-300 mb-8 max-w-2xl mx-auto">{projectDescription}</p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
                 <Link
                   href="/#explore"
@@ -116,7 +117,7 @@ export default async function Home() {
           </div>
         </section>
 
-        {/* Quick Stats with Animated Counters */}
+        {/* Quick Stats with Animated Counters + Progress Bars */}
         <HomeStats
           total={allUnits.length}
           available={available}
@@ -130,8 +131,8 @@ export default async function Home() {
           }}
         />
 
-        {/* Interactive Master Plan / Visual Tour */}
-        <section id="explore" className="bg-slate-50 border-t border-slate-200 pt-8 pb-16">
+        {/* Interactive Master Plan / Visual Tour — pt-12 for balanced rhythm after stat overlap */}
+        <section id="explore" className="bg-slate-50 border-t border-slate-200 pt-12 pb-16">
           <div className="max-w-7xl mx-auto">
             <ExploreClient project={JSON.parse(JSON.stringify(project))} />
           </div>
@@ -152,7 +153,7 @@ export default async function Home() {
                   t("project.parkingSecurity"),
                 ].map((feature, i) => (
                   <div key={i} className="flex items-center gap-3">
-                    <span className="text-emerald-500 font-bold">✓</span>
+                    <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" />
                     <span className="text-slate-700">{feature}</span>
                   </div>
                 ))}
@@ -245,15 +246,15 @@ export default async function Home() {
           </div>
         </section>
 
-        {/* CTA */}
-        <section className="bg-emerald-600 text-white py-12">
+        {/* CTA — navy keeps brand coherent, emerald as accent button */}
+        <section className="bg-navy-900 text-white py-12">
           <div className="max-w-6xl mx-auto px-4 text-center">
             <ScrollReveal>
               <h2 className="text-2xl sm:text-3xl font-bold mb-4">{t("project.findPerfectApartment")}</h2>
-              <p className="text-emerald-100 mb-8 text-sm sm:text-base">{t("project.useInteractiveFloorPlan")}</p>
+              <p className="text-navy-300 mb-8 text-sm sm:text-base">{t("project.useInteractiveFloorPlan")}</p>
               <Link
                 href="/#explore"
-                className="bg-shine inline-block bg-white text-emerald-700 px-6 py-2.5 sm:px-8 sm:py-3 text-sm sm:text-base rounded-lg font-semibold hover:bg-emerald-50 transition"
+                className="bg-shine inline-block bg-emerald-500 text-white px-6 py-2.5 sm:px-8 sm:py-3 text-sm sm:text-base rounded-lg font-semibold hover:bg-emerald-400 transition"
               >
                 {t("project.exploreFloorPlans")} →
               </Link>

@@ -3,8 +3,10 @@
 import { useEffect, useState, useRef } from "react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
-import TranslatedInput from "@/components/admin/TranslatedInput";
 import Image from "next/image";
+import { Languages, Save } from "lucide-react";
+
+type Lang = "uz" | "ru" | "en";
 
 interface HeroImage {
   id: string;
@@ -20,9 +22,18 @@ export default function HeroImagesPage() {
 
   // Project info state
   const [projectId, setProjectId] = useState<string | null>(null);
-  const [form, setForm] = useState({ name: "", nameTranslations: "", description: "", descriptionTranslations: "", address: "", addressTranslations: "" });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [activeLang, setActiveLang] = useState<Lang>("uz");
+
+  const parseTrans = (json: string | null | undefined): Record<Lang, string> => {
+    try { return { uz: "", ru: "", en: "", ...JSON.parse(json || "{}") }; }
+    catch { return { uz: "", ru: "", en: "" }; }
+  };
+
+  const [names, setNames] = useState<Record<Lang, string>>({ uz: "", ru: "", en: "" });
+  const [descs, setDescs] = useState<Record<Lang, string>>({ uz: "", ru: "", en: "" });
+  const [addrs, setAddrs] = useState<Record<Lang, string>>({ uz: "", ru: "", en: "" });
 
   const loadProject = async () => {
     const r = await fetch("/api/projects");
@@ -32,14 +43,9 @@ export default function HeroImagesPage() {
     const r2 = await fetch(`/api/projects/${first.id}`);
     const data = await r2.json();
     setProjectId(data.id);
-    setForm({
-      name: data.name || "",
-      nameTranslations: data.nameTranslations || "",
-      description: data.description || "",
-      descriptionTranslations: data.descriptionTranslations || "",
-      address: data.address || "",
-      addressTranslations: data.addressTranslations || "",
-    });
+    setNames(parseTrans(data.nameTranslations));
+    setDescs(parseTrans(data.descriptionTranslations));
+    setAddrs(parseTrans(data.addressTranslations));
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -49,7 +55,14 @@ export default function HeroImagesPage() {
     await fetch(`/api/projects/${projectId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
+      body: JSON.stringify({
+        name: names.uz,
+        nameTranslations: JSON.stringify({ uz: names.uz, ru: names.ru, en: names.en }),
+        description: descs.uz,
+        descriptionTranslations: JSON.stringify({ uz: descs.uz, ru: descs.ru, en: descs.en }),
+        address: addrs.uz,
+        addressTranslations: JSON.stringify({ uz: addrs.uz, ru: addrs.ru, en: addrs.en }),
+      }),
     });
     setSaving(false);
     setSaved(true);
@@ -145,37 +158,76 @@ export default function HeroImagesPage() {
       </div>
 
       {/* Project Info Form */}
-      <form onSubmit={handleSave} className="bg-white rounded-xl shadow-sm border p-6 mb-6 space-y-4">
-        <h2 className="text-lg font-semibold text-slate-800">Loyiha ma&apos;lumotlari</h2>
-        <TranslatedInput
-          label={t("projectName")}
-          value={form.name}
-          translationsJson={form.nameTranslations}
-          onChange={(v, tr) => setForm({ ...form, name: v, nameTranslations: tr })}
-          placeholder={t("projectName")}
-        />
-        <TranslatedInput
-          label={t("description")}
-          value={form.description}
-          translationsJson={form.descriptionTranslations}
-          onChange={(v, tr) => setForm({ ...form, description: v, descriptionTranslations: tr })}
-          multiline
-          placeholder={t("description")}
-        />
-        <TranslatedInput
-          label={t("address")}
-          value={form.address}
-          translationsJson={form.addressTranslations}
-          onChange={(v, tr) => setForm({ ...form, address: v, addressTranslations: tr })}
-          placeholder={t("address")}
-        />
-        <div className="flex items-center gap-3 pt-1">
-          <button type="submit" disabled={saving}
-            className="bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white px-6 py-2 rounded-lg font-medium transition">
-            {saving ? t("saving") : t("saveChanges")}
-          </button>
-          {saved && <span className="text-emerald-600 text-sm font-medium">✓ Saqlandi!</span>}
+      <form onSubmit={handleSave} className="bg-white rounded-xl shadow-sm border p-4 sm:p-6 mb-6">
+        <div className="flex items-center gap-2 mb-1">
+          <Languages className="w-5 h-5 text-slate-400" />
+          <h2 className="text-lg font-semibold text-slate-800">Loyiha nomi va tavsifi</h2>
         </div>
+        <p className="text-sm text-slate-500 mb-4">Saytda ko&apos;rsatiladigan matnlar — O&apos;zbek / Rus / Ingliz</p>
+
+        {/* Language tabs */}
+        <div className="flex gap-1 bg-slate-100 rounded-lg p-1 w-fit mb-5">
+          {(["uz", "ru", "en"] as Lang[]).map((lang) => (
+            <button
+              key={lang}
+              type="button"
+              onClick={() => setActiveLang(lang)}
+              className={`px-4 py-1.5 rounded-md text-sm font-semibold transition ${
+                activeLang === lang
+                  ? "bg-white text-slate-900 shadow-sm"
+                  : "text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              {lang === "uz" ? "🇺🇿 UZ" : lang === "ru" ? "🇷🇺 RU" : "🇬🇧 EN"}
+            </button>
+          ))}
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5">{t("projectName")}</label>
+            <input
+              type="text"
+              value={names[activeLang]}
+              onChange={(e) => setNames({ ...names, [activeLang]: e.target.value })}
+              placeholder={activeLang === "uz" ? "Navruz Residence" : activeLang === "ru" ? "Навруз Резиденс" : "Navruz Residence"}
+              className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5">{t("description")}</label>
+            <textarea
+              rows={4}
+              value={descs[activeLang]}
+              onChange={(e) => setDescs({ ...descs, [activeLang]: e.target.value })}
+              placeholder={activeLang === "uz" ? "Toshkent markazida zamonaviy turar-joy majmuasi..." : activeLang === "ru" ? "Современный жилой комплекс в центре Ташкента..." : "Premium residential complex in the heart of Tashkent..."}
+              className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm resize-none"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5">{t("address")}</label>
+            <input
+              type="text"
+              value={addrs[activeLang]}
+              onChange={(e) => setAddrs({ ...addrs, [activeLang]: e.target.value })}
+              placeholder={activeLang === "uz" ? "Toshkent sh., Chilonzor tumani..." : activeLang === "ru" ? "г. Ташкент, Чиланзарский район..." : "Tashkent, Chilanzar district..."}
+              className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+            />
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          disabled={saving}
+          className={`mt-4 inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition ${
+            saved
+              ? "bg-emerald-100 text-emerald-700"
+              : "bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-60"
+          }`}
+        >
+          <Save className="w-4 h-4" />
+          {saving ? "Saqlanmoqda..." : saved ? "Saqlandi ✓" : "Saqlash"}
+        </button>
       </form>
 
       {/* Upload section */}

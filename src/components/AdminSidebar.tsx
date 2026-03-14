@@ -90,7 +90,7 @@ export default function AdminSidebar({ isOpen, onClose }: Props) {
                 href={item.href}
                 onClick={onClose}
                 className={`flex items-center gap-3 pl-3 pr-4 py-2.5 mx-2 rounded-lg text-sm transition-all border-l-2 ${isActive
-                  ? "border-amber-400 bg-slate-800 text-white font-medium"
+                  ? "border-emerald-400 bg-slate-800 text-white font-medium"
                   : "border-transparent text-slate-400 hover:text-white hover:bg-slate-800/60"
                   }`}
               >

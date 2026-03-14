@@ -10,7 +10,8 @@ export const initPostHog = () => {
     if (!key) return;
 
     posthog.init(key, {
-        api_host: host,
+        api_host: "/ingest",   // reverse proxy — bypasses ad blockers
+        ui_host: host,         // still links back to PostHog dashboard correctly
         person_profiles: "identified_only",
         capture_pageview: true,
         capture_pageleave: true,

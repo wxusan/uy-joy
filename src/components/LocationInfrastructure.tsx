@@ -95,10 +95,10 @@ export default function LocationInfrastructure({ latitude, longitude, infrastruc
               style={{
                 border: 0,
                 position: "absolute",
-                top: "-52px",
+                top: "-64px",
                 left: 0,
                 width: "100%",
-                height: "calc(100% + 104px)",
+                height: "calc(100% + 128px)",
               }}
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"

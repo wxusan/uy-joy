@@ -3,7 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import TopViewMapper from "@/components/admin/TopViewMapper";
-import { Building2, Home, Map } from "lucide-react";
+import { Building2, Home, Map, Languages, Save } from "lucide-react";
+
+type Lang = "uz" | "ru" | "en";
 
 interface Building {
   id: string;
@@ -14,6 +16,9 @@ interface Building {
 interface Project {
   id: string;
   name: string;
+  nameTranslations: string | null;
+  description: string | null;
+  descriptionTranslations: string | null;
   topViewImage: string | null;
   expectedYear: number | null;
   buildings: Building[];
@@ -27,6 +32,43 @@ export default function ProjectsClient({ initialProject }: Props) {
   const [project, setProject] = useState<Project | null>(initialProject);
   const [uploadingTopView, setUploadingTopView] = useState(false);
   const [showMapper, setShowMapper] = useState(false);
+
+  // Multilingual text editor
+  const [activeLang, setActiveLang] = useState<Lang>("uz");
+  const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
+  const parseTrans = (json: string | null | undefined): Record<Lang, string> => {
+    try { return { uz: "", ru: "", en: "", ...JSON.parse(json || "{}") }; }
+    catch { return { uz: "", ru: "", en: "" }; }
+  };
+
+  const [names, setNames] = useState<Record<Lang, string>>(() =>
+    parseTrans(initialProject?.nameTranslations)
+  );
+  const [descs, setDescs] = useState<Record<Lang, string>>(() =>
+    parseTrans(initialProject?.descriptionTranslations)
+  );
+
+  const saveTexts = async () => {
+    if (!project) return;
+    setSaving(true);
+    const nameJson = JSON.stringify({ uz: names.uz, ru: names.ru, en: names.en });
+    const descJson = JSON.stringify({ uz: descs.uz, ru: descs.ru, en: descs.en });
+    await fetch(`/api/projects/${project.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: names.uz || project.name,
+        nameTranslations: nameJson,
+        description: descs.uz || project.description,
+        descriptionTranslations: descJson,
+      }),
+    });
+    setSaving(false);
+    setSaveSuccess(true);
+    setTimeout(() => setSaveSuccess(false), 2500);
+  };
 
   const loadProject = async () => {
     if (!project) return;
@@ -134,6 +176,68 @@ export default function ProjectsClient({ initialProject }: Props) {
             </div>
           </div>
         </Link>
+      </div>
+
+      {/* Multilingual text editor */}
+      <div className="bg-white rounded-xl shadow-sm border p-4 sm:p-6">
+        <div className="flex items-center gap-2 mb-1">
+          <Languages className="w-5 h-5 text-slate-400" />
+          <h2 className="text-lg font-semibold text-slate-800">Loyiha nomi va tavsifi</h2>
+        </div>
+        <p className="text-sm text-slate-500 mb-4">Saytda ko&apos;rsatiladigan matnlar — O&apos;zbek / Rus / Ingliz</p>
+
+        {/* Language tabs */}
+        <div className="flex gap-1 bg-slate-100 rounded-lg p-1 w-fit mb-5">
+          {(["uz", "ru", "en"] as Lang[]).map((lang) => (
+            <button
+              key={lang}
+              onClick={() => setActiveLang(lang)}
+              className={`px-4 py-1.5 rounded-md text-sm font-semibold transition ${
+                activeLang === lang
+                  ? "bg-white text-slate-900 shadow-sm"
+                  : "text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              {lang === "uz" ? "🇺🇿 UZ" : lang === "ru" ? "🇷🇺 RU" : "🇬🇧 EN"}
+            </button>
+          ))}
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Loyiha nomi</label>
+            <input
+              type="text"
+              value={names[activeLang]}
+              onChange={(e) => setNames({ ...names, [activeLang]: e.target.value })}
+              placeholder={activeLang === "uz" ? "Navruz Residence" : activeLang === "ru" ? "Навруз Резиденс" : "Navruz Residence"}
+              className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Majmua haqida (tavsif)</label>
+            <textarea
+              rows={4}
+              value={descs[activeLang]}
+              onChange={(e) => setDescs({ ...descs, [activeLang]: e.target.value })}
+              placeholder={activeLang === "uz" ? "Toshkent markazida zamonaviy turar-joy majmuasi..." : activeLang === "ru" ? "Современный жилой комплекс в центре Ташкента..." : "Premium residential complex in the heart of Tashkent..."}
+              className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm resize-none"
+            />
+          </div>
+        </div>
+
+        <button
+          onClick={saveTexts}
+          disabled={saving}
+          className={`mt-4 inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition ${
+            saveSuccess
+              ? "bg-emerald-100 text-emerald-700"
+              : "bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-60"
+          }`}
+        >
+          <Save className="w-4 h-4" />
+          {saving ? "Saqlanmoqda..." : saveSuccess ? "Saqlandi ✓" : "Saqlash"}
+        </button>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border p-4 sm:p-6 mt-4">

@@ -9,7 +9,10 @@ import posthog from "posthog-js";
 export default function IntentPopup() {
     const pathname = usePathname();
     const [isOpen, setIsOpen] = useState(false);
-    const [hasDismissed, setHasDismissed] = useState(false);
+    const [hasDismissed, setHasDismissed] = useState(() => {
+        if (typeof window === "undefined") return false;
+        return localStorage.getItem("intentPopupDismissed") === "true";
+    });
     const [step, setStep] = useState(0); // 0 = closed, 1 = rooms, 2 = contact, 3 = success
 
     const [rooms, setRooms] = useState<string>("");
@@ -30,7 +33,13 @@ export default function IntentPopup() {
             }
         };
 
+        let scrollReady = false;
+        const scrollReadyTimer = setTimeout(() => {
+            scrollReady = true;
+        }, 2500); // wait 2.5s before scroll trigger is active
+
         const handleScroll = () => {
+            if (!scrollReady) return;
             const scrollY = window.scrollY;
             const height = document.documentElement.scrollHeight - window.innerHeight;
             if (height > 0 && scrollY > height * 0.7) {
@@ -49,6 +58,7 @@ export default function IntentPopup() {
             document.removeEventListener("mouseleave", handleMouseLeave);
             window.removeEventListener("scroll", handleScroll);
             clearTimeout(timer);
+            clearTimeout(scrollReadyTimer);
         };
     }, [hasDismissed, isOpen, step]);
 
@@ -61,6 +71,7 @@ export default function IntentPopup() {
     const closePopup = () => {
         setIsOpen(false);
         setHasDismissed(true);
+        localStorage.setItem("intentPopupDismissed", "true");
         setTimeout(() => setStep(0), 300);
     };
 

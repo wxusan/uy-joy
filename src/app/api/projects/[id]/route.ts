@@ -32,6 +32,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   if (body.latitude !== undefined) data.latitude = body.latitude;
   if (body.longitude !== undefined) data.longitude = body.longitude;
   if (body.infrastructure !== undefined) data.infrastructure = body.infrastructure;
+  if (body.expectedYear !== undefined) data.expectedYear = body.expectedYear;
 
   const project = await prisma.project.update({
     where: { id: params.id },

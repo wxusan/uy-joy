@@ -8,6 +8,9 @@ export default async function AdminProjects() {
     select: {
       id: true,
       name: true,
+      nameTranslations: true,
+      description: true,
+      descriptionTranslations: true,
       topViewImage: true,
       expectedYear: true,
       buildings: {

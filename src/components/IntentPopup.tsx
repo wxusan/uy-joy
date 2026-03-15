@@ -9,11 +9,7 @@ import posthog from "posthog-js";
 export default function IntentPopup() {
     const pathname = usePathname();
     const [isOpen, setIsOpen] = useState(false);
-    const [hasDismissed, setHasDismissed] = useState(() => {
-        if (typeof window === "undefined") return false;
-        // sessionStorage resets when the browser/tab is closed — shows once per session
-        return sessionStorage.getItem("intentPopupDismissed") === "true";
-    });
+    const [hasDismissed, setHasDismissed] = useState(false);
     const [step, setStep] = useState(0); // 0 = closed, 1 = rooms, 2 = contact, 3 = success
 
     const [rooms, setRooms] = useState<string>("");
@@ -72,7 +68,7 @@ export default function IntentPopup() {
     const closePopup = () => {
         setIsOpen(false);
         setHasDismissed(true);
-        sessionStorage.setItem("intentPopupDismissed", "true");
+        // dismissed state lives in memory only — resets on every page refresh
         setTimeout(() => setStep(0), 300);
     };
 

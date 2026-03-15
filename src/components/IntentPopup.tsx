@@ -11,7 +11,10 @@ export default function IntentPopup() {
     const [isOpen, setIsOpen] = useState(false);
     const [hasDismissed, setHasDismissed] = useState(() => {
         if (typeof window === "undefined") return false;
-        return localStorage.getItem("intentPopupDismissed") === "true";
+        const ts = localStorage.getItem("intentPopupDismissed");
+        if (!ts) return false;
+        // Re-show after 7 days
+        return Date.now() - parseInt(ts) < 7 * 24 * 60 * 60 * 1000;
     });
     const [step, setStep] = useState(0); // 0 = closed, 1 = rooms, 2 = contact, 3 = success
 
@@ -71,7 +74,7 @@ export default function IntentPopup() {
     const closePopup = () => {
         setIsOpen(false);
         setHasDismissed(true);
-        localStorage.setItem("intentPopupDismissed", "true");
+        localStorage.setItem("intentPopupDismissed", Date.now().toString());
         setTimeout(() => setStep(0), 300);
     };
 

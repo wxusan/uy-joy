@@ -4,12 +4,12 @@ export default function LeadsLoading() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <div className="h-8 w-48 bg-slate-200 rounded animate-pulse mb-2" />
-          <div className="h-4 w-24 bg-slate-100 rounded animate-pulse" />
+          <div className="h-8 w-48 skeleton mb-2" />
+          <div className="h-4 w-24 skeleton" />
         </div>
         <div className="flex gap-3">
-          <div className="h-10 w-32 bg-emerald-200 rounded-lg animate-pulse" />
-          <div className="h-10 w-36 bg-slate-100 rounded-lg animate-pulse" />
+          <div className="h-10 w-32 bg-emerald-200 rounded-lg" />
+          <div className="h-10 w-36 skeleton" />
         </div>
       </div>
 
@@ -20,7 +20,7 @@ export default function LeadsLoading() {
             <tr>
               {["Name", "Phone", "Project", "Unit", "Status", "Date"].map((_, i) => (
                 <th key={i} className="text-left p-4">
-                  <div className="h-4 w-16 bg-slate-200 rounded animate-pulse" />
+                  <div className="h-4 w-16 skeleton" />
                 </th>
               ))}
             </tr>
@@ -28,12 +28,12 @@ export default function LeadsLoading() {
           <tbody>
             {[...Array(6)].map((_, i) => (
               <tr key={i} className="border-b">
-                <td className="p-4"><div className="h-4 w-28 bg-slate-200 rounded animate-pulse" /></td>
-                <td className="p-4"><div className="h-4 w-24 bg-slate-100 rounded animate-pulse" /></td>
-                <td className="p-4"><div className="h-4 w-32 bg-slate-100 rounded animate-pulse" /></td>
-                <td className="p-4"><div className="h-4 w-12 bg-slate-100 rounded animate-pulse" /></td>
-                <td className="p-4"><div className="h-6 w-20 bg-blue-100 rounded-full animate-pulse" /></td>
-                <td className="p-4"><div className="h-4 w-24 bg-slate-100 rounded animate-pulse" /></td>
+                <td className="p-4"><div className="h-4 w-28 skeleton" /></td>
+                <td className="p-4"><div className="h-4 w-24 skeleton" /></td>
+                <td className="p-4"><div className="h-4 w-32 skeleton" /></td>
+                <td className="p-4"><div className="h-4 w-12 skeleton" /></td>
+                <td className="p-4"><div className="h-6 w-20 bg-blue-100 rounded-full" /></td>
+                <td className="p-4"><div className="h-4 w-24 skeleton" /></td>
               </tr>
             ))}
           </tbody>

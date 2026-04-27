@@ -12,6 +12,9 @@ export default function IntentPopup() {
     const [hasDismissed, setHasDismissed] = useState(false);
     const [step, setStep] = useState(0); // 0 = closed, 1 = rooms, 2 = contact, 3 = success
 
+    // Never render anything (trigger tab or modal) on admin/portal pages.
+    const isAdmin = pathname?.startsWith("/portal");
+
     const [rooms, setRooms] = useState<string>("");
     const [name, setName] = useState("");
     const [phone, setPhone] = useState("");
@@ -101,6 +104,9 @@ export default function IntentPopup() {
             setLoading(false);
         }
     };
+
+    // Don't render anything on admin/portal pages
+    if (isAdmin) return null;
 
     // Floating trigger button when closed — always visible
     if (!isOpen) {

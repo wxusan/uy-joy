@@ -3,6 +3,7 @@
 import { SessionProvider, useSession } from "next-auth/react";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { Menu } from "lucide-react";
 import AdminSidebar from "@/components/AdminSidebar";
 
 function AdminGuard({ children }: { children: React.ReactNode }) {
@@ -23,13 +24,15 @@ function AdminGuard({ children }: { children: React.ReactNode }) {
   }, [pathname]);
 
   if (pathname === "/portal/management-x7k9/login") {
-    return <>{children}</>;
+    return <div className="admin-shell">{children}</div>;
   }
 
   if (status === "loading") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <p className="text-slate-500">Loading...</p>
+      <div className="admin-shell min-h-screen flex items-center justify-center">
+        <p className="text-[13px]" style={{ color: "var(--a-text-tertiary)" }}>
+          Loading…
+        </p>
       </div>
     );
   }
@@ -37,31 +40,45 @@ function AdminGuard({ children }: { children: React.ReactNode }) {
   if (!session) return null;
 
   return (
-    <div className="flex min-h-screen">
+    <div className="admin-shell min-h-screen flex">
       {/* Mobile top bar */}
-      <header className="md:hidden fixed top-0 left-0 right-0 h-14 bg-slate-900 flex items-center px-4 z-40 gap-3">
+      <header
+        className="md:hidden fixed top-0 left-0 right-0 h-12 flex items-center px-3 z-40 gap-2"
+        style={{
+          background: "var(--a-bg)",
+          borderBottom: "1px solid var(--a-border)",
+        }}
+      >
         <button
           onClick={() => setSidebarOpen(true)}
-          className="text-slate-300 hover:text-white p-1"
+          className="p-1.5 rounded hover:bg-[var(--a-bg-hover)]"
           aria-label="Open menu"
         >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
+          <Menu className="w-4 h-4" style={{ color: "var(--a-text)" }} />
         </button>
-        <span className="text-white font-bold text-base">UyJoy Admin</span>
+        <span className="text-[13px] font-semibold" style={{ color: "var(--a-text)" }}>
+          UyJoy
+        </span>
       </header>
 
       {/* Backdrop */}
       {sidebarOpen && (
         <div
-          className="md:hidden fixed inset-0 bg-black/50 z-40"
+          className="md:hidden fixed inset-0 bg-black/30 z-40"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       <AdminSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <main className="flex-1 bg-slate-50 p-4 md:p-8 overflow-auto mt-14 md:mt-0 md:ml-56">{children}</main>
+
+      <main
+        className="flex-1 overflow-auto mt-12 md:mt-0 md:ml-[232px]"
+        style={{ background: "var(--a-bg)" }}
+      >
+        <div className="mx-auto w-full max-w-[1100px] px-5 sm:px-8 py-6 sm:py-8">
+          {children}
+        </div>
+      </main>
     </div>
   );
 }

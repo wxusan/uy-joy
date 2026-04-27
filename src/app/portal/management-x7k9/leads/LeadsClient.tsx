@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
+import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
+import { Download, Search } from "lucide-react";
 
 interface Lead {
   id: string;
@@ -32,6 +32,19 @@ interface Props {
   initialPages: number;
 }
 
+const statusDotColor = (s: string) => {
+  if (s === "new") return "var(--a-accent)";
+  if (s === "converted") return "var(--a-success)";
+  if (s === "notInterested" || s === "closed") return "var(--a-text-tertiary)";
+  return "var(--a-warning)";
+};
+
+const SOURCE_LABEL: Record<string, string> = {
+  kvartiralar: "Apartments",
+  vizual: "Visual",
+  "bosh-sahifa": "Homepage",
+};
+
 export default function LeadsClient({ initialLeads, initialTotal, initialPages }: Props) {
   const t = useTranslations("admin");
   const tc = useTranslations("common");
@@ -40,6 +53,8 @@ export default function LeadsClient({ initialLeads, initialTotal, initialPages }
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(initialTotal);
   const [pages, setPages] = useState(initialPages);
+  const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
 
   const loadLeads = (p: number) => {
     setLoading(true);
@@ -90,87 +105,158 @@ export default function LeadsClient({ initialLeads, initialTotal, initialPages }
     a.click();
   };
 
-  const statusColors: Record<string, string> = {
-    new: "bg-blue-100 text-blue-700",
-    inCRM: "bg-purple-100 text-purple-700",
-    callback: "bg-orange-100 text-orange-700",
-    inProgress: "bg-cyan-100 text-cyan-700",
-    contacted: "bg-yellow-100 text-yellow-700",
-    converted: "bg-green-100 text-green-700",
-    notInterested: "bg-red-100 text-red-700",
-    closed: "bg-slate-100 text-slate-700",
-  };
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return leads.filter((l) => {
+      if (statusFilter !== "all" && l.status !== statusFilter) return false;
+      if (!q) return true;
+      return (
+        l.name.toLowerCase().includes(q) ||
+        l.phone.toLowerCase().includes(q) ||
+        (l.projectName || "").toLowerCase().includes(q) ||
+        (l.unitNumber || "").toLowerCase().includes(q)
+      );
+    });
+  }, [leads, query, statusFilter]);
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
+    <div className="flex flex-col gap-5">
+      {/* Header */}
+      <div className="flex items-end justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold">{t("leadsInquiries")}</h1>
-          <p className="text-slate-500 text-sm">{t("totalLeads", { count: total })}</p>
+          <h1 className="a-page-title">{t("leadsInquiries")}</h1>
+          <p className="a-page-sub">{t("totalLeads", { count: total })}</p>
         </div>
-        <div className="flex gap-3">
-          <button
-            onClick={exportToCSV}
-            disabled={total === 0}
-            className="px-4 py-2 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 disabled:bg-slate-300 transition"
-          >
-            📥 {t("exportCSV")}
-          </button>
-          <Link href="/portal/management-x7k9" className="text-sm text-slate-500 hover:text-slate-700 py-2">
-            ← {t("backToDashboard")}
-          </Link>
-        </div>
+        <button
+          onClick={exportToCSV}
+          disabled={total === 0}
+          className="a-btn"
+        >
+          <Download className="w-3.5 h-3.5" />
+          {t("exportCSV")}
+        </button>
       </div>
 
+      {/* Toolbar */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <div className="relative flex-1 min-w-[220px] max-w-[320px]">
+          <Search
+            className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5"
+            style={{ color: "var(--a-text-tertiary)" }}
+          />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search name, phone, project…"
+            className="a-input"
+            style={{ height: 30, paddingLeft: 28 }}
+          />
+        </div>
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="a-input"
+          style={{ height: 30, width: "auto", padding: "0 8px" }}
+        >
+          <option value="all">All statuses</option>
+          {LEAD_STATUSES.map((s) => (
+            <option key={s} value={s}>
+              {t(s)}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Table or empty */}
       {loading ? (
-        <p className="text-slate-500">{tc("loading")}</p>
-      ) : leads.length === 0 ? (
-        <div className="bg-slate-50 rounded-xl p-12 text-center">
-          <span className="text-5xl block mb-4">📭</span>
-          <p className="text-slate-500">{t("noLeadsYet")}</p>
+        <p className="text-[13px]" style={{ color: "var(--a-text-tertiary)" }}>
+          {tc("loading")}
+        </p>
+      ) : filtered.length === 0 ? (
+        <div
+          className="a-card text-center py-12 text-[13px]"
+          style={{ color: "var(--a-text-tertiary)" }}
+        >
+          {leads.length === 0 ? t("noLeadsYet") : "No leads match your filter."}
         </div>
       ) : (
-        <div className="bg-white rounded-xl shadow-sm border overflow-x-auto">
-          <table className="w-full min-w-[900px]">
-            <thead className="bg-slate-50 border-b">
+        <div className="a-card overflow-x-auto">
+          <table className="a-table min-w-[820px]">
+            <thead>
               <tr>
-                <th className="text-left p-4 font-medium text-slate-600">{t("name")}</th>
-                <th className="text-left p-4 font-medium text-slate-600">{t("phone")}</th>
-                <th className="text-left p-4 font-medium text-slate-600">{t("project")}</th>
-                <th className="text-left p-4 font-medium text-slate-600">{t("unit")}</th>
-                <th className="text-left p-4 font-medium text-slate-600">Manba</th>
-                <th className="text-left p-4 font-medium text-slate-600">{t("status")}</th>
-                <th className="text-left p-4 font-medium text-slate-600">{t("date")}</th>
+                <th>{t("name")}</th>
+                <th>{t("phone")}</th>
+                <th>{t("project")}</th>
+                <th>{t("unit")}</th>
+                <th>Source</th>
+                <th>{t("status")}</th>
+                <th style={{ textAlign: "right" }}>{t("date")}</th>
               </tr>
             </thead>
             <tbody>
-              {leads.map((lead) => (
-                  <tr key={lead.id} className="border-b hover:bg-slate-50">
-                    <td className="p-4 font-medium">{lead.name}</td>
-                    <td className="p-4">
-                      <a href={`tel:${lead.phone}`} className="text-emerald-600 hover:underline">{lead.phone}</a>
-                    </td>
-                    <td className="p-4 text-slate-600">{lead.projectName || "-"}</td>
-                    <td className="p-4 text-slate-600">{lead.unitNumber || "-"}</td>
-                    <td className="p-4">
-                      {lead.source === "kvartiralar" && <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700">Kvartiralar</span>}
-                      {lead.source === "vizual" && <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700">Vizual</span>}
-                      {lead.source === "bosh-sahifa" && <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700">Bosh sahifa</span>}
-                      {!lead.source && <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-slate-50 text-slate-500">—</span>}
-                    </td>
-                    <td className="p-4">
+              {filtered.map((lead) => (
+                <tr key={lead.id}>
+                  <td style={{ fontWeight: 500 }}>{lead.name}</td>
+                  <td>
+                    <a
+                      href={`tel:${lead.phone}`}
+                      style={{ color: "var(--a-text)" }}
+                      className="hover:underline"
+                    >
+                      {lead.phone}
+                    </a>
+                  </td>
+                  <td style={{ color: "var(--a-text-secondary)" }}>
+                    {lead.projectName || "—"}
+                  </td>
+                  <td style={{ color: "var(--a-text-secondary)" }}>
+                    {lead.unitNumber || "—"}
+                  </td>
+                  <td style={{ color: "var(--a-text-secondary)" }}>
+                    {lead.source ? SOURCE_LABEL[lead.source] || lead.source : "—"}
+                  </td>
+                  <td>
+                    <span className="inline-flex items-center gap-2">
+                      <span
+                        className="a-dot"
+                        style={{ color: statusDotColor(lead.status) }}
+                      />
                       <select
                         value={lead.status}
                         onChange={(e) => updateLead(lead.id, { status: e.target.value })}
-                        className={`px-2 py-1 rounded-full text-xs font-medium border-0 cursor-pointer ${statusColors[lead.status] || statusColors.new}`}
+                        className="a-input"
+                        style={{
+                          height: 24,
+                          padding: "0 6px",
+                          fontSize: 12,
+                          width: "auto",
+                          background: "transparent",
+                          border: "1px solid transparent",
+                        }}
                       >
-                        {LEAD_STATUSES.map((s) => <option key={s} value={s}>{t(s)}</option>)}
+                        {LEAD_STATUSES.map((s) => (
+                          <option key={s} value={s}>
+                            {t(s)}
+                          </option>
+                        ))}
                       </select>
-                    </td>
-                    <td className="p-4 text-slate-500 text-sm whitespace-nowrap">
-                      {new Date(lead.createdAt).toLocaleDateString()} {new Date(lead.createdAt).toLocaleTimeString()}
-                    </td>
-                  </tr>
+                    </span>
+                  </td>
+                  <td
+                    style={{
+                      textAlign: "right",
+                      color: "var(--a-text-tertiary)",
+                      fontSize: 12,
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {new Date(lead.createdAt).toLocaleDateString()}{" "}
+                    {new Date(lead.createdAt).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </td>
+                </tr>
               ))}
             </tbody>
           </table>
@@ -178,15 +264,23 @@ export default function LeadsClient({ initialLeads, initialTotal, initialPages }
       )}
 
       {pages > 1 && (
-        <div className="flex items-center justify-between mt-4">
-          <p className="text-sm text-slate-500">Page {page} of {pages} — {total} total</p>
+        <div className="flex items-center justify-between">
+          <p className="text-[12px]" style={{ color: "var(--a-text-tertiary)" }}>
+            Page {page} of {pages} · {total} total
+          </p>
           <div className="flex gap-2">
-            <button onClick={() => changePage(Math.max(1, page - 1))} disabled={page <= 1}
-              className="px-3 py-1.5 text-sm bg-white border rounded-lg hover:bg-slate-50 disabled:opacity-40 transition">
+            <button
+              onClick={() => changePage(Math.max(1, page - 1))}
+              disabled={page <= 1}
+              className="a-btn"
+            >
               ← Prev
             </button>
-            <button onClick={() => changePage(Math.min(pages, page + 1))} disabled={page >= pages}
-              className="px-3 py-1.5 text-sm bg-white border rounded-lg hover:bg-slate-50 disabled:opacity-40 transition">
+            <button
+              onClick={() => changePage(Math.min(pages, page + 1))}
+              disabled={page >= pages}
+              className="a-btn"
+            >
               Next →
             </button>
           </div>

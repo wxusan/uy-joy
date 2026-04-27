@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useTranslations } from "next-intl";
+import { Plus, Trash2 } from "lucide-react";
 
 export default function AdminUsers() {
   const t = useTranslations("admin");
@@ -43,29 +44,46 @@ export default function AdminUsers() {
   };
 
   if ((session?.user as any)?.role !== "superadmin" && (session?.user as any)?.role !== "developer") {
-    return <p className="text-slate-500">{t("accessDenied")}</p>;
+    return (
+      <p className="text-[13px]" style={{ color: "var(--a-text-tertiary)" }}>
+        {t("accessDenied")}
+      </p>
+    );
   }
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">{t("users")}</h1>
+    <div className="flex flex-col gap-5">
+      <div className="flex items-end justify-between gap-4">
+        <div>
+          <h1 className="a-page-title">{t("users")}</h1>
+          <p className="a-page-sub">{users.length} member{users.length === 1 ? "" : "s"}</p>
+        </div>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-4 py-2 rounded-lg transition"
+          className={showForm ? "a-btn" : "a-btn a-btn-primary"}
         >
-          {showForm ? tc("cancel") : "+ " + t("addUser")}
+          {showForm ? (
+            tc("cancel")
+          ) : (
+            <>
+              <Plus className="w-3.5 h-3.5" />
+              {t("addUser")}
+            </>
+          )}
         </button>
       </div>
 
       {showForm && (
-        <form onSubmit={createUser} className="bg-white rounded-xl shadow-sm border p-5 mb-6 space-y-3">
-          <div className="grid grid-cols-2 gap-3">
+        <form
+          onSubmit={createUser}
+          className="a-card p-4 flex flex-col gap-3"
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <input
               placeholder={t("name")}
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className="px-3 py-2 border rounded-lg text-sm"
+              className="a-input"
               required
             />
             <input
@@ -73,7 +91,7 @@ export default function AdminUsers() {
               type="email"
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
-              className="px-3 py-2 border rounded-lg text-sm"
+              className="a-input"
               required
             />
             <input
@@ -81,56 +99,70 @@ export default function AdminUsers() {
               type="password"
               value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
-              className="px-3 py-2 border rounded-lg text-sm"
+              className="a-input"
               required
             />
             <select
               value={form.role}
               onChange={(e) => setForm({ ...form, role: e.target.value })}
-              className="px-3 py-2 border rounded-lg text-sm"
+              className="a-input"
             >
               <option value="admin">Admin</option>
               <option value="superadmin">{t("superadmin")}</option>
             </select>
           </div>
-          <button
-            type="submit"
-            className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-4 py-2 rounded-lg transition"
-          >
-            {t("createUser")}
-          </button>
+          <div>
+            <button type="submit" className="a-btn a-btn-primary">
+              {t("createUser")}
+            </button>
+          </div>
         </form>
       )}
 
-      <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="a-card overflow-hidden">
+        <table className="a-table">
           <thead>
-            <tr className="bg-slate-50 border-b text-left">
-              <th className="px-4 py-3 font-medium text-slate-600">{t("name")}</th>
-              <th className="px-4 py-3 font-medium text-slate-600">{t("email")}</th>
-              <th className="px-4 py-3 font-medium text-slate-600">{t("role")}</th>
-              <th className="px-4 py-3 font-medium text-slate-600">{tc("actions")}</th>
+            <tr>
+              <th>{t("name")}</th>
+              <th>{t("email")}</th>
+              <th>{t("role")}</th>
+              <th style={{ textAlign: "right" }}>{tc("actions")}</th>
             </tr>
           </thead>
           <tbody>
             {users.map((user) => (
-              <tr key={user.id} className="border-b">
-                <td className="px-4 py-3 font-medium">{user.name}</td>
-                <td className="px-4 py-3 text-slate-500">{user.email}</td>
-                <td className="px-4 py-3">
+              <tr key={user.id}>
+                <td style={{ fontWeight: 500 }}>{user.name}</td>
+                <td style={{ color: "var(--a-text-secondary)" }}>{user.email}</td>
+                <td>
                   <span
-                    className={`text-xs px-2 py-1 rounded-full font-medium ${user.role === "superadmin" ? "bg-purple-100 text-purple-800" : "bg-slate-100 text-slate-700"
-                      }`}
+                    className="inline-flex items-center gap-1.5 text-[12px]"
+                    style={{ color: "var(--a-text-secondary)" }}
                   >
-                    {user.role === "superadmin" ? t("superadmin") : "Admin"}
+                    <span
+                      className="a-dot"
+                      style={{
+                        color:
+                          user.role === "superadmin" || user.role === "developer"
+                            ? "var(--a-accent)"
+                            : "var(--a-text-tertiary)",
+                      }}
+                    />
+                    {user.role === "superadmin"
+                      ? t("superadmin")
+                      : user.role === "developer"
+                      ? "Developer"
+                      : "Admin"}
                   </span>
                 </td>
-                <td className="px-4 py-3">
+                <td style={{ textAlign: "right" }}>
                   {user.id !== (session?.user as any)?.id && (
                     <button
                       onClick={() => deleteUser(user.id)}
-                      className="text-xs text-red-600 hover:text-red-800 transition"
+                      className="a-btn a-btn-danger"
+                      style={{ height: 24, padding: "0 8px", fontSize: 12 }}
                     >
+                      <Trash2 className="w-3 h-3" />
                       {tc("delete")}
                     </button>
                   )}

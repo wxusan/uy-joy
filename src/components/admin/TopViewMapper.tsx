@@ -14,6 +14,7 @@ interface BuildingItem {
   pointX?: number | null;
   pointY?: number | null;
   labelScale?: number | null;
+  floors?: { id: string }[];
 }
 
 interface Props {
@@ -218,34 +219,34 @@ export default function TopViewMapper({ imageUrl, buildings, onClose, onSaved }:
                   const isActive = id === activeId;
                   const isHovered = id === hoveredId;
                   const building = buildings.find(b => b.id === id);
+                  const buildingLetter = (building?.name || "").replace(/block|building/gi, "").trim() || (building?.name || "");
+                  const floorsCount = building?.floors?.length ?? 0;
                   return (
                     <g key={id}>
                       <path
                         d={toSvgPath(pts)}
-                        fill={isActive || isHovered ? "rgba(16, 185, 129, 0.3)" : "transparent"}
-                        stroke={isActive ? "#10b981" : isHovered ? "#10b981" : "transparent"}
-                        strokeWidth={isActive ? 0.5 : 0.3}
+                        fill={isActive ? "rgba(199,93,63,0.20)" : isHovered ? "rgba(199,93,63,0.14)" : "rgba(199,93,63,0.08)"}
+                        stroke={isActive ? "#E07F5C" : isHovered ? "#C75D3F" : "rgba(199,93,63,0.50)"}
+                        strokeWidth={isActive ? 0.22 : 0.14}
                         className="transition-all duration-200"
                         onMouseEnter={() => setHoveredId(id)}
                         onMouseLeave={() => setHoveredId(null)}
                         style={{ cursor: "pointer" }}
                         onClick={(e) => { e.stopPropagation(); setActiveId(id); }}
                       />
-                      {/* Connector Line */}
+                      {/* Connector Line — always visible to mirror frontend */}
                       {(() => {
-                        if (!(isActive || isHovered) || pts.length === 0 || !labelPositions[id] || !pointPositions[id]) return null;
+                        if (pts.length === 0 || !labelPositions[id] || !pointPositions[id]) return null;
 
                         const scale = labelScales[id] || 1.0;
-                        // The rect in TopViewMapper has width=20, height=6
-                        const boxWidth = 20 * scale;
-                        const boxHeight = 6 * scale;
+                        const boxWidth = 3.6 * scale;
+                        const boxHeight = 5.2 * scale;
+                        const boxLeft = labelPositions[id].x - boxWidth / 2;
+                        const boxRight = labelPositions[id].x + boxWidth / 2;
+                        const boxBottom = labelPositions[id].y + boxHeight / 2;
 
-                        const boxLeft = labelPositions[id].x - (boxWidth / 2);
-                        const boxRight = labelPositions[id].x + (boxWidth / 2);
-                        const boxBottom = labelPositions[id].y + (boxHeight / 2);
-
-                        const isLabelLeftOfBuilding = labelPositions[id].x < pointPositions[id].x;
-                        const lineStartX = isLabelLeftOfBuilding ? boxRight + 0.5 : boxLeft - 0.5;
+                        const labelLeftOfPoint = labelPositions[id].x < pointPositions[id].x;
+                        const lineStartX = labelLeftOfPoint ? boxRight : boxLeft;
                         const lineStartY = boxBottom;
 
                         return (
@@ -254,58 +255,79 @@ export default function TopViewMapper({ imageUrl, buildings, onClose, onSaved }:
                             y1={lineStartY}
                             x2={pointPositions[id].x}
                             y2={pointPositions[id].y}
-                            stroke="#10b981"
-                            strokeWidth={isActive ? 0.3 : 0.2}
+                            stroke="rgba(247,232,215,0.7)"
+                            strokeWidth={isActive ? 0.16 : 0.12}
                             className="pointer-events-none"
                           />
                         );
                       })()}
 
                       {/* Draggable Point (Dot) */}
-                      {(isActive || isHovered) && pts.length > 0 && pointPositions[id] && (
+                      {pts.length > 0 && pointPositions[id] && (
                         <circle
                           cx={pointPositions[id].x}
                           cy={pointPositions[id].y}
-                          r={isActive ? 1.2 : 0.8}
-                          fill={isActive ? "white" : "#059669"}
-                          stroke="#059669"
-                          strokeWidth="0.3"
+                          r={isActive ? 0.65 : 0.5}
+                          fill="#F7F1E8"
+                          stroke={isActive ? "#E07F5C" : "rgba(247,241,232,0.7)"}
+                          strokeWidth="0.18"
                           style={{ cursor: draggingPointId === id ? 'grabbing' : 'grab' }}
                           onMouseDown={(e) => { e.stopPropagation(); setDraggingPointId(id); }}
                         />
                       )}
 
-                      {/* Draggable Label Box */}
-                      {(isActive || isHovered) && pts.length > 0 && labelPositions[id] && (
-                        <g
-                          onMouseDown={(e) => { e.stopPropagation(); setDraggingLabelId(id); }}
-                          style={{
-                            cursor: draggingLabelId === id ? 'grabbing' : 'grab',
-                            transformOrigin: `${labelPositions[id].x}px ${labelPositions[id].y}px`,
-                            transform: `scale(${labelScales[id] || 1.0})`
-                          }}
-                        >
-                          <rect
-                            x={labelPositions[id].x - 10}
-                            y={labelPositions[id].y - 3}
-                            width="20"
-                            height="6"
-                            fill={isActive ? "white" : "#059669"}
-                            stroke="#059669"
-                            strokeWidth="0.2"
-                            rx="0.5"
-                          />
-                          <text
-                            x={labelPositions[id].x}
-                            y={labelPositions[id].y}
-                            textAnchor="middle"
-                            dominantBaseline="middle"
-                            className={`text-[2.5px] font-bold select-none ${isActive ? 'fill-emerald-700' : 'fill-white'}`}
+                      {/* Draggable Label Box — portrait dark card with letter + "X floors" */}
+                      {pts.length > 0 && labelPositions[id] && (() => {
+                        const scale = labelScales[id] || 1.0;
+                        const boxW = 3.6 * scale;
+                        const boxH = 5.2 * scale;
+                        const boxLeft = labelPositions[id].x - boxW / 2;
+                        const boxTop = labelPositions[id].y - boxH / 2;
+                        return (
+                          <g
+                            onMouseDown={(e) => { e.stopPropagation(); setDraggingLabelId(id); }}
+                            style={{ cursor: draggingLabelId === id ? 'grabbing' : 'grab' }}
                           >
-                            {building?.name}
-                          </text>
-                        </g>
-                      )}
+                            <rect
+                              x={boxLeft}
+                              y={boxTop}
+                              width={boxW}
+                              height={boxH}
+                              rx="0.18"
+                              ry="0.18"
+                              fill="rgba(20,18,16,0.92)"
+                              stroke={isActive ? "#E07F5C" : "rgba(247,241,232,0.22)"}
+                              strokeWidth={isActive ? 0.22 : 0.14}
+                            />
+                            <text
+                              x={labelPositions[id].x}
+                              y={labelPositions[id].y - 0.55 * scale}
+                              textAnchor="middle"
+                              dominantBaseline="middle"
+                              fontSize={2.5 * scale}
+                              fontWeight="600"
+                              fill="#F7F1E8"
+                              className="select-none"
+                              style={{ letterSpacing: "0.02em" }}
+                            >
+                              {buildingLetter}
+                            </text>
+                            <text
+                              x={labelPositions[id].x}
+                              y={labelPositions[id].y + 1.6 * scale}
+                              textAnchor="middle"
+                              dominantBaseline="middle"
+                              fontSize={0.78 * scale}
+                              fontWeight="500"
+                              fill="rgba(247,241,232,0.66)"
+                              className="select-none"
+                              style={{ letterSpacing: "0.04em" }}
+                            >
+                              {floorsCount} floors
+                            </text>
+                          </g>
+                        );
+                      })()}
                     </g>
                   );
                 })}
@@ -317,11 +339,11 @@ export default function TopViewMapper({ imageUrl, buildings, onClose, onSaved }:
                       d={currentPoints.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ")}
                       fill="none"
                       stroke="#10b981"
-                      strokeWidth={0.4}
-                      strokeDasharray="1 0.5"
+                      strokeWidth={0.18}
+                      strokeDasharray="0.8 0.4"
                     />
                     {currentPoints.map((p, i) => (
-                      <circle key={i} cx={p.x} cy={p.y} r={0.8} fill="#10b981" />
+                      <circle key={i} cx={p.x} cy={p.y} r={0.45} fill="#10b981" stroke="white" strokeWidth="0.15" />
                     ))}
                   </>
                 )}

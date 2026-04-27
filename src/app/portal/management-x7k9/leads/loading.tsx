@@ -1,39 +1,45 @@
 export default function LeadsLoading() {
   return (
-    <div>
+    <div className="flex flex-col gap-5">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <div className="h-8 w-48 skeleton mb-2" />
-          <div className="h-4 w-24 skeleton" />
+      <div className="flex items-end justify-between gap-4 flex-wrap">
+        <div className="flex flex-col gap-2">
+          <div className="a-skel h-5 w-40" />
+          <div className="a-skel h-3.5 w-24" />
         </div>
-        <div className="flex gap-3">
-          <div className="h-10 w-32 bg-emerald-200 rounded-lg" />
-          <div className="h-10 w-36 skeleton" />
-        </div>
+        <div className="a-skel h-7 w-32" />
+      </div>
+
+      {/* Toolbar */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <div className="a-skel h-7 w-64" />
+        <div className="a-skel h-7 w-32" />
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-slate-50 border-b">
+      <div className="a-card overflow-hidden">
+        <table className="a-table">
+          <thead>
             <tr>
-              {["Name", "Phone", "Project", "Unit", "Status", "Date"].map((_, i) => (
-                <th key={i} className="text-left p-4">
-                  <div className="h-4 w-16 skeleton" />
-                </th>
-              ))}
+              {["Name", "Phone", "Project", "Unit", "Source", "Status", "Date"].map(
+                (_, i) => (
+                  <th key={i}>
+                    <div className="a-skel h-3 w-16" />
+                  </th>
+                )
+              )}
             </tr>
           </thead>
           <tbody>
-            {[...Array(6)].map((_, i) => (
-              <tr key={i} className="border-b">
-                <td className="p-4"><div className="h-4 w-28 skeleton" /></td>
-                <td className="p-4"><div className="h-4 w-24 skeleton" /></td>
-                <td className="p-4"><div className="h-4 w-32 skeleton" /></td>
-                <td className="p-4"><div className="h-4 w-12 skeleton" /></td>
-                <td className="p-4"><div className="h-6 w-20 bg-blue-100 rounded-full" /></td>
-                <td className="p-4"><div className="h-4 w-24 skeleton" /></td>
+            {Array.from({ length: 8 }).map((_, i) => (
+              <tr key={i}>
+                <td><div className="a-skel h-3 w-28" /></td>
+                <td><div className="a-skel h-3 w-24" /></td>
+                <td><div className="a-skel h-3 w-32" /></td>
+                <td><div className="a-skel h-3 w-10" /></td>
+                <td><div className="a-skel h-3 w-16" /></td>
+                <td><div className="a-skel h-3 w-20" /></td>
+                <td><div className="a-skel h-3 w-24 ml-auto" /></td>
               </tr>
             ))}
           </tbody>

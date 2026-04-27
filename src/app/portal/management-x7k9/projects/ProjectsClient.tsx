@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import TopViewMapper from "@/components/admin/TopViewMapper";
-import { Building2, Home, Map, Languages, Save } from "lucide-react";
+import { Building2, Home, Map, ArrowUpRight, Save, Upload } from "lucide-react";
 
 type Lang = "uz" | "ru" | "en";
 
@@ -94,134 +94,264 @@ export default function ProjectsClient({ initialProject }: Props) {
     await loadProject();
   };
 
-  if (!project) return <p className="text-slate-500">Loyiha topilmadi.</p>;
+  if (!project) {
+    return (
+      <p className="text-[13px]" style={{ color: "var(--a-text-tertiary)" }}>
+        Loyiha topilmadi.
+      </p>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-        <h1 className="text-xl sm:text-2xl font-bold">Loyiha</h1>
-        <div className="flex gap-4 text-sm">
-          <a href={`/projects/${project.id}`} target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline">
-            Saytda ko&apos;rish →
+    <div className="flex flex-col gap-6">
+      {/* Page header */}
+      <div className="flex items-end justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="a-page-title">Project</h1>
+          <p className="a-page-sub">Manage buildings, units, content and translations</p>
+        </div>
+        <div className="flex gap-2">
+          <a
+            href={`/projects/${project.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="a-btn"
+          >
+            View on site
+            <ArrowUpRight className="w-3.5 h-3.5" />
           </a>
-          <a href={`/projects/${project.id}/explore`} target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline">
-            Floor plan →
+          <a
+            href={`/projects/${project.id}/explore`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="a-btn"
+          >
+            Floor plan
+            <ArrowUpRight className="w-3.5 h-3.5" />
           </a>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border p-4 sm:p-6">
-        <h2 className="text-lg font-semibold text-slate-800 mb-1">Majmua ustidan ko&apos;rinishi</h2>
-        <p className="text-sm text-slate-500 mb-4">Foydalanuvchilar bu rasmda binolarni bosib ko&apos;radi</p>
-        <div className="flex items-start gap-6 flex-wrap">
-          <div className="w-48 h-36 bg-slate-100 rounded-lg overflow-hidden flex-shrink-0">
+      {/* Top-view image */}
+      <section className="a-card p-4 sm:p-5">
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <div>
+            <h2 className="text-[14px] font-semibold" style={{ color: "var(--a-text)" }}>
+              Top-view of the complex
+            </h2>
+            <p className="text-[12px] mt-0.5" style={{ color: "var(--a-text-secondary)" }}>
+              Visitors click buildings on this image
+            </p>
+          </div>
+        </div>
+        <div className="flex items-start gap-5 flex-wrap">
+          <div
+            className="w-48 h-32 overflow-hidden flex-shrink-0"
+            style={{
+              background: "var(--a-bg-subtle)",
+              border: "1px solid var(--a-border)",
+              borderRadius: "var(--a-radius-sm)",
+            }}
+          >
             {project.topViewImage ? (
-              <img src={project.topViewImage} alt="Top view" className="w-full h-full object-cover" />
+              <img
+                src={project.topViewImage}
+                alt="Top view"
+                className="w-full h-full object-cover"
+              />
             ) : (
-              <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 gap-2">
-                <Map className="w-8 h-8 text-slate-300" />
-                <span className="text-xs">Rasm yo&apos;q</span>
+              <div
+                className="w-full h-full flex flex-col items-center justify-center gap-2"
+                style={{ color: "var(--a-text-tertiary)" }}
+              >
+                <Map className="w-6 h-6" />
+                <span className="text-[11px]">No image</span>
               </div>
             )}
           </div>
-          <div className="flex flex-col gap-3">
-            <label className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg cursor-pointer transition text-sm font-medium ${uploadingTopView ? "bg-slate-200 text-slate-500 cursor-not-allowed" : "bg-emerald-600 text-white hover:bg-emerald-700"}`}>
-              {uploadingTopView ? "Yuklanmoqda..." : "Rasm yuklash"}
-              <input type="file" accept="image/*" className="hidden" disabled={uploadingTopView}
-                onChange={(e) => e.target.files?.[0] && handleTopViewUpload(e.target.files[0])} />
+          <div className="flex flex-col gap-2">
+            <label
+              className={`a-btn ${uploadingTopView ? "" : "a-btn-primary"}`}
+              style={{ cursor: uploadingTopView ? "not-allowed" : "pointer" }}
+            >
+              <Upload className="w-3.5 h-3.5" />
+              {uploadingTopView ? "Uploading…" : "Upload image"}
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                disabled={uploadingTopView}
+                onChange={(e) =>
+                  e.target.files?.[0] && handleTopViewUpload(e.target.files[0])
+                }
+              />
             </label>
             {project.topViewImage && project.buildings?.length > 0 && (
-              <button onClick={() => setShowMapper(true)}
-                className="px-4 py-2 bg-slate-800 text-white rounded-lg text-sm font-medium hover:bg-slate-700 transition">
-                Binolar hududlarini belgilash
+              <button onClick={() => setShowMapper(true)} className="a-btn">
+                Map building areas
               </button>
             )}
           </div>
         </div>
-      </div>
+      </section>
 
       {showMapper && project.topViewImage && (
         <TopViewMapper
           imageUrl={project.topViewImage}
-          buildings={project.buildings.map((b) => ({ id: b.id, name: b.name, polygonData: b.polygonData || null }))}
+          buildings={project.buildings.map((b) => ({
+            id: b.id,
+            name: b.name,
+            polygonData: b.polygonData || null,
+          }))}
           onClose={() => setShowMapper(false)}
-          onSaved={async () => { setShowMapper(false); await loadProject(); }}
+          onSaved={async () => {
+            setShowMapper(false);
+            await loadProject();
+          }}
         />
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Link href={`/portal/management-x7k9/projects/${project.id}/buildings`}
-          className="group bg-white rounded-xl shadow-sm border p-6 hover:border-purple-400 hover:shadow-md transition">
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center group-hover:bg-purple-200 transition">
-              <Building2 className="w-6 h-6 text-purple-600" />
+      {/* Manage Buildings / Units — now quiet rows, not big colorful tiles */}
+      <section className="a-card overflow-hidden">
+        <div
+          className="px-4 py-3 text-[13px] font-semibold"
+          style={{
+            color: "var(--a-text)",
+            borderBottom: "1px solid var(--a-border)",
+          }}
+        >
+          Inventory
+        </div>
+        <Link
+          href={`/portal/management-x7k9/projects/${project.id}/buildings`}
+          className="flex items-center gap-3 px-4 py-3 hover:bg-[var(--a-bg-hover)]"
+          style={{ borderBottom: "1px solid var(--a-border)" }}
+        >
+          <Building2
+            className="w-[14px] h-[14px]"
+            style={{ color: "var(--a-text-tertiary)" }}
+          />
+          <div className="flex-1 min-w-0">
+            <div className="text-[13px] font-medium" style={{ color: "var(--a-text)" }}>
+              Buildings
             </div>
-            <div>
-              <h3 className="text-lg font-semibold text-slate-800 group-hover:text-purple-700 transition">Binolarni boshqarish</h3>
-              <p className="text-sm text-slate-500 mt-1">Binolar qo&apos;shish, rasm yuklash, qavatlarni tahrirlash</p>
-              <p className="text-xs text-purple-600 font-medium mt-2">{project.buildings?.length || 0} ta bino →</p>
+            <div className="text-[12px]" style={{ color: "var(--a-text-secondary)" }}>
+              Add buildings, upload facade images, edit floors
             </div>
           </div>
+          <span className="text-[12px]" style={{ color: "var(--a-text-tertiary)" }}>
+            {project.buildings?.length || 0}
+          </span>
+          <ArrowUpRight
+            className="w-3.5 h-3.5"
+            style={{ color: "var(--a-text-tertiary)" }}
+          />
         </Link>
-
-        <Link href={`/portal/management-x7k9/projects/${project.id}/units`}
-          className="group bg-white rounded-xl shadow-sm border p-6 hover:border-emerald-400 hover:shadow-md transition">
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center group-hover:bg-emerald-200 transition">
-              <Home className="w-6 h-6 text-emerald-600" />
+        <Link
+          href={`/portal/management-x7k9/projects/${project.id}/units`}
+          className="flex items-center gap-3 px-4 py-3 hover:bg-[var(--a-bg-hover)]"
+        >
+          <Home
+            className="w-[14px] h-[14px]"
+            style={{ color: "var(--a-text-tertiary)" }}
+          />
+          <div className="flex-1 min-w-0">
+            <div className="text-[13px] font-medium" style={{ color: "var(--a-text)" }}>
+              Units
             </div>
-            <div>
-              <h3 className="text-lg font-semibold text-slate-800 group-hover:text-emerald-700 transition">Kvartiralar holati</h3>
-              <p className="text-sm text-slate-500 mt-1">Bo&apos;sh, band, sotilgan kvartiralarni boshqarish</p>
+            <div className="text-[12px]" style={{ color: "var(--a-text-secondary)" }}>
+              Manage available, reserved and sold apartments
             </div>
           </div>
+          <ArrowUpRight
+            className="w-3.5 h-3.5"
+            style={{ color: "var(--a-text-tertiary)" }}
+          />
         </Link>
-      </div>
+      </section>
 
       {/* Multilingual text editor */}
-      <div className="bg-white rounded-xl shadow-sm border p-4 sm:p-6">
-        <div className="flex items-center gap-2 mb-1">
-          <Languages className="w-5 h-5 text-slate-400" />
-          <h2 className="text-lg font-semibold text-slate-800">Loyiha nomi va tavsifi</h2>
-        </div>
-        <p className="text-sm text-slate-500 mb-4">Saytda ko&apos;rsatiladigan matnlar — O&apos;zbek / Rus / Ingliz</p>
+      <section className="a-card p-4 sm:p-5">
+        <h2 className="text-[14px] font-semibold mb-1" style={{ color: "var(--a-text)" }}>
+          Project name and description
+        </h2>
+        <p className="text-[12px] mb-4" style={{ color: "var(--a-text-secondary)" }}>
+          Public-facing copy — Uzbek / Russian / English
+        </p>
 
         {/* Language tabs */}
-        <div className="flex gap-1 bg-slate-100 rounded-lg p-1 w-fit mb-5">
+        <div
+          className="inline-flex items-center gap-0 mb-4 p-0.5"
+          style={{
+            background: "var(--a-bg-active)",
+            borderRadius: "var(--a-radius-sm)",
+          }}
+        >
           {(["uz", "ru", "en"] as Lang[]).map((lang) => (
             <button
               key={lang}
               onClick={() => setActiveLang(lang)}
-              className={`px-4 py-1.5 rounded-md text-sm font-semibold transition ${
-                activeLang === lang
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-500 hover:text-slate-700"
-              }`}
+              className="px-3 py-1 text-[12px] font-medium uppercase tracking-wide"
+              style={{
+                background: activeLang === lang ? "var(--a-bg)" : "transparent",
+                color:
+                  activeLang === lang
+                    ? "var(--a-text)"
+                    : "var(--a-text-secondary)",
+                borderRadius: "calc(var(--a-radius-sm) - 1px)",
+                border:
+                  activeLang === lang
+                    ? "1px solid var(--a-border)"
+                    : "1px solid transparent",
+              }}
             >
-              {lang === "uz" ? "🇺🇿 UZ" : lang === "ru" ? "🇷🇺 RU" : "🇬🇧 EN"}
+              {lang}
             </button>
           ))}
         </div>
 
-        <div className="space-y-4">
+        <div className="flex flex-col gap-3">
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Loyiha nomi</label>
+            <label
+              className="block text-[12px] font-medium mb-1"
+              style={{ color: "var(--a-text-secondary)" }}
+            >
+              Project name
+            </label>
             <input
               type="text"
               value={names[activeLang]}
               onChange={(e) => setNames({ ...names, [activeLang]: e.target.value })}
-              placeholder={activeLang === "uz" ? "Navruz Residence" : activeLang === "ru" ? "Навруз Резиденс" : "Navruz Residence"}
-              className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+              placeholder={
+                activeLang === "uz"
+                  ? "Navruz Residence"
+                  : activeLang === "ru"
+                  ? "Навруз Резиденс"
+                  : "Navruz Residence"
+              }
+              className="a-input"
             />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Majmua haqida (tavsif)</label>
+            <label
+              className="block text-[12px] font-medium mb-1"
+              style={{ color: "var(--a-text-secondary)" }}
+            >
+              About the complex
+            </label>
             <textarea
               rows={4}
               value={descs[activeLang]}
               onChange={(e) => setDescs({ ...descs, [activeLang]: e.target.value })}
-              placeholder={activeLang === "uz" ? "Toshkent markazida zamonaviy turar-joy majmuasi..." : activeLang === "ru" ? "Современный жилой комплекс в центре Ташкента..." : "Premium residential complex in the heart of Tashkent..."}
-              className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm resize-none"
+              placeholder={
+                activeLang === "uz"
+                  ? "Toshkent markazida zamonaviy turar-joy majmuasi…"
+                  : activeLang === "ru"
+                  ? "Современный жилой комплекс в центре Ташкента…"
+                  : "Premium residential complex in the heart of Tashkent…"
+              }
+              className="a-input"
+              style={{ resize: "vertical", padding: "8px 10px" }}
             />
           </div>
         </div>
@@ -229,23 +359,27 @@ export default function ProjectsClient({ initialProject }: Props) {
         <button
           onClick={saveTexts}
           disabled={saving}
-          className={`mt-4 inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition ${
-            saveSuccess
-              ? "bg-emerald-100 text-emerald-700"
-              : "bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-60"
-          }`}
+          className="a-btn a-btn-primary mt-4"
         >
-          <Save className="w-4 h-4" />
-          {saving ? "Saqlanmoqda..." : saveSuccess ? "Saqlandi ✓" : "Saqlash"}
+          <Save className="w-3.5 h-3.5" />
+          {saving ? "Saving…" : saveSuccess ? "Saved ✓" : "Save"}
         </button>
-      </div>
+      </section>
 
-      <div className="bg-white rounded-xl shadow-sm border p-4 sm:p-6 mt-4">
-        <h2 className="text-lg font-semibold text-slate-800 mb-1">Topshirish yili</h2>
-        <p className="text-sm text-slate-500 mb-3">Loyiha qachon topshiriladi (masalan: 2028)</p>
-        <div className="flex items-center gap-3">
+      {/* Expected year */}
+      <section className="a-card p-4 sm:p-5">
+        <h2 className="text-[14px] font-semibold mb-1" style={{ color: "var(--a-text)" }}>
+          Expected completion
+        </h2>
+        <p className="text-[12px] mb-3" style={{ color: "var(--a-text-secondary)" }}>
+          Year the project is expected to be delivered (e.g. 2028)
+        </p>
+        <div className="flex items-center gap-2">
           <input
-            type="number" min={2024} max={2040} placeholder="2028"
+            type="number"
+            min={2024}
+            max={2040}
+            placeholder="2028"
             value={project.expectedYear || ""}
             onChange={async (e) => {
               const val = e.target.value ? parseInt(e.target.value) : null;
@@ -256,11 +390,14 @@ export default function ProjectsClient({ initialProject }: Props) {
                 body: JSON.stringify({ expectedYear: val }),
               });
             }}
-            className="w-32 px-3 py-2 border rounded-lg text-lg font-semibold"
+            className="a-input"
+            style={{ width: 96, fontWeight: 600 }}
           />
-          <span className="text-sm text-slate-400">yil</span>
+          <span className="text-[12px]" style={{ color: "var(--a-text-tertiary)" }}>
+            year
+          </span>
         </div>
-      </div>
+      </section>
     </div>
   );
 }

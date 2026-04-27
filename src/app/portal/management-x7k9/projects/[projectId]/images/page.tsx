@@ -197,12 +197,13 @@ export default function ProjectImagesPage() {
           buildings={project.buildings.map(b => ({
             id: b.id,
             name: b.name,
-            positionData: (b as any).positionData || null,
+            polygonData: (b as any).polygonData || (b as any).positionData || null,
             labelX: b.labelX,
             labelY: b.labelY,
             pointX: b.pointX,
             pointY: b.pointY,
-            labelScale: b.labelScale
+            labelScale: b.labelScale,
+            floors: (b.floors || []).map(f => ({ id: f.id })),
           }))}
           onClose={() => setShowMapper(false)}
           onSaved={async () => { setShowMapper(false); await loadProject(); setMessage({ type: 'success', text: 'Saved building areas' }); }}

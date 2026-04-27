@@ -34,43 +34,82 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-xl max-w-sm w-full p-8">
-        <h1 className="text-2xl font-bold mb-1">
-          <span className="text-emerald-600">Uy</span>Joy Admin
-        </h1>
-        <p className="text-sm text-slate-500 mb-6">{t("subtitle")}</p>
+    <div
+      className="min-h-screen flex items-center justify-center px-4"
+      style={{ background: "var(--a-bg-subtle)" }}
+    >
+      <div className="w-full max-w-[360px]">
+        {/* Brand mark */}
+        <div className="flex items-center gap-2 mb-8">
+          <div
+            className="w-7 h-7 rounded flex items-center justify-center text-[12px] font-semibold text-white"
+            style={{ background: "var(--a-text)" }}
+          >
+            U
+          </div>
+          <span className="text-[14px] font-semibold" style={{ color: "var(--a-text)" }}>
+            UyJoy
+          </span>
+        </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <h1 className="text-[20px] font-semibold mb-1" style={{ color: "var(--a-text)" }}>
+          Sign in
+        </h1>
+        <p className="text-[13px] mb-6" style={{ color: "var(--a-text-secondary)" }}>
+          {t("subtitle")}
+        </p>
+
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           <div>
-            <label className="text-sm font-medium text-slate-700">{t("email")}</label>
+            <label
+              className="text-[12px] font-medium block mb-1"
+              style={{ color: "var(--a-text-secondary)" }}
+            >
+              {t("email")}
+            </label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full mt-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+              className="a-input"
               placeholder="admin@navruz.uz"
               required
+              style={{ height: 32, padding: "0 10px" }}
             />
           </div>
+
           <div>
-            <label className="text-sm font-medium text-slate-700">{t("password")}</label>
+            <label
+              className="text-[12px] font-medium block mb-1"
+              style={{ color: "var(--a-text-secondary)" }}
+            >
+              {t("password")}
+            </label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full mt-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+              className="a-input"
               placeholder="••••••••"
               required
+              style={{ height: 32, padding: "0 10px" }}
             />
           </div>
 
-          {error && <p className="text-sm text-red-600">{t("invalidCredentials")}</p>}
+          {error && (
+            <p
+              className="text-[12px]"
+              style={{ color: "var(--a-danger)" }}
+            >
+              {t("invalidCredentials")}
+            </p>
+          )}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white py-2.5 rounded-lg font-medium transition"
+            className="a-btn a-btn-primary w-full justify-center mt-2"
+            style={{ height: 34 }}
           >
             {loading ? t("signingIn") : t("signIn")}
           </button>

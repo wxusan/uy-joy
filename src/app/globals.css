@@ -180,3 +180,230 @@ html {
   animation: shimmer 1.4s ease-in-out infinite;
   border-radius: 0.375rem;
 }
+
+/* =========================================================
+   Admin (Linear/Notion) design tokens
+   Scoped via .admin-shell — does not leak to public site.
+   ========================================================= */
+.admin-shell {
+  /* Surface */
+  --a-bg: #ffffff;
+  --a-bg-subtle: #fafafa;
+  --a-bg-sidebar: #f7f7f5;
+  --a-bg-hover: #f2f2ef;
+  --a-bg-active: #ececea;
+
+  /* Text */
+  --a-text: #1f1f1d;
+  --a-text-secondary: #6b6b66;
+  --a-text-tertiary: #9b9b96;
+  --a-text-disabled: #c0c0bb;
+
+  /* Border (hairline only — no shadows) */
+  --a-border: #ebebe8;
+  --a-border-strong: #d8d8d4;
+
+  /* Single accent — used for selected/active and primary CTA only */
+  --a-accent: #5e6ad2;          /* Linear violet */
+  --a-accent-hover: #4f5ac4;
+  --a-accent-bg: #eef0fb;
+  --a-accent-text: #ffffff;
+
+  /* Status — desaturated, dot-only (no full backgrounds) */
+  --a-success: #4f9d6c;
+  --a-warning: #c98a3a;
+  --a-danger:  #c25656;
+
+  /* Type */
+  --a-font: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Inter",
+            "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --a-font-mono: ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, monospace;
+
+  /* Geometry */
+  --a-radius: 6px;
+  --a-radius-sm: 4px;
+  --a-radius-lg: 8px;
+
+  background: var(--a-bg);
+  color: var(--a-text);
+  font-family: var(--a-font);
+  font-feature-settings: "cv11", "ss01", "ss03";
+  -webkit-font-smoothing: antialiased;
+  letter-spacing: -0.005em;
+}
+
+.admin-shell h1,
+.admin-shell h2,
+.admin-shell h3,
+.admin-shell h4,
+.admin-shell h5,
+.admin-shell h6 {
+  font-family: var(--a-font);
+  letter-spacing: -0.015em;
+  color: var(--a-text);
+}
+
+.admin-shell ::selection {
+  background: var(--a-accent-bg);
+  color: var(--a-text);
+}
+
+/* Reusable primitives for admin-only use */
+.admin-shell .a-card {
+  background: var(--a-bg);
+  border: 1px solid var(--a-border);
+  border-radius: var(--a-radius);
+}
+
+.admin-shell .a-divider {
+  height: 1px;
+  background: var(--a-border);
+}
+
+.admin-shell .a-input {
+  background: var(--a-bg);
+  border: 1px solid var(--a-border);
+  border-radius: var(--a-radius-sm);
+  padding: 6px 10px;
+  font-size: 13px;
+  color: var(--a-text);
+  width: 100%;
+  transition: border-color .12s ease, box-shadow .12s ease;
+}
+
+.admin-shell .a-input:focus {
+  outline: none;
+  border-color: var(--a-accent);
+  box-shadow: 0 0 0 3px var(--a-accent-bg);
+}
+
+.admin-shell .a-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--a-text);
+  background: var(--a-bg);
+  border: 1px solid var(--a-border);
+  border-radius: var(--a-radius-sm);
+  transition: background .12s ease, border-color .12s ease;
+  cursor: pointer;
+}
+.admin-shell .a-btn:hover { background: var(--a-bg-hover); border-color: var(--a-border-strong); }
+.admin-shell .a-btn:disabled { color: var(--a-text-disabled); cursor: not-allowed; background: var(--a-bg); }
+
+.admin-shell .a-btn-primary {
+  background: var(--a-text);
+  color: #fff;
+  border-color: var(--a-text);
+}
+.admin-shell .a-btn-primary:hover { background: #000; border-color: #000; }
+.admin-shell .a-btn-primary:disabled { background: var(--a-text-tertiary); border-color: var(--a-text-tertiary); }
+
+.admin-shell .a-btn-danger {
+  color: var(--a-danger);
+}
+.admin-shell .a-btn-danger:hover { background: #fbf0f0; border-color: var(--a-danger); }
+
+/* Status dot used inline in tables/lists */
+.admin-shell .a-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: currentColor;
+  flex: none;
+}
+
+/* Quiet table */
+.admin-shell .a-table {
+  width: 100%;
+  font-size: 13px;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.admin-shell .a-table th {
+  text-align: left;
+  font-weight: 500;
+  color: var(--a-text-tertiary);
+  font-size: 12px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--a-border);
+  background: var(--a-bg);
+}
+.admin-shell .a-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--a-border);
+  color: var(--a-text);
+}
+.admin-shell .a-table tbody tr:hover { background: var(--a-bg-hover); }
+.admin-shell .a-table tbody tr:last-child td { border-bottom: 0; }
+
+/* Section header used at top of pages */
+.admin-shell .a-page-title {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: var(--a-text);
+}
+.admin-shell .a-page-sub {
+  font-size: 13px;
+  color: var(--a-text-secondary);
+  margin-top: 2px;
+}
+.admin-shell .a-section-title {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--a-text-tertiary);
+  text-transform: none;
+  letter-spacing: 0;
+  margin-bottom: 8px;
+}
+
+/* Sidebar primitives */
+.admin-shell .a-side {
+  background: var(--a-bg-sidebar);
+  border-right: 1px solid var(--a-border);
+}
+.admin-shell .a-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  margin: 0 6px;
+  border-radius: var(--a-radius-sm);
+  font-size: 13px;
+  color: var(--a-text-secondary);
+  font-weight: 500;
+  transition: background .1s ease, color .1s ease;
+}
+.admin-shell .a-nav-item:hover {
+  background: var(--a-bg-hover);
+  color: var(--a-text);
+}
+.admin-shell .a-nav-item.active {
+  background: var(--a-bg-active);
+  color: var(--a-text);
+}
+.admin-shell .a-nav-group {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--a-text-tertiary);
+  letter-spacing: 0.02em;
+  padding: 14px 14px 4px;
+}
+
+/* Admin skeleton — neutral, subtle pulse only.
+   Replaces the old colored .skeleton inside admin pages. */
+@keyframes a-skel-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.55; }
+}
+.admin-shell .a-skel {
+  background: var(--a-bg-active);
+  border-radius: var(--a-radius-sm);
+  animation: a-skel-pulse 1.4s ease-in-out infinite;
+}

@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { invalidateProject } from "@/lib/cache";
+import { HeroImageCreateSchema } from "@/lib/schemas/hero-image";
+import { invalidInput } from "@/lib/schemas/common";
 
 // GET all hero images
 export async function GET() {
@@ -17,7 +20,10 @@ export async function GET() {
 // POST new hero image (max 3)
 export async function POST(req: Request) {
   try {
-    const { imageUrl } = await req.json();
+    const body = await req.json();
+    const parsed = HeroImageCreateSchema.safeParse(body);
+    if (!parsed.success) return invalidInput(parsed.error);
+    const { imageUrl } = parsed.data;
     
     // Check current count
     const count = await prisma.heroImage.count();
@@ -35,6 +41,7 @@ export async function POST(req: Request) {
       },
     });
 
+    invalidateProject();
     return NextResponse.json(image);
   } catch (error) {
     console.error("Error creating hero image:", error);

@@ -26,6 +26,7 @@ const emptyFAQ = {
 
 export default function FAQsPage() {
   const t = useTranslations("admin");
+  const tc = useTranslations("common");
   const [faqs, setFaqs] = useState<FAQ[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState(emptyFAQ);
@@ -44,7 +45,7 @@ export default function FAQsPage() {
 
   const handleSave = async () => {
     if (!formData.questionUz || !formData.answerUz) {
-      alert("Savol va javobni kiriting (kamida O&apos;zbek tilida)");
+      alert(t("requireUzQuestion"));
       return;
     }
 
@@ -52,14 +53,12 @@ export default function FAQsPage() {
 
     try {
       if (editingId) {
-        // Update
         await fetch(`/api/faqs/${editingId}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(formData),
         });
       } else {
-        // Create
         await fetch("/api/faqs", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -73,14 +72,14 @@ export default function FAQsPage() {
       setFormData(emptyFAQ);
     } catch (error) {
       console.error("Error:", error);
-      alert("Xatolik yuz berdi");
+      alert(t("errorOccurred"));
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Bu savolni o&apos;chirmoqchimisiz?")) return;
+    if (!confirm(t("deleteQuestion"))) return;
 
     try {
       await fetch(`/api/faqs/${id}`, { method: "DELETE" });
@@ -125,17 +124,17 @@ export default function FAQsPage() {
           >
             ← {t("backToDashboard")}
           </Link>
-          <h1 className="text-2xl font-bold">FAQ - Savollar va Javoblar</h1>
+          <h1 className="text-2xl font-bold">{t("faqTitle")}</h1>
           <p className="text-slate-500 text-sm mt-1">
-            Bosh sahifada ko&apos;rinadigan savollar
+            {t("faqSubtitle")}
           </p>
         </div>
         {!isAdding && !editingId && (
           <button
             onClick={startAdd}
-            className="px-4 py-2 bg-navy-900 text-white rounded-lg font-medium hover:bg-navy-800 transition"
+            className="px-4 py-2 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800 transition"
           >
-            + Savol qo&apos;shish
+            {t("addQuestion")}
           </button>
         )}
       </div>
@@ -144,23 +143,23 @@ export default function FAQsPage() {
       {(isAdding || editingId) && (
         <div className="bg-white rounded-xl shadow-sm border p-6 mb-6">
           <h2 className="font-semibold text-lg mb-4">
-            {editingId ? "Savolni tahrirlash" : "Yangi savol"}
+            {editingId ? t("editQuestion") : t("newQuestion")}
           </h2>
 
           <div className="space-y-6">
             {/* Uzbek */}
             <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <h3 className="font-medium text-blue-800 mb-3">🇺🇿 O&apos;zbek tilida</h3>
+              <h3 className="font-medium text-blue-800 mb-3">{t("uzLang")}</h3>
               <div className="space-y-3">
                 <input
                   type="text"
-                  placeholder="Savol"
+                  placeholder={t("questionLabel")}
                   value={formData.questionUz}
                   onChange={(e) => setFormData({ ...formData, questionUz: e.target.value })}
                   className="w-full px-4 py-2 border rounded-lg"
                 />
                 <textarea
-                  placeholder="Javob"
+                  placeholder={t("answerLabel")}
                   value={formData.answerUz}
                   onChange={(e) => setFormData({ ...formData, answerUz: e.target.value })}
                   rows={3}
@@ -171,17 +170,17 @@ export default function FAQsPage() {
 
             {/* English */}
             <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
-              <h3 className="font-medium text-slate-700 mb-3">🇬🇧 English</h3>
+              <h3 className="font-medium text-slate-700 mb-3">{t("enLang")}</h3>
               <div className="space-y-3">
                 <input
                   type="text"
-                  placeholder="Question"
+                  placeholder={t("questionLabel")}
                   value={formData.questionEn}
                   onChange={(e) => setFormData({ ...formData, questionEn: e.target.value })}
                   className="w-full px-4 py-2 border rounded-lg"
                 />
                 <textarea
-                  placeholder="Answer"
+                  placeholder={t("answerLabel")}
                   value={formData.answerEn}
                   onChange={(e) => setFormData({ ...formData, answerEn: e.target.value })}
                   rows={3}
@@ -192,17 +191,17 @@ export default function FAQsPage() {
 
             {/* Russian */}
             <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
-              <h3 className="font-medium text-slate-700 mb-3">🇷🇺 Русский</h3>
+              <h3 className="font-medium text-slate-700 mb-3">{t("ruLang")}</h3>
               <div className="space-y-3">
                 <input
                   type="text"
-                  placeholder="Вопрос"
+                  placeholder={t("questionLabel")}
                   value={formData.questionRu}
                   onChange={(e) => setFormData({ ...formData, questionRu: e.target.value })}
                   className="w-full px-4 py-2 border rounded-lg"
                 />
                 <textarea
-                  placeholder="Ответ"
+                  placeholder={t("answerLabel")}
                   value={formData.answerRu}
                   onChange={(e) => setFormData({ ...formData, answerRu: e.target.value })}
                   rows={3}
@@ -216,15 +215,15 @@ export default function FAQsPage() {
             <button
               onClick={handleSave}
               disabled={saving}
-              className="px-6 py-2 bg-navy-900 text-white rounded-lg font-medium hover:bg-navy-800 disabled:bg-slate-300 transition"
+              className="px-6 py-2 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800 disabled:bg-slate-300 transition"
             >
-              {saving ? "Saqlanmoqda..." : "Saqlash"}
+              {saving ? t("saving") : tc("save")}
             </button>
             <button
               onClick={cancelEdit}
               className="px-6 py-2 bg-slate-200 text-slate-700 rounded-lg font-medium hover:bg-slate-300 transition"
             >
-              Bekor qilish
+              {tc("cancel")}
             </button>
           </div>
         </div>
@@ -234,9 +233,9 @@ export default function FAQsPage() {
       {faqs.length === 0 ? (
         <div className="bg-slate-50 rounded-xl p-12 text-center">
           <span className="text-4xl mb-4 block">❓</span>
-          <p className="text-slate-500">Hali savollar yo&apos;q.</p>
+          <p className="text-slate-500">{t("noQuestionsYet")}</p>
           <p className="text-slate-400 text-sm mt-2">
-            Yuqoridagi tugmani bosib birinchi savolni qo&apos;shing.
+            {t("addFirstQuestion")}
           </p>
         </div>
       ) : (
@@ -249,7 +248,7 @@ export default function FAQsPage() {
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="bg-navy-900 text-white text-xs px-2 py-1 rounded">
+                    <span className="bg-gray-900 text-white text-xs px-2 py-1 rounded">
                       #{index + 1}
                     </span>
                     <span className="font-medium text-slate-800">
@@ -275,13 +274,13 @@ export default function FAQsPage() {
                     onClick={() => startEdit(faq)}
                     className="px-3 py-1.5 text-sm bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition"
                   >
-                    Tahrirlash
+                    {tc("edit")}
                   </button>
                   <button
                     onClick={() => handleDelete(faq.id)}
                     className="px-3 py-1.5 text-sm bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition"
                   >
-                    O&apos;chirish
+                    {tc("delete")}
                   </button>
                 </div>
               </div>
@@ -290,11 +289,9 @@ export default function FAQsPage() {
         </div>
       )}
 
-      {/* Info */}
       <div className="mt-6 p-4 bg-amber-50 rounded-lg border border-amber-200">
         <p className="text-amber-800 text-sm">
-          <strong>Eslatma:</strong> Agar bazada savollar bo&apos;lmasa, bosh sahifada standart savollar ko&apos;rinadi.
-          Kamida bitta savol qo&apos;shsangiz, faqat siz qo&apos;shgan savollar ko&apos;rinadi.
+          <strong>ℹ</strong> {t("faqNote")}
         </p>
       </div>
     </div>

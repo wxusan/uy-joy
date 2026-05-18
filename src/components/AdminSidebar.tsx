@@ -10,8 +10,9 @@ import {
   LayoutDashboard,
   MessageSquare,
   Building2,
-  Image as ImageIcon,
+  Home,
   HelpCircle,
+  Images,
   Users,
   Activity,
   LogOut,
@@ -27,11 +28,12 @@ type NavItem = {
   exact?: boolean;
 };
 
-type NavGroup = { label: string; items: NavItem[] };
+type NavGroup = { labelKey: string; items: NavItem[] };
+type SessionUserWithRole = { role?: string };
 
 const navGroups: NavGroup[] = [
   {
-    label: "Overview",
+    labelKey: "overview",
     items: [
       {
         href: "/portal/management-x7k9",
@@ -47,7 +49,7 @@ const navGroups: NavGroup[] = [
     ],
   },
   {
-    label: "Content",
+    labelKey: "content",
     items: [
       {
         href: "/portal/management-x7k9/projects",
@@ -55,19 +57,14 @@ const navGroups: NavGroup[] = [
         icon: <Building2 className="w-[14px] h-[14px]" />,
       },
       {
-        href: "/portal/management-x7k9/hero-images",
-        label: "Homepage",
-        icon: <ImageIcon className="w-[14px] h-[14px]" />,
-      },
-      {
         href: "/portal/management-x7k9/faqs",
-        label: "FAQ",
+        labelKey: "faq",
         icon: <HelpCircle className="w-[14px] h-[14px]" />,
       },
     ],
   },
   {
-    label: "System",
+    labelKey: "system",
     items: [
       {
         href: "/portal/management-x7k9/users",
@@ -97,8 +94,28 @@ export default function AdminSidebar({ isOpen, onClose }: Props) {
   const router = useRouter();
   const locale = useLocale();
   const { data: session } = useSession();
-  const role = (session?.user as any)?.role;
+  const role = (session?.user as SessionUserWithRole | undefined)?.role;
   const [isPending, startTransition] = useTransition();
+  const currentProjectId = pathname.match(/\/projects\/([^/]+)/)?.[1] ?? null;
+  const projectNavItems: NavItem[] = currentProjectId
+    ? [
+        {
+          href: `/portal/management-x7k9/projects/${currentProjectId}/buildings`,
+          labelKey: "buildings",
+          icon: <Building2 className="w-[14px] h-[14px]" />,
+        },
+        {
+          href: `/portal/management-x7k9/projects/${currentProjectId}/images`,
+          labelKey: "buildingImages",
+          icon: <Images className="w-[14px] h-[14px]" />,
+        },
+        {
+          href: `/portal/management-x7k9/projects/${currentProjectId}/units`,
+          labelKey: "units",
+          icon: <Home className="w-[14px] h-[14px]" />,
+        },
+      ]
+    : [];
 
   const handleLocaleChange = (newLocale: string) => {
     document.cookie = `locale=${newLocale};path=/;max-age=31536000`;
@@ -161,8 +178,8 @@ export default function AdminSidebar({ isOpen, onClose }: Props) {
           const visibleItems = group.items.filter(isItemVisible);
           if (visibleItems.length === 0) return null;
           return (
-            <div key={group.label} className="mb-2">
-              <div className="a-nav-group">{group.label}</div>
+            <div key={group.labelKey} className="mb-2">
+              <div className="a-nav-group">{t(group.labelKey)}</div>
               <div className="flex flex-col gap-[1px]">
                 {visibleItems.map((item) => {
                   const active = isItemActive(item);
@@ -190,6 +207,35 @@ export default function AdminSidebar({ isOpen, onClose }: Props) {
             </div>
           );
         })}
+        {projectNavItems.length > 0 && (
+          <div className="mb-2">
+            <div className="a-nav-group">{t("inventory")}</div>
+            <div className="flex flex-col gap-[1px]">
+              {projectNavItems.map((item) => {
+                const active = isItemActive(item);
+                const label = item.labelKey ? t(item.labelKey) : item.label;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={onClose}
+                    className={`a-nav-item ${active ? "active" : ""}`}
+                  >
+                    <span
+                      style={{
+                        color: active ? "var(--a-text)" : "var(--a-text-tertiary)",
+                        display: "inline-flex",
+                      }}
+                    >
+                      {item.icon}
+                    </span>
+                    <span className="truncate">{label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </nav>
 
       {/* Footer: language + user */}

@@ -502,7 +502,7 @@ def create_pdf_report():
         "• Add comprehensive test suite (Jest, Playwright)",
         "• Set up CI/CD pipeline with GitHub Actions",
         "• Implement rate limiting on API endpoints",
-        "• Add error tracking with Sentry"
+        "• Add lightweight production error logging if needed"
     ]
     for t in tech_improve:
         story.append(Paragraph(t, bullet_style))

@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Download, Search } from "lucide-react";
+import { getLeadStatusTone, LEAD_STATUSES } from "@/lib/lead-status";
 
 interface Lead {
   id: string;
@@ -10,19 +11,21 @@ interface Lead {
   phone: string;
   projectId: string | null;
   projectName: string | null;
+  unitId: string | null;
   unitNumber: string | null;
   status: string;
   source: string | null;
   notes: string | null;
   assignedTo: string | null;
   nextFollowUp: string | null;
+  unitNumberSnapshot: string | null;
+  unitAreaSnapshot: number | null;
+  unitRoomsSnapshot: number | null;
+  unitPriceSnapshot: number | null;
+  buildingNameSnapshot: string | null;
+  floorNumberSnapshot: number | null;
   createdAt: string;
 }
-
-const LEAD_STATUSES = [
-  "new", "inCRM", "callback", "inProgress",
-  "contacted", "converted", "notInterested", "closed",
-] as const;
 
 const LIMIT = 20;
 
@@ -32,23 +35,22 @@ interface Props {
   initialPages: number;
 }
 
-const statusDotColor = (s: string) => {
-  if (s === "new") return "var(--a-accent)";
-  if (s === "converted") return "var(--a-success)";
-  if (s === "notInterested" || s === "closed") return "var(--a-text-tertiary)";
-  return "var(--a-warning)";
-};
-
-const SOURCE_LABEL: Record<string, string> = {
-  kvartiralar: "Apartments",
-  vizual: "Visual",
-  "bosh-sahifa": "Homepage",
-};
+function escapeCsvValue(value: unknown) {
+  const raw = String(value ?? "");
+  const formulaSafe = /^[=+\-@\t\r]/.test(raw) ? `'${raw}` : raw;
+  return `"${formulaSafe.replace(/"/g, '""')}"`;
+}
 
 export default function LeadsClient({ initialLeads, initialTotal, initialPages }: Props) {
   const t = useTranslations("admin");
   const tc = useTranslations("common");
   const [leads, setLeads] = useState<Lead[]>(initialLeads);
+
+  const SOURCE_LABEL: Record<string, string> = {
+    kvartiralar: t("sourceKvartiralar"),
+    vizual: t("sourceVizual"),
+    "bosh-sahifa": t("sourceBoshSahifa"),
+  };
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(initialTotal);
@@ -90,19 +92,44 @@ export default function LeadsClient({ initialLeads, initialTotal, initialPages }
     const res = await fetch(`/api/leads?page=1&limit=10000`);
     const data = await res.json();
     const allLeads: Lead[] = data.data;
-    const headers = ["Name", "Phone", "Project", "Unit", "Source", "Status", "Date"];
+    const headers = [
+      t("csvHeaderName"),
+      t("csvHeaderPhone"),
+      t("csvHeaderProject"),
+      t("csvHeaderBuilding"),
+      t("csvHeaderFloor"),
+      t("csvHeaderUnit"),
+      t("csvHeaderRooms"),
+      t("csvHeaderArea"),
+      t("csvHeaderPrice"),
+      t("csvHeaderSource"),
+      t("csvHeaderStatus"),
+      t("csvHeaderDate"),
+    ];
     const rows = allLeads.map((l) => [
-      l.name, l.phone, l.projectName || "-", l.unitNumber || "-",
-      l.source || "-", l.status,
+      l.name,
+      l.phone,
+      l.projectName || "-",
+      l.buildingNameSnapshot || "-",
+      l.floorNumberSnapshot ?? "-",
+      l.unitNumberSnapshot || l.unitNumber || "-",
+      l.unitRoomsSnapshot ?? "-",
+      l.unitAreaSnapshot ?? "-",
+      l.unitPriceSnapshot ?? "-",
+      l.source || "-",
+      l.status,
       new Date(l.createdAt).toLocaleDateString(),
     ]);
-    const csv = [headers, ...rows].map((row) => row.join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
+    const csv = [headers, ...rows]
+      .map((row) => row.map(escapeCsvValue).join(","))
+      .join("\r\n");
+    const blob = new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
     a.download = `leads_${new Date().toISOString().split("T")[0]}.csv`;
     a.click();
+    URL.revokeObjectURL(url);
   };
 
   const filtered = useMemo(() => {
@@ -147,7 +174,7 @@ export default function LeadsClient({ initialLeads, initialTotal, initialPages }
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search name, phone, project…"
+            placeholder={t("searchLeadPlaceholder")}
             className="a-input"
             style={{ height: 30, paddingLeft: 28 }}
           />
@@ -158,7 +185,7 @@ export default function LeadsClient({ initialLeads, initialTotal, initialPages }
           className="a-input"
           style={{ height: 30, width: "auto", padding: "0 8px" }}
         >
-          <option value="all">All statuses</option>
+          <option value="all">{t("allStatuses")}</option>
           {LEAD_STATUSES.map((s) => (
             <option key={s} value={s}>
               {t(s)}
@@ -177,7 +204,7 @@ export default function LeadsClient({ initialLeads, initialTotal, initialPages }
           className="a-card text-center py-12 text-[13px]"
           style={{ color: "var(--a-text-tertiary)" }}
         >
-          {leads.length === 0 ? t("noLeadsYet") : "No leads match your filter."}
+          {leads.length === 0 ? t("noLeadsYet") : t("noLeadsMatch")}
         </div>
       ) : (
         <div className="a-card overflow-x-auto">
@@ -188,7 +215,7 @@ export default function LeadsClient({ initialLeads, initialTotal, initialPages }
                 <th>{t("phone")}</th>
                 <th>{t("project")}</th>
                 <th>{t("unit")}</th>
-                <th>Source</th>
+                <th>{t("source")}</th>
                 <th>{t("status")}</th>
                 <th style={{ textAlign: "right" }}>{t("date")}</th>
               </tr>
@@ -210,7 +237,48 @@ export default function LeadsClient({ initialLeads, initialTotal, initialPages }
                     {lead.projectName || "—"}
                   </td>
                   <td style={{ color: "var(--a-text-secondary)" }}>
-                    {lead.unitNumber || "—"}
+                    {(() => {
+                      const live = lead.unitNumber;
+                      const snap = lead.unitNumberSnapshot;
+                      // No unit at all
+                      if (!live && !snap) return "—";
+                      // Prefer the snapshot (it was captured server-side) but
+                      // mark it explicitly when the lead has no live unitId
+                      // reference (i.e. the underlying unit may have been deleted).
+                      const label = snap || live || "—";
+                      const subtitle: string[] = [];
+                      if (lead.buildingNameSnapshot) subtitle.push(lead.buildingNameSnapshot);
+                      if (lead.floorNumberSnapshot != null)
+                        subtitle.push(`F${lead.floorNumberSnapshot}`);
+                      if (lead.unitRoomsSnapshot != null)
+                        subtitle.push(`${lead.unitRoomsSnapshot}R`);
+                      if (lead.unitAreaSnapshot != null)
+                        subtitle.push(`${lead.unitAreaSnapshot}m²`);
+                      const showSnapshotTag = !lead.unitId && !!snap;
+                      return (
+                        <div className="flex flex-col">
+                          <span>
+                            {label}
+                            {showSnapshotTag ? (
+                              <span
+                                className="ml-1 text-[11px]"
+                                style={{ color: "var(--a-text-tertiary)" }}
+                              >
+                                ({t("snapshot")})
+                              </span>
+                            ) : null}
+                          </span>
+                          {subtitle.length > 0 && (
+                            <span
+                              className="text-[11px]"
+                              style={{ color: "var(--a-text-tertiary)" }}
+                            >
+                              {subtitle.join(" · ")}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </td>
                   <td style={{ color: "var(--a-text-secondary)" }}>
                     {lead.source ? SOURCE_LABEL[lead.source] || lead.source : "—"}
@@ -219,7 +287,7 @@ export default function LeadsClient({ initialLeads, initialTotal, initialPages }
                     <span className="inline-flex items-center gap-2">
                       <span
                         className="a-dot"
-                        style={{ color: statusDotColor(lead.status) }}
+                        style={{ color: getLeadStatusTone(lead.status) }}
                       />
                       <select
                         value={lead.status}
@@ -266,7 +334,7 @@ export default function LeadsClient({ initialLeads, initialTotal, initialPages }
       {pages > 1 && (
         <div className="flex items-center justify-between">
           <p className="text-[12px]" style={{ color: "var(--a-text-tertiary)" }}>
-            Page {page} of {pages} · {total} total
+            {t("pageStatus", { page, pages, total })}
           </p>
           <div className="flex gap-2">
             <button
@@ -274,14 +342,14 @@ export default function LeadsClient({ initialLeads, initialTotal, initialPages }
               disabled={page <= 1}
               className="a-btn"
             >
-              ← Prev
+              {t("prev")}
             </button>
             <button
               onClick={() => changePage(Math.min(pages, page + 1))}
               disabled={page >= pages}
               className="a-btn"
             >
-              Next →
+              {t("next")}
             </button>
           </div>
         </div>

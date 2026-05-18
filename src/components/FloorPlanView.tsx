@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import Image from "next/image";
 import { ArrowRight, BedDouble, Building2, CircleCheck, Layers, MessageCircle, Ruler, Send, X } from "lucide-react";
 import ImageCoordinateStage from "@/components/ImageCoordinateStage";
@@ -63,10 +64,7 @@ const getCenter = (points: Point[]) => ({
   y: points.reduce((sum, point) => sum + point.y, 0) / points.length,
 });
 
-const formatPrice = (value: number | null) => {
-  if (!value) return "Narx belgilanmagan";
-  return `${value.toLocaleString("ru-RU")} so'm`;
-};
+// formatPrice is defined inside the component to access t()
 
 const getUnitPrice = (unit: UnitData, floor: FloorData) => {
   if (unit.totalPrice) return unit.totalPrice;
@@ -100,6 +98,16 @@ export default function FloorPlanView({
   onUnitClose,
   telegramUrl,
 }: Props) {
+  const t = useTranslations("explore");
+  const tu = useTranslations("unit");
+  const tl = useTranslations("legend");
+  const tc = useTranslations("contact");
+  const ta = useTranslations("apartments");
+
+  const formatPrice = (value: number | null) => {
+    if (!value) return ta("priceOnRequest");
+    return `${value.toLocaleString("ru-RU")} so'm`;
+  };
   const [hoveredUnitId, setHoveredUnitId] = useState<string | null>(null);
   const [leadUnit, setLeadUnit] = useState<Props["selectedUnit"]>(null);
   const [inlineLeadForm, setInlineLeadForm] = useState({ name: "", phone: "" });
@@ -216,14 +224,14 @@ export default function FloorPlanView({
       });
 
       if (!response.ok) {
-        setInlineLeadError("So'rov yuborilmadi. Ma'lumotlarni tekshirib, qaytadan urinib ko'ring.");
+        setInlineLeadError(tc("error"));
         return;
       }
 
       setInlineLeadSubmitted(true);
       setInlineLeadForm({ name: "", phone: "" });
     } catch {
-      setInlineLeadError("So'rov yuborilmadi. Qaytadan urinib ko'ring.");
+      setInlineLeadError(tc("error"));
     } finally {
       setInlineLeadSubmitting(false);
     }
@@ -237,33 +245,33 @@ export default function FloorPlanView({
             <div>
               <div className="flex flex-wrap items-center gap-3 text-[13px] font-medium text-[#d7c8b7]/72">
                 <button onClick={onBackToMaster} className="transition-colors hover:text-[#f4eadc]">
-                  Bosh sahifa
+                  {tc("home")}
                 </button>
                 <span className="text-[#806f61]">/</span>
                 <button onClick={onBackToMaster} className="transition-colors hover:text-[#f4eadc]">
-                  Barcha binolar
+                  {t("allBuildings")}
                 </button>
                 <span className="text-[#806f61]">/</span>
                 <button onClick={onBackToBuilding} className="transition-colors hover:text-[#f4eadc]">
                   {displayBuildingName}
                 </button>
                 <span className="text-[#806f61]">/</span>
-                <span className="text-[#f4eadc]">{activeFloor.number}-qavat</span>
+                <span className="text-[#f4eadc]">{t("floor")} {activeFloor.number}</span>
               </div>
               <h1 className="mt-6 font-display text-[34px] font-semibold leading-none text-[#fff4e8]">
-                {activeFloor.number}-qavat rejasi
+                {t("floor")} {activeFloor.number}
               </h1>
               <p className="mt-3 text-[14px] font-medium text-[#b8aa9a]">
-                Qavatda {selectedFloorStats.total} xonadon
+                {t("floorUnitCount", { count: selectedFloorStats.total })}
               </p>
             </div>
           </div>
 
           <div className="mt-5 flex flex-wrap items-center gap-4 text-[12px] font-medium text-[#b8aa9a]">
             {[
-              { color: "#9fd287", label: "Mavjud" },
-              { color: "#d8ac67", label: "Bron qilingan" },
-              { color: "#d86b4c", label: "Sotilgan" },
+              { color: "#9fd287", label: tl("available") },
+              { color: "#d8ac67", label: tl("reserved") },
+              { color: "#d86b4c", label: tl("sold") },
             ].map((item) => (
               <span key={item.label} className="inline-flex items-center gap-2">
                 <span className="h-2.5 w-4 rounded-[2px]" style={{ backgroundColor: item.color, opacity: 0.72 }} />
@@ -276,7 +284,7 @@ export default function FloorPlanView({
             {activeFloor.floorPlanImage ? (
               <ImageCoordinateStage
                 src={activeFloor.floorPlanImage}
-                alt={`${activeFloor.number}-qavat rejasi`}
+                alt={`${t("floor")} ${activeFloor.number}`}
                 sizes="(min-width: 1536px) calc(100vw - 820px), (min-width: 1280px) calc(100vw - 720px), (min-width: 1024px) calc(100vw - 420px), 100vw"
                 className="relative h-[min(56vh,600px)] min-h-[390px] overflow-hidden rounded-[5px] bg-[#efeae0] 2xl:h-[min(62vh,640px)] 2xl:min-h-[420px]"
                 imageClassName="select-none"
@@ -324,7 +332,7 @@ export default function FloorPlanView({
                           fill="#f0dfca"
                           className="pointer-events-none drop-shadow-[0_2px_6px_rgba(0,0,0,0.8)]"
                         >
-                          {unit.area} m² · {unit.rooms} xona
+                          {unit.area} m² · {unit.rooms} {t("room")}
                         </text>
                       </g>
                     );
@@ -333,7 +341,7 @@ export default function FloorPlanView({
               </ImageCoordinateStage>
             ) : (
               <div className="flex min-h-[420px] items-center justify-center rounded-[5px] bg-[#151819] text-[14px] font-medium text-[#8d7f70]">
-                Qavat rejasi hali yuklanmagan
+                {tc("planNotUploaded")}
               </div>
             )}
           </section>
@@ -357,7 +365,7 @@ export default function FloorPlanView({
                   <span>
                     <span className="block text-[15px] font-semibold text-[#fff4e8]">{displayNumber}</span>
                     <span className="mt-2 block text-[12px] font-medium text-[#ead8c5]">
-                      {unit.area} m² · {unit.rooms} xona
+                      {unit.area} m² · {unit.rooms} {t("room")}
                     </span>
                     <span className="mt-1 block text-[12px] font-semibold text-[#fff4e8]">
                       {formatPrice(getUnitPrice(unit, selectedFloor))}
@@ -368,7 +376,7 @@ export default function FloorPlanView({
                       <Image src={getThumbnailUrl(image, 96)} alt={displayNumber} fill className="object-contain p-1" sizes="64px" />
                     ) : (
                       <span className="absolute inset-0 grid place-items-center text-[11px] font-medium text-[#6f6256]">
-                        Reja
+                        {t("plan")}
                       </span>
                     )}
                   </span>
@@ -383,12 +391,12 @@ export default function FloorPlanView({
           {selectedUnit && selectedStatus ? (
             <div ref={selectedPanelRef} className="rounded-[8px] border border-[#f0d7be]/10 bg-[#151819] p-4 shadow-[0_18px_70px_rgba(0,0,0,0.28)]">
               <div className="flex items-start justify-between gap-4">
-                <p className="text-[13px] font-medium text-[#d7c8b7]">Tanlangan xonadon</p>
+                <p className="text-[13px] font-medium text-[#d7c8b7]">{tc("selectedApartment")}</p>
                 <button
                   type="button"
                   onClick={onUnitClose}
                   className="grid h-8 w-8 place-items-center rounded-full text-[#d7c8b7] transition hover:bg-white/5 hover:text-white"
-                  aria-label="Close apartment details"
+                  aria-label={t("closeDetails")}
                 >
                   <X className="h-5 w-5" strokeWidth={1.6} />
                 </button>
@@ -405,9 +413,9 @@ export default function FloorPlanView({
 
               <div className="mt-5 grid grid-cols-4 gap-2 text-center text-[12px] font-medium text-[#d7c8b7]">
                 {[
-                  { icon: Layers, value: `${activeFloor.number}-qavat` },
+                  { icon: Layers, value: `${t("floor")} ${activeFloor.number}` },
                   { icon: Ruler, value: `${selectedUnit.area} m²` },
-                  { icon: BedDouble, value: `${selectedUnit.rooms} xona` },
+                  { icon: BedDouble, value: `${selectedUnit.rooms} ${t("room")}` },
                   { icon: Building2, value: building.name },
                 ].map((item) => {
                   const Icon = item.icon;
@@ -422,11 +430,11 @@ export default function FloorPlanView({
 
               <div className="mt-5 grid grid-cols-2 overflow-hidden rounded-[6px] border border-[#f0d7be]/10">
                 <div className="border-r border-[#f0d7be]/10 p-3">
-                  <p className="text-[12px] font-medium text-[#8f8172]">Umumiy narx</p>
+                  <p className="text-[12px] font-medium text-[#8f8172]">{tu("totalPrice")}</p>
                   <p className="mt-2 text-[17px] font-semibold text-[#fff4e8]">{formatPrice(selectedUnitPrice)}</p>
                 </div>
                 <div className="p-3">
-                  <p className="text-[12px] font-medium text-[#8f8172]">Narx / m²</p>
+                  <p className="text-[12px] font-medium text-[#8f8172]">{tu("pricePerM2")}</p>
                   <p className="mt-2 text-[14px] font-semibold text-[#d7c8b7]">{formatPrice(selectedPricePerM2)}</p>
                 </div>
               </div>
@@ -435,8 +443,8 @@ export default function FloorPlanView({
                 {inlineLeadSubmitted ? (
                   <div className="rounded-[6px] border border-[#9fd287]/25 bg-[#9fd287]/10 p-4 text-center">
                     <CircleCheck className="mx-auto h-8 w-8 text-[#9fd287]" strokeWidth={1.7} />
-                    <p className="mt-3 text-[15px] font-semibold text-[#fff4e8]">Rahmat, so&apos;rovingiz yuborildi.</p>
-                    <p className="mt-1 text-[12px] font-medium text-[#b8aa9a]">Tez orada siz bilan bog&apos;lanamiz.</p>
+                    <p className="mt-3 text-[15px] font-semibold text-[#fff4e8]">{tc("thankYouSent")}</p>
+                    <p className="mt-1 text-[12px] font-medium text-[#b8aa9a]">{tc("weWillContactSoon")}</p>
                   </div>
                 ) : (
                   <form onSubmit={handleInlineLeadSubmit} className="space-y-3">
@@ -446,7 +454,7 @@ export default function FloorPlanView({
                       value={inlineLeadForm.name}
                       onChange={(event) => setInlineLeadForm({ ...inlineLeadForm, name: event.target.value })}
                       className="h-11 w-full rounded-[6px] border border-[#f0d7be]/12 bg-[#0c0f10] px-4 text-[14px] font-medium text-[#fff4e8] outline-none transition placeholder:text-[#7b7065] focus:border-[#d58a69]"
-                      placeholder="Ismingiz"
+                      placeholder={tc("namePlaceholder")}
                       autoComplete="name"
                     />
                     <input
@@ -466,13 +474,13 @@ export default function FloorPlanView({
                       className="h-11 w-full rounded-[6px] bg-[#c66348] text-[14px] font-semibold text-white transition hover:bg-[#d37152] disabled:opacity-60"
                     >
                       {inlineLeadSubmitting
-                        ? "Yuborilmoqda..."
+                        ? tc("submitting")
                         : selectedUnit.status === "available"
-                          ? "Xonadonni bron qilish"
-                          : "Xabar berish"}
+                          ? tc("bookApartment")
+                          : tc("notify")}
                     </button>
                     <p className="text-[11px] font-semibold leading-5 text-[#cdbdac]">
-                      Savdo menejeri 15 daqiqa ichida qo&apos;ng&apos;iroq qiladi (9:00-19:00).
+                      {tc("responseSLA")}
                     </p>
                     {resolvedTelegramUrl && (
                       <a
@@ -482,7 +490,7 @@ export default function FloorPlanView({
                         className="flex h-11 w-full items-center justify-center gap-2 rounded-[6px] border border-[#c66348]/55 text-[14px] font-semibold text-[#f4eadc] transition hover:bg-[#c66348]/10"
                       >
                         <MessageCircle className="h-4 w-4 text-[#c66348]" strokeWidth={1.7} />
-                        Savol berish
+                        {tc("askQuestion")}
                       </a>
                     )}
                   </form>
@@ -491,11 +499,11 @@ export default function FloorPlanView({
 
               <div className="mt-5 space-y-3 text-[13px]">
                 {[
-                  ["Xonalar soni", `${selectedUnit.rooms} xona`],
-                  ["Maydon", `${selectedUnit.area} m²`],
-                  ["Qavat", `${activeFloor.number} / ${sortedFloors.length}`],
-                  ["Holati", selectedStatus.label],
-                  ["Soni", "1 ta"],
+                  [tu("rooms"), `${selectedUnit.rooms} ${t("room")}`],
+                  [tu("area"), `${selectedUnit.area} m²`],
+                  [tu("floor"), `${activeFloor.number} / ${sortedFloors.length}`],
+                  [tu("status"), selectedStatus.label],
+                  [tc("quantity"), tc("oneUnit")],
                 ].map(([label, value]) => (
                   <div key={label} className="flex items-center justify-between gap-4">
                     <span className="text-[#8f8172]">{label}</span>
@@ -527,9 +535,9 @@ export default function FloorPlanView({
         </aside>
 
         <aside className="bg-[#0d1011] px-5 pb-6 pt-7 text-[#f4eadc] lg:border-l lg:border-[#f0d7be]/10 lg:px-6 xl:order-3">
-          <h2 className="font-display text-[27px] font-semibold leading-none text-[#fff4e8]">Qavatni tanlang</h2>
+          <h2 className="font-display text-[27px] font-semibold leading-none text-[#fff4e8]">{t("encourageFloor")}</h2>
           <p className="mt-3 text-[13px] leading-5 text-[#b8aa9a]">
-            Kerakli qavatni tanlab, rejadagi xonadonlarni ko&apos;ring.
+            {t("floorPlanSubtitle")}
           </p>
 
           <div className="mt-5 overflow-hidden rounded-[6px] border border-[#f0d7be]/10">
@@ -549,11 +557,11 @@ export default function FloorPlanView({
                   }`}
                 >
                   <span>
-                    <span className="block text-[15px] font-semibold">{floor.number}-qavat</span>
-                    <span className="mt-0.5 block text-[12px] font-medium text-[#bba998]">{stats.total} xonadon</span>
+                    <span className="block text-[15px] font-semibold">{t("floor")} {floor.number}</span>
+                    <span className="mt-0.5 block text-[12px] font-medium text-[#bba998]">{t("floorUnitCount", { count: stats.total })}</span>
                   </span>
                   <span className="flex items-center gap-3 text-[12px] font-semibold text-[#a8d995]">
-                    {stats.available} ta mavjud
+                    {t("floorAvailableCount", { count: stats.available })}
                     <ArrowRight className={`h-4 w-4 shrink-0 transition-colors ${isSelected ? "text-[#f7d2bf]" : "text-[#5a4f46]"}`} strokeWidth={1.6} />
                   </span>
                 </button>
@@ -614,7 +622,7 @@ export default function FloorPlanView({
               onClick={() => setLeadUnit(selectedUnit)}
               className="h-11 shrink-0 rounded-[6px] bg-[#c66348] px-5 text-[14px] font-semibold text-white transition hover:bg-[#d37152]"
             >
-              Bron qilish
+              {tc("bookApartment")}
             </button>
           </div>
         </div>

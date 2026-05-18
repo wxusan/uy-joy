@@ -1,43 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { promises as fs } from "fs";
-import path from "path";
+import { ImageInputError, readSafeImageInput } from "@/lib/secure-image-input";
+import { DetectFloorsSchema } from "@/lib/schemas/ai";
+import { invalidInput } from "@/lib/schemas/common";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
 export async function POST(request: NextRequest) {
   try {
-    const { imageUrl, floorCount } = await request.json();
-
-    if (!imageUrl) {
-      return NextResponse.json({ error: "Image URL is required" }, { status: 400 });
-    }
-
-    if (!floorCount || floorCount < 1) {
-      return NextResponse.json({ error: "Floor count is required" }, { status: 400 });
-    }
+    const body = await request.json();
+    const parsed = DetectFloorsSchema.safeParse(body);
+    if (!parsed.success) return invalidInput(parsed.error);
+    const { imageUrl, floorCount } = parsed.data;
 
     if (!process.env.GEMINI_API_KEY) {
       return NextResponse.json({ error: "Gemini API key not configured" }, { status: 500 });
     }
 
-    // Convert local image to base64
-    let base64Data: string;
-    let mimeType: string;
-    
-    if (imageUrl.startsWith("/uploads/") || imageUrl.startsWith("uploads/")) {
-      // Local file - read and convert to base64
-      const imagePath = path.join(process.cwd(), "public", imageUrl);
-      const imageBuffer = await fs.readFile(imagePath);
-      base64Data = imageBuffer.toString("base64");
-      mimeType = imageUrl.endsWith(".png") ? "image/png" : "image/jpeg";
-    } else {
-      // External URL - fetch and convert
-      const response = await fetch(imageUrl);
-      const arrayBuffer = await response.arrayBuffer();
-      base64Data = Buffer.from(arrayBuffer).toString("base64");
-      mimeType = response.headers.get("content-type") || "image/jpeg";
-    }
+    const { base64: base64Data, mimeType } = await readSafeImageInput(imageUrl);
 
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
@@ -102,6 +82,10 @@ IMPORTANT:
 
     return NextResponse.json({ floors: validatedFloors });
   } catch (error) {
+    if (error instanceof ImageInputError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
+
     console.error("Error detecting floors:", error);
     return NextResponse.json(
       { error: "Failed to detect floors" },

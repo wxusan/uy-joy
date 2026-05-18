@@ -1,19 +1,14 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { publicProjectSelect } from "@/lib/public-selects";
+import { invalidateProject } from "@/lib/cache";
+import { ProjectUpdateSchema } from "@/lib/schemas/project";
+import { invalidInput } from "@/lib/schemas/common";
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
   const project = await prisma.project.findUnique({
     where: { id: params.id },
-    include: {
-      buildings: {
-        include: {
-          floors: {
-            include: { units: true },
-            orderBy: { number: "asc" },
-          },
-        },
-      },
-    },
+    select: publicProjectSelect,
   });
   if (!project) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json(project);
@@ -21,22 +16,26 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
 
 export async function PUT(req: Request, { params }: { params: { id: string } }) {
   const body = await req.json();
+  const parsed = ProjectUpdateSchema.safeParse(body);
+  if (!parsed.success) return invalidInput(parsed.error);
+  const input = parsed.data;
   const data: Record<string, unknown> = {};
-  if (body.name !== undefined) data.name = body.name;
-  if (body.nameTranslations !== undefined) data.nameTranslations = body.nameTranslations || null;
-  if (body.description !== undefined) data.description = body.description;
-  if (body.descriptionTranslations !== undefined) data.descriptionTranslations = body.descriptionTranslations || null;
-  if (body.address !== undefined) data.address = body.address;
-  if (body.addressTranslations !== undefined) data.addressTranslations = body.addressTranslations || null;
-  if (body.topViewImage !== undefined) data.topViewImage = body.topViewImage;
-  if (body.latitude !== undefined) data.latitude = body.latitude;
-  if (body.longitude !== undefined) data.longitude = body.longitude;
-  if (body.infrastructure !== undefined) data.infrastructure = body.infrastructure;
-  if (body.expectedYear !== undefined) data.expectedYear = body.expectedYear;
+  if (input.name !== undefined) data.name = input.name;
+  if (input.nameTranslations !== undefined) data.nameTranslations = input.nameTranslations || null;
+  if (input.description !== undefined) data.description = input.description;
+  if (input.descriptionTranslations !== undefined) data.descriptionTranslations = input.descriptionTranslations || null;
+  if (input.address !== undefined) data.address = input.address;
+  if (input.addressTranslations !== undefined) data.addressTranslations = input.addressTranslations || null;
+  if (input.topViewImage !== undefined) data.topViewImage = input.topViewImage;
+  if (input.latitude !== undefined) data.latitude = input.latitude;
+  if (input.longitude !== undefined) data.longitude = input.longitude;
+  if (input.infrastructure !== undefined) data.infrastructure = input.infrastructure;
+  if (input.expectedYear !== undefined) data.expectedYear = input.expectedYear;
 
   const project = await prisma.project.update({
     where: { id: params.id },
     data,
   });
+  invalidateProject();
   return NextResponse.json(project);
 }

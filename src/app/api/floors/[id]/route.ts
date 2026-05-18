@@ -1,11 +1,18 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
+import { publicUnitSelect } from "@/lib/public-selects";
+import { invalidateProject } from "@/lib/cache";
+import { FloorUpdateSchema } from "@/lib/schemas/floor";
+import { invalidInput } from "@/lib/schemas/common";
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
   const floor = await prisma.floor.findUnique({
     where: { id: params.id },
     include: {
-      units: true,
+      units: {
+        select: publicUnitSelect,
+      },
       building: {
         select: { id: true, name: true, projectId: true },
       },
@@ -17,21 +24,26 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
 
 export async function PUT(req: Request, { params }: { params: { id: string } }) {
   const body = await req.json();
-  const data: any = {};
+  const parsed = FloorUpdateSchema.safeParse(body);
+  if (!parsed.success) return invalidInput(parsed.error);
+  const input = parsed.data;
+  const data: Prisma.FloorUpdateInput = {};
 
-  if (body.number !== undefined) data.number = body.number;
-  if (body.basePricePerM2 !== undefined) data.basePricePerM2 = body.basePricePerM2;
-  if (body.floorPlanImage !== undefined) data.floorPlanImage = body.floorPlanImage;
-  if (body.positionData !== undefined) data.positionData = body.positionData;
+  if (input.number !== undefined) data.number = input.number;
+  if (input.basePricePerM2 !== undefined) data.basePricePerM2 = input.basePricePerM2;
+  if (input.floorPlanImage !== undefined) data.floorPlanImage = input.floorPlanImage;
+  if (input.positionData !== undefined) data.positionData = input.positionData ?? Prisma.JsonNull;
 
   const floor = await prisma.floor.update({
     where: { id: params.id },
     data,
   });
+  invalidateProject();
   return NextResponse.json(floor);
 }
 
 export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
   await prisma.floor.delete({ where: { id: params.id } });
+  invalidateProject();
   return NextResponse.json({ success: true });
 }

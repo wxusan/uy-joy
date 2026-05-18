@@ -24,6 +24,7 @@ interface Building {
 export default function BuildingImagesPage() {
   const params = useParams();
   const tc = useTranslations("common");
+  const ta = useTranslations("admin");
   const [building, setBuilding] = useState<Building | null>(null);
   const [uploading, setUploading] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -68,17 +69,17 @@ export default function BuildingImagesPage() {
         body: JSON.stringify({ [field]: url }),
       });
 
-      setMessage({ type: "success", text: "Rasm muvaffaqiyatli yuklandi!" });
+      setMessage({ type: "success", text: ta("imageUploadSuccess") });
       loadBuilding();
     } catch {
-      setMessage({ type: "error", text: "Rasm yuklashda xatolik" });
+      setMessage({ type: "error", text: ta("imageUploadError") });
     } finally {
       setUploading(null);
     }
   };
 
   const deleteImage = async (type: string, id: string, field: string) => {
-    if (!confirm("Rasmni o'chirmoqchimisiz?")) return;
+    if (!confirm(ta("confirmDeleteImage"))) return;
     setUploading(`${type}-${id}-${field}`);
     setMessage(null);
 
@@ -93,10 +94,10 @@ export default function BuildingImagesPage() {
         body: JSON.stringify({ [field]: null }),
       });
 
-      setMessage({ type: "success", text: "Rasm o'chirildi!" });
+      setMessage({ type: "success", text: ta("imageDeleteSuccess") });
       loadBuilding();
     } catch {
-      setMessage({ type: "error", text: "O'chirishda xatolik" });
+      setMessage({ type: "error", text: ta("deleteImageError") });
     } finally {
       setUploading(null);
     }
@@ -119,10 +120,10 @@ export default function BuildingImagesPage() {
   }
 
   const viewLabels: Record<string, string> = {
-    front: "Old ko\u2019rinish",
-    back: "Orqa ko\u2019rinish",
-    left: "Chap ko\u2019rinish",
-    right: "O\u2019ng ko\u2019rinish",
+    front: ta("front"),
+    back: ta("back"),
+    left: ta("left"),
+    right: ta("right"),
   };
 
   return (
@@ -130,13 +131,13 @@ export default function BuildingImagesPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold">{building.name}</h1>
-          <p className="text-slate-500 text-sm">Bino rasmlarini boshqarish</p>
+          <p className="text-slate-500 text-sm">{ta("manageImages")}</p>
         </div>
         <Link
-          href={`/portal/management-x7k9/projects/${params.projectId}/images`}
+          href="/portal/management-x7k9/projects"
           className="text-sm text-slate-500 hover:text-slate-700"
         >
-          ← Rasmlarga qaytish
+          ← {ta("backToImages")}
         </Link>
       </div>
 
@@ -152,9 +153,9 @@ export default function BuildingImagesPage() {
 
       {/* Building Views */}
       <section className="bg-white rounded-xl shadow-sm border p-6 mb-6">
-        <h2 className="text-lg font-semibold mb-4">Bino ko&apos;rinishlari</h2>
+        <h2 className="text-lg font-semibold mb-4">{ta("buildingImages")}</h2>
         <p className="text-sm text-slate-500 mb-4">
-          Binoning old, orqa, chap va o&apos;ng tomonlaridan rasmlarini yuklang.
+          {ta("buildingImageHint")}
         </p>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -179,7 +180,7 @@ export default function BuildingImagesPage() {
                     </>
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-slate-400 text-sm">
-                      Rasm yo&apos;q
+                      {ta("noImage")}
                     </div>
                   )}
                 </div>
@@ -199,7 +200,7 @@ export default function BuildingImagesPage() {
                       : "bg-emerald-600 text-white hover:bg-emerald-700"
                   }`}
                 >
-                  {uploading === uploadKey ? "Yuklanmoqda..." : imageUrl ? "O'zgartirish" : "Yuklash"}
+                  {uploading === uploadKey ? tc("loading") : imageUrl ? ta("replace") : ta("upload")}
                 </label>
               </div>
             );
@@ -209,9 +210,9 @@ export default function BuildingImagesPage() {
 
       {/* Floor Plans */}
       <section className="bg-white rounded-xl shadow-sm border p-6">
-        <h2 className="text-lg font-semibold mb-4">Qavat rejalari</h2>
+        <h2 className="text-lg font-semibold mb-4">{ta("floorPlans")}</h2>
         <p className="text-sm text-slate-500 mb-4">
-          Har bir qavat uchun reja rasmini yuklang. Bu rasmlar kvartiralarni ko&apos;rsatish uchun ishlatiladi.
+          {ta("floorImageHint")}
         </p>
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
@@ -223,7 +224,7 @@ export default function BuildingImagesPage() {
               return (
                 <div key={floor.id} className="bg-slate-50 rounded-lg p-3">
                   <p className="text-sm font-semibold text-slate-700 mb-2 text-center">
-                    {floor.number}-qavat
+                    {ta("floor")} {floor.number}
                   </p>
                   <div className="w-full aspect-square bg-white rounded-lg overflow-hidden mb-2 border relative group">
                     {floor.floorPlanImage ? (
@@ -242,7 +243,7 @@ export default function BuildingImagesPage() {
                       </>
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-slate-400 text-xs">
-                        Rasm yo&apos;q
+                        {ta("noImage")}
                       </div>
                     )}
                   </div>
@@ -262,7 +263,7 @@ export default function BuildingImagesPage() {
                         : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                     }`}
                   >
-                    {uploading === uploadKey ? "..." : floor.floorPlanImage ? "O'zgartirish" : "Yuklash"}
+                    {uploading === uploadKey ? "..." : floor.floorPlanImage ? ta("replace") : ta("upload")}
                   </label>
                 </div>
               );

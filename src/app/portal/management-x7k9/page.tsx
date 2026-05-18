@@ -1,36 +1,28 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import prisma from "@/lib/prisma";
+import { requireAdmin } from "@/lib/auth";
 import { ArrowUpRight } from "lucide-react";
+import { getLeadStatusTone } from "@/lib/lead-status";
 
 export const dynamic = "force-dynamic";
 
-const LEAD_STATUS_LABEL: Record<string, string> = {
-  new: "New",
-  inCRM: "In CRM",
-  callback: "Callback",
-  inProgress: "In progress",
-  contacted: "Contacted",
-  converted: "Converted",
-  notInterested: "Not interested",
-  closed: "Closed",
-};
-
-function formatRelative(dateIso: string) {
-  const d = new Date(dateIso);
-  const diff = Date.now() - d.getTime();
-  const min = Math.round(diff / 60000);
-  if (min < 1) return "just now";
-  if (min < 60) return `${min}m ago`;
-  const h = Math.round(min / 60);
-  if (h < 24) return `${h}h ago`;
-  const days = Math.round(h / 24);
-  if (days < 7) return `${days}d ago`;
-  return d.toLocaleDateString();
-}
-
 export default async function AdminDashboard() {
+  await requireAdmin();
   const t = await getTranslations("admin");
+
+  function formatRelative(dateIso: string) {
+    const d = new Date(dateIso);
+    const diff = Date.now() - d.getTime();
+    const min = Math.round(diff / 60000);
+    if (min < 1) return t("justNow");
+    if (min < 60) return t("minutesAgo", { min });
+    const h = Math.round(min / 60);
+    if (h < 24) return t("hoursAgo", { h });
+    const days = Math.round(h / 24);
+    if (days < 7) return t("daysAgo", { days });
+    return d.toLocaleDateString();
+  }
 
   const [total, available, reserved, sold, leadsTotal, leadsNew, recentLeads] =
     await Promise.all([
@@ -53,15 +45,14 @@ export default async function AdminDashboard() {
     { label: t("available"), value: available, sub: `${total > 0 ? Math.round((available / total) * 100) : 0}%` },
     { label: t("reserved"), value: reserved },
     { label: t("sold"), value: sold },
-    { label: "Leads", value: leadsTotal, sub: leadsNew > 0 ? `${leadsNew} new` : undefined },
-    { label: "Occupancy", value: `${occupancyPct}%` },
+    { label: t("leads"), value: leadsTotal, sub: leadsNew > 0 ? t("newLeads", { count: leadsNew }) : undefined },
+    { label: t("occupancy"), value: `${occupancyPct}%` },
   ];
 
   const quickActions = [
-    { label: "View leads", href: "/portal/management-x7k9/leads" },
-    { label: "Manage project", href: "/portal/management-x7k9/projects" },
-    { label: "Edit homepage", href: "/portal/management-x7k9/hero-images" },
-    { label: "Edit FAQ", href: "/portal/management-x7k9/faqs" },
+    { label: t("viewLeads"), href: "/portal/management-x7k9/leads" },
+    { label: t("manageProject"), href: "/portal/management-x7k9/projects" },
+    { label: t("editFAQ"), href: "/portal/management-x7k9/faqs" },
   ];
 
   return (
@@ -69,14 +60,14 @@ export default async function AdminDashboard() {
       {/* Page header */}
       <div className="flex items-end justify-between gap-4">
         <div>
-          <h1 className="a-page-title">Overview</h1>
+          <h1 className="a-page-title">{t("overview")}</h1>
           <p className="a-page-sub">{t("dashboard")}</p>
         </div>
         <Link
           href="/portal/management-x7k9/leads"
           className="a-btn"
         >
-          View leads
+          {t("viewLeads")}
           <ArrowUpRight className="w-3.5 h-3.5" />
         </Link>
       </div>
@@ -127,14 +118,14 @@ export default async function AdminDashboard() {
             style={{ borderBottom: "1px solid var(--a-border)" }}
           >
             <div className="text-[13px] font-semibold" style={{ color: "var(--a-text)" }}>
-              Recent leads
+              {t("recentLeads")}
             </div>
             <Link
               href="/portal/management-x7k9/leads"
               className="text-[12px]"
               style={{ color: "var(--a-text-secondary)" }}
             >
-              See all →
+              {t("seeAll")}
             </Link>
           </div>
 
@@ -143,16 +134,16 @@ export default async function AdminDashboard() {
               className="px-4 py-10 text-center text-[13px]"
               style={{ color: "var(--a-text-tertiary)" }}
             >
-              No leads yet. Inquiries from the contact form will appear here.
+              {t("noLeadsYet")}
             </div>
           ) : (
             <table className="a-table">
               <thead>
                 <tr>
-                  <th>Name</th>
-                  <th>Phone</th>
-                  <th>Status</th>
-                  <th style={{ textAlign: "right" }}>When</th>
+                  <th>{t("name")}</th>
+                  <th>{t("phone")}</th>
+                  <th>{t("status")}</th>
+                  <th style={{ textAlign: "right" }}>{t("when")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -168,17 +159,10 @@ export default async function AdminDashboard() {
                         <span
                           className="a-dot"
                           style={{
-                            color:
-                              l.status === "new"
-                                ? "var(--a-accent)"
-                                : l.status === "converted"
-                                ? "var(--a-success)"
-                                : l.status === "notInterested" || l.status === "closed"
-                                ? "var(--a-text-tertiary)"
-                                : "var(--a-warning)",
+                            color: getLeadStatusTone(l.status),
                           }}
                         />
-                        {LEAD_STATUS_LABEL[l.status] || l.status}
+                        {t(l.status)}
                       </span>
                     </td>
                     <td
@@ -205,7 +189,7 @@ export default async function AdminDashboard() {
               className="text-[13px] font-semibold mb-3"
               style={{ color: "var(--a-text)" }}
             >
-              Inventory
+              {t("inventory")}
             </div>
 
             {/* Simple stacked bar */}
@@ -269,7 +253,7 @@ export default async function AdminDashboard() {
               className="text-[13px] font-semibold mb-3"
               style={{ color: "var(--a-text)" }}
             >
-              Quick actions
+              {t("quickActions")}
             </div>
             <ul className="flex flex-col">
               {quickActions.map((a, i) => (

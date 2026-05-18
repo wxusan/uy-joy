@@ -14,12 +14,60 @@ const unitTemplates = [
 
 const statuses = ["available", "available", "available", "available", "reserved", "reserved", "sold"];
 
+const defaultFaqs = [
+  {
+    questionUz: "Ipoteka kredit bormi?",
+    answerUz:
+      "Ha, biz bir nechta banklar bilan hamkorlik qilamiz, ular qulay shartlarda ipoteka kreditlarini taklif qiladi. Menejerlarimiz sizga eng yaxshi variantni tanlashda yordam beradi.",
+    questionEn: "Is mortgage credit available?",
+    answerEn:
+      "Yes, we work with several banks that offer mortgage loans with favorable terms. Our managers will help you choose the best option.",
+    questionRu: "Есть ли ипотечный кредит?",
+    answerRu:
+      "Да, мы сотрудничаем с несколькими банками, которые предлагают ипотечные кредиты на выгодных условиях. Наши менеджеры помогут подобрать лучший вариант.",
+  },
+  {
+    questionUz: "Xonadon ta'mirlangan holda topshiriladimi?",
+    answerUz:
+      "Xonadonlar tayyor ta'mir bilan, lekin mebelsiz topshiriladi. Kerak bo'lsa, ichki dizayn bo'yicha hamkorlarimizni tavsiya qilishimiz mumkin.",
+    questionEn: "Are apartments delivered furnished?",
+    answerEn:
+      "Apartments are delivered with finished repairs but without furniture. We can recommend interior design partners if needed.",
+    questionRu: "Квартиры сдаются с ремонтом?",
+    answerRu:
+      "Квартиры сдаются с чистовой отделкой, но без мебели. При необходимости мы можем порекомендовать партнеров по дизайну интерьера.",
+  },
+  {
+    questionUz: "To'lash muddatini uzaytirish mumkinmi?",
+    answerUz:
+      "Ha, biz moslashuvchan to'lov rejalarini taklif qilamiz. Siz bo'lib to'lash variantlarini savdo bo'limimiz bilan muhokama qilishingiz mumkin.",
+    questionEn: "Is it possible to extend the payment period?",
+    answerEn:
+      "Yes, we offer flexible payment plans. You can discuss installment options with our sales team.",
+    questionRu: "Можно ли продлить срок оплаты?",
+    answerRu:
+      "Да, мы предлагаем гибкие планы оплаты. Вы можете обсудить варианты рассрочки с нашим отделом продаж.",
+  },
+  {
+    questionUz: "Sizning savdo ofisingiz qayerda?",
+    answerUz:
+      "Savdo ofisimiz qurilish maydonchasida joylashgan. Har kuni soat 9:00 dan 18:00 gacha tashrif buyurishingiz mumkin.",
+    questionEn: "Where is your sales office located?",
+    answerEn:
+      "Our sales office is located at the construction site. You can visit us any day from 9:00 to 18:00.",
+    questionRu: "Где находится ваш офис продаж?",
+    answerRu:
+      "Наш офис продаж расположен на строительной площадке. Вы можете посетить нас в любой день с 9:00 до 18:00.",
+  },
+];
+
 async function main() {
   // Clear existing data
   await prisma.unit.deleteMany();
   await prisma.floor.deleteMany();
   await prisma.building.deleteMany();
   await prisma.project.deleteMany();
+  await prisma.fAQ.deleteMany();
   await prisma.user.deleteMany();
 
   // Create superadmin
@@ -105,7 +153,15 @@ async function main() {
     }
   }
 
-  console.log("✅ Seed completed: 1 project, 1 building, 9 floors, 54 units, 1 superadmin");
+  await prisma.fAQ.createMany({
+    data: defaultFaqs.map((faq, index) => ({
+      ...faq,
+      sortOrder: index,
+      isActive: true,
+    })),
+  });
+
+  console.log("✅ Seed completed: 1 project, 1 building, 9 floors, 54 units, 4 FAQs, 1 superadmin");
 }
 
 main()

@@ -10,7 +10,7 @@ interface Floor {
   number: number;
   basePricePerM2: number | null;
   floorPlanImage: string | null;
-  positionData: { yStart: number; yEnd: number } | null;
+  positionData: { yStart?: number; yEnd?: number; polygon?: { x: number; y: number }[]; label?: { x: number; y: number } | null } | string | null;
   units: { id: string; status: string }[];
 }
 
@@ -34,9 +34,6 @@ export default function FloorsClient({ initialBuilding, buildingId, projectId }:
   const [building, setBuilding] = useState<Building>(initialBuilding);
   const [newFloorNumber, setNewFloorNumber] = useState("");
   const [newFloorPrice, setNewFloorPrice] = useState("");
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editNumber, setEditNumber] = useState("");
-  const [editPrice, setEditPrice] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPositionEditor, setShowPositionEditor] = useState(false);
   const [addMode, setAddMode] = useState<"single" | "range">("single");
@@ -84,18 +81,6 @@ export default function FloorsClient({ initialBuilding, buildingId, projectId }:
     setLoading(false);
   };
 
-  const handleUpdateFloor = async (id: string) => {
-    setLoading(true);
-    await fetch(`/api/floors/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ number: parseInt(editNumber), basePricePerM2: editPrice ? parseFloat(editPrice) : null }),
-    });
-    setEditingId(null);
-    await loadBuilding();
-    setLoading(false);
-  };
-
   const handleDeleteFloor = async (id: string, number: number) => {
     if (!confirm(t("confirmDeleteFloorMsg", { number }))) return;
     setLoading(true);
@@ -104,7 +89,12 @@ export default function FloorsClient({ initialBuilding, buildingId, projectId }:
     setLoading(false);
   };
 
-  const handleSaveFloorPositions = async (floorPositions: { floorId: string; positionData: { yStart: number; yEnd: number } }[]) => {
+  const handleSaveFloorPositions = async (
+    floorPositions: {
+      floorId: string;
+      positionData: { yStart?: number; yEnd?: number; polygon?: { x: number; y: number }[]; label?: { x: number; y: number } | null };
+    }[]
+  ) => {
     setLoading(true);
     await fetch(`/api/buildings/${buildingId}/floor-positions`, {
       method: "PUT",
@@ -119,7 +109,7 @@ export default function FloorsClient({ initialBuilding, buildingId, projectId }:
   const sortedFloors = [...building.floors].sort((a, b) => b.number - a.number);
 
   return (
-    <div>
+    <div className="space-y-4">
       {showPositionEditor && building.frontViewImage && (
         <FloorPositionEditor
           buildingImage={building.frontViewImage}
@@ -129,33 +119,33 @@ export default function FloorsClient({ initialBuilding, buildingId, projectId }:
         />
       )}
 
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
         <div>
-          <h1 className="text-2xl font-bold">{building.name} - {t("floors")}</h1>
-          <p className="text-slate-500 text-sm">{building.floors.length} {t("floors")}</p>
+          <h1 className="text-[22px] font-semibold text-neutral-950">{building.name} - {t("floors")}</h1>
+          <p className="mt-1 text-sm text-neutral-500">{building.floors.length} {t("floors")}</p>
         </div>
-        <div className="flex gap-3 items-center">
+        <div className="flex flex-wrap items-center gap-2">
           {building.frontViewImage && building.floors.length > 0 && (
             <button onClick={() => setShowPositionEditor(true)}
-              className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 transition">
+              className="rounded-[6px] bg-black px-4 py-2 text-sm font-medium text-white transition hover:bg-neutral-800">
               {t("editFloorPositions")}
             </button>
           )}
           <Link href={`/portal/management-x7k9/projects/${projectId}/buildings`}
-            className="text-sm text-slate-500 hover:text-slate-700">
+            className="rounded-[6px] border border-neutral-200 bg-white px-3 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50">
             ← {t("backToBuildings")}
           </Link>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border mb-6 overflow-hidden">
-        <div className="flex border-b">
+      <div className="overflow-hidden rounded-[8px] border border-neutral-200 bg-white shadow-sm">
+        <div className="flex border-b border-neutral-200 bg-neutral-50 p-1">
           <button onClick={() => setAddMode("single")}
-            className={`flex-1 py-2.5 text-sm font-medium transition ${addMode === "single" ? "bg-emerald-50 text-emerald-700 border-b-2 border-emerald-600" : "text-slate-500 hover:text-slate-700"}`}>
+            className={`flex-1 rounded-[6px] py-2.5 text-sm font-medium transition ${addMode === "single" ? "bg-white text-neutral-950 shadow-sm" : "text-neutral-500 hover:text-neutral-900"}`}>
             + {t("addFloor")}
           </button>
           <button onClick={() => setAddMode("range")}
-            className={`flex-1 py-2.5 text-sm font-medium transition ${addMode === "range" ? "bg-blue-50 text-blue-700 border-b-2 border-blue-600" : "text-slate-500 hover:text-slate-700"}`}>
+            className={`flex-1 rounded-[6px] py-2.5 text-sm font-medium transition ${addMode === "range" ? "bg-white text-neutral-950 shadow-sm" : "text-neutral-500 hover:text-neutral-900"}`}>
             ++ {t("addMultipleFloors")}
           </button>
         </div>
@@ -163,51 +153,51 @@ export default function FloorsClient({ initialBuilding, buildingId, projectId }:
           {addMode === "single" ? (
             <form onSubmit={handleAddFloor} className="flex flex-wrap gap-3 items-end">
               <div>
-                <label className="block text-xs text-slate-500 mb-1">{t("floorNumber")}</label>
+                <label className="mb-1 block text-xs font-medium text-neutral-500">{t("floorNumber")}</label>
                 <input type="number" value={newFloorNumber} onChange={(e) => setNewFloorNumber(e.target.value)}
                   placeholder="1" disabled={loading}
-                  className="w-28 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-sm" />
+                  className="w-28 rounded-[6px] border border-neutral-200 px-3 py-2 text-sm outline-none transition focus:border-neutral-400" />
               </div>
               <div>
-                <label className="block text-xs text-slate-500 mb-1">{t("basePricePerM2")} (optional)</label>
+                <label className="mb-1 block text-xs font-medium text-neutral-500">{t("basePricePerM2")} (optional)</label>
                 <input type="number" value={newFloorPrice} onChange={(e) => setNewFloorPrice(e.target.value)}
                   placeholder="e.g. 6500000" disabled={loading}
-                  className="w-44 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-sm" />
+                  className="w-44 rounded-[6px] border border-neutral-200 px-3 py-2 text-sm outline-none transition focus:border-neutral-400" />
               </div>
               <button type="submit" disabled={loading || !newFloorNumber}
-                className="px-5 py-2 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 disabled:bg-slate-300 transition text-sm">
+                className="rounded-[6px] bg-black px-5 py-2 text-sm font-medium text-white transition hover:bg-neutral-800 disabled:bg-neutral-200 disabled:text-neutral-400">
                 {loading ? "..." : t("addFloor")}
               </button>
             </form>
           ) : (
             <form onSubmit={handleAddRangeFloors} className="flex flex-wrap gap-3 items-end">
               <div>
-                <label className="block text-xs text-slate-500 mb-1">{t("fromFloor")}</label>
+                <label className="mb-1 block text-xs font-medium text-neutral-500">{t("fromFloor")}</label>
                 <input type="number" value={rangeFrom} onChange={(e) => setRangeFrom(e.target.value)}
                   placeholder="1" disabled={loading}
-                  className="w-24 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" />
+                  className="w-24 rounded-[6px] border border-neutral-200 px-3 py-2 text-sm outline-none transition focus:border-neutral-400" />
               </div>
-              <div className="pb-2 text-slate-400 text-lg self-end">→</div>
+              <div className="self-end pb-2 text-lg text-neutral-400">→</div>
               <div>
-                <label className="block text-xs text-slate-500 mb-1">{t("toFloor")}</label>
+                <label className="mb-1 block text-xs font-medium text-neutral-500">{t("toFloor")}</label>
                 <input type="number" value={rangeTo} onChange={(e) => setRangeTo(e.target.value)}
                   placeholder="9" disabled={loading}
-                  className="w-24 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" />
+                  className="w-24 rounded-[6px] border border-neutral-200 px-3 py-2 text-sm outline-none transition focus:border-neutral-400" />
               </div>
               <div>
-                <label className="block text-xs text-slate-500 mb-1">{t("basePricePerM2")} (optional)</label>
+                <label className="mb-1 block text-xs font-medium text-neutral-500">{t("basePricePerM2")} (optional)</label>
                 <input type="number" value={rangePrice} onChange={(e) => setRangePrice(e.target.value)}
                   placeholder="e.g. 6500000" disabled={loading}
-                  className="w-44 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" />
+                  className="w-44 rounded-[6px] border border-neutral-200 px-3 py-2 text-sm outline-none transition focus:border-neutral-400" />
               </div>
               <div className="flex flex-col gap-1">
                 {rangeFrom && rangeTo && parseInt(rangeFrom) <= parseInt(rangeTo) && (
-                  <p className="text-xs text-blue-600">
+                  <p className="text-xs text-neutral-500">
                     {t("floorsWillBeCreated", { count: parseInt(rangeTo) - parseInt(rangeFrom) + 1 })}
                   </p>
                 )}
                 <button type="submit" disabled={loading || !rangeFrom || !rangeTo || parseInt(rangeFrom) > parseInt(rangeTo)}
-                  className="px-5 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:bg-slate-300 transition text-sm">
+                  className="rounded-[6px] bg-black px-5 py-2 text-sm font-medium text-white transition hover:bg-neutral-800 disabled:bg-neutral-200 disabled:text-neutral-400">
                   {loading ? "..." : t("addFloors")}
                 </button>
               </div>
@@ -217,57 +207,38 @@ export default function FloorsClient({ initialBuilding, buildingId, projectId }:
       </div>
 
       {sortedFloors.length === 0 ? (
-        <div className="bg-slate-50 rounded-xl p-8 text-center text-slate-500">{t("noFloorsYet")}</div>
+        <div className="rounded-[8px] border border-dashed border-neutral-300 bg-neutral-50 p-8 text-center text-sm text-neutral-500">{t("noFloorsYet")}</div>
       ) : (
         <div className="space-y-3">
           {sortedFloors.map((floor) => {
             const available = floor.units.filter((u) => u.status === "available").length;
             const total = floor.units.length;
             return (
-              <div key={floor.id} className="bg-white rounded-xl shadow-sm border p-4 flex items-center gap-4">
-                <div className="w-16 h-16 bg-slate-100 rounded-lg flex items-center justify-center">
-                  <span className="text-2xl font-bold text-slate-600">{floor.number}</span>
+              <div key={floor.id} className="flex flex-col gap-4 rounded-[8px] border border-neutral-200 bg-white p-4 shadow-sm lg:flex-row lg:items-center">
+                <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-[6px] border border-neutral-200 bg-neutral-50">
+                  <span className="text-2xl font-semibold text-neutral-700">{floor.number}</span>
                 </div>
-                <div className="flex-1">
-                  {editingId === floor.id ? (
-                    <div className="flex gap-2 items-center">
-                      <input type="number" value={editNumber} onChange={(e) => setEditNumber(e.target.value)}
-                        className="w-20 px-2 py-1 border rounded" placeholder={t("floorNumber")} />
-                      <input type="number" value={editPrice} onChange={(e) => setEditPrice(e.target.value)}
-                        className="w-32 px-2 py-1 border rounded" placeholder={t("basePricePerM2")} />
-                      <button onClick={() => handleUpdateFloor(floor.id)}
-                        className="px-3 py-1 bg-emerald-600 text-white rounded text-sm">{tc("save")}</button>
-                      <button onClick={() => setEditingId(null)}
-                        className="px-3 py-1 bg-slate-200 rounded text-sm">{tc("cancel")}</button>
-                    </div>
-                  ) : (
-                    <>
-                      <h3 className="font-semibold text-slate-800">{t("floor")} {floor.number}</h3>
-                      <p className="text-sm text-slate-500">
-                        {total > 0 ? `${available}/${total} ${t("available")}` : t("noUnitsOnFloor")} ·{" "}
-                        {floor.basePricePerM2 ? `${(floor.basePricePerM2 / 1_000_000).toFixed(1)}M/m²` : t("noBasePrice")}
-                      </p>
-                    </>
-                  )}
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-semibold text-neutral-950">{t("floor")} {floor.number}</h3>
+                  <p className="mt-1 text-sm text-neutral-500">
+                    {total > 0 ? `${available}/${total} ${t("available")}` : t("noUnitsOnFloor")} ·{" "}
+                    {floor.basePricePerM2 ? `${(floor.basePricePerM2 / 1_000_000).toFixed(1)}M/m²` : t("noBasePrice")}
+                  </p>
                 </div>
                 {total > 0 && (
-                  <div className="flex h-3 w-24 rounded-full overflow-hidden bg-slate-100">
-                    <div className="bg-green-500" style={{ width: `${(available / total) * 100}%` }} />
-                    <div className="bg-yellow-400" style={{ width: `${(floor.units.filter((u) => u.status === "reserved").length / total) * 100}%` }} />
-                    <div className="bg-red-400" style={{ width: `${(floor.units.filter((u) => u.status === "sold").length / total) * 100}%` }} />
+                  <div className="flex h-2 w-24 overflow-hidden rounded-full bg-neutral-100">
+                    <div className="bg-neutral-900" style={{ width: `${(available / total) * 100}%` }} />
+                    <div className="bg-neutral-500" style={{ width: `${(floor.units.filter((u) => u.status === "reserved").length / total) * 100}%` }} />
+                    <div className="bg-neutral-300" style={{ width: `${(floor.units.filter((u) => u.status === "sold").length / total) * 100}%` }} />
                   </div>
                 )}
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2 lg:justify-end">
                   <Link href={`/portal/management-x7k9/projects/${projectId}/buildings/${buildingId}/floors/${floor.id}/editor`}
-                    className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 transition">
+                    className="rounded-[6px] bg-black px-4 py-2 text-sm font-medium text-white transition hover:bg-neutral-800">
                     {t("floorPlanEditor")}
                   </Link>
-                  <button onClick={() => { setEditingId(floor.id); setEditNumber(floor.number.toString()); setEditPrice(floor.basePricePerM2?.toString() || ""); }}
-                    className="px-3 py-2 bg-slate-100 text-slate-600 rounded-lg text-sm hover:bg-slate-200 transition">
-                    {tc("edit")}
-                  </button>
                   <button onClick={() => handleDeleteFloor(floor.id, floor.number)}
-                    className="px-3 py-2 bg-red-50 text-red-600 rounded-lg text-sm hover:bg-red-100 transition">
+                    className="rounded-[6px] border border-neutral-200 bg-white px-3 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50">
                     {tc("delete")}
                   </button>
                 </div>

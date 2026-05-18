@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useTranslations } from "next-intl";
+import { ArrowRight, Building2, Layers3, Ruler } from "lucide-react";
 import { getCardImageUrl } from "@/lib/cloudinary";
 
 export interface GroupedUnit {
@@ -13,6 +14,7 @@ export interface GroupedUnit {
     units: {
         id: string;
         unitNumber: string;
+        displayNumber: string;
         rooms: number;
         area: number;
         status: string;
@@ -33,6 +35,8 @@ export interface GroupedUnit {
     floorMin: number;
     floorMax: number;
     buildingName: string;
+    minTotalPrice: number | null;
+    minPricePerM2: number | null;
 }
 
 interface Props {
@@ -43,56 +47,81 @@ interface Props {
 export default function GroupedApartmentCard({ group, onClick }: Props) {
     const t = useTranslations("unit");
     const ta = useTranslations("apartments");
+    const formatPrice = (value: number | null) => {
+        if (!value) return null;
+        return `${Math.round(value).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")} UZS`;
+    };
 
     // Auto-construct display number for label
     const getDisplayLabel = () => {
-        return `${group.rooms}-${t("rooms")?.toLowerCase() || "xona"}, ${group.area} m²`;
+        return `${group.rooms} ${t("rooms").toLowerCase()}, ${group.area} m²`;
     };
+
+    const price = formatPrice(group.minTotalPrice);
+    const pricePerM2 = formatPrice(group.minPricePerM2);
 
     return (
         <button
             onClick={onClick}
-            className="group bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-slate-100/50 hover:shadow-[0_20px_50px_rgba(8,112,184,0.08)] hover:border-indigo-100/50 active:scale-[0.98] hover:-translate-y-1.5 transition-all duration-300 overflow-hidden text-left w-full flex flex-col relative"
+            className="group relative flex w-full flex-col overflow-hidden rounded-[7px] border border-[#d8cabc] bg-[#fbf7ef] text-left shadow-[0_16px_45px_rgba(36,28,20,0.08)] transition-all duration-300 hover:-translate-y-1 hover:border-[#c66348]/70 hover:shadow-[0_24px_70px_rgba(36,28,20,0.14)]"
         >
             {/* Image */}
-            <div className="relative bg-slate-50 p-4 pb-2">
+            <div className="relative border-b border-[#e0d1c2] bg-[#f7efe4] p-5">
+                <div className="absolute left-4 top-4 z-10 inline-flex items-center gap-2 rounded-full border border-[#d8cabc] bg-[#fbf7ef]/90 px-3 py-1 text-[11px] font-semibold text-[#6f675e] backdrop-blur-md">
+                    <Building2 className="h-3.5 w-3.5 text-[#c66348]" strokeWidth={1.7} />
+                    {group.buildingName}
+                </div>
                 {group.sketchImage ? (
-                    <div className="relative w-full aspect-square">
+                    <div className="relative aspect-[4/3] w-full">
                         <Image
                             src={getCardImageUrl(group.sketchImage)}
                             alt={getDisplayLabel()}
                             fill
                             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                            className="object-contain group-hover:scale-105 transition-transform duration-300"
+                            className="object-contain p-4 transition-transform duration-500 group-hover:scale-[1.035]"
                         />
                     </div>
                 ) : (
-                    <div className="w-full aspect-square flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-slate-50 to-slate-100 rounded-lg">
-                        <svg className="w-12 h-12 text-slate-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                        </svg>
-                        <span className="text-xs text-slate-300">{group.area} m²</span>
+                    <div className="flex aspect-[4/3] w-full flex-col items-center justify-center gap-2 text-[#a89c90]">
+                        <Ruler className="h-10 w-10" strokeWidth={1.4} />
+                        <span className="text-[13px] font-semibold">{group.area} m²</span>
                     </div>
                 )}
             </div>
 
             {/* Info */}
-            <div className="px-4 pb-3 pt-2 space-y-1.5 flex-1">
-                <InfoRow label={t("rooms") || "Xonalar"} value={String(group.rooms)} />
-                <InfoRow label={t("area") || "Maydon"} value={`${group.area} m²`} />
-                <InfoRow
-                    label={ta("floorsAvailable") || "Qavatlar"}
-                    value={group.floorMin === group.floorMax ? String(group.floorMin) : `${group.floorMin}–${group.floorMax}`}
-                />
-            </div>
+            <div className="flex flex-1 flex-col p-5">
+                <div className="flex items-start justify-between gap-4">
+                    <div>
+                        <p className="font-display text-[34px] font-semibold leading-none text-[#15120f]">
+                            {group.rooms} · {group.area} m²
+                        </p>
+                        <p className="mt-2 text-[13px] font-semibold uppercase tracking-[0.14em] text-[#b75f43]">
+                            {ta("availableCount", { count: group.availableCount })}
+                        </p>
+                    </div>
+                    <span className={`mt-1 h-3 w-3 rounded-full ${group.availableCount > 0 ? "bg-[#7fb069]" : "bg-[#c66348]"}`} />
+                </div>
 
-            {/* Bottom availability badge */}
-            <div className="px-4 pb-4">
-                <div className={`text-center text-xs font-semibold py-2 rounded-xl ${group.availableCount > 0
-                    ? "bg-emerald-100 text-emerald-700"
-                    : "bg-red-100 text-red-600"
-                    }`}>
-                    {group.availableCount} ta mavjud
+                <div className="mt-5 space-y-2.5">
+                    <InfoRow label={t("rooms")} value={String(group.rooms)} />
+                    <InfoRow label={ta("floorsAvailable")} value={group.floorMin === group.floorMax ? String(group.floorMin) : `${group.floorMin}–${group.floorMax}`} />
+                    <InfoRow label={ta("price")} value={price || ta("priceOnRequest")} />
+                </div>
+
+                <div className="mt-5 flex items-end justify-between gap-4 border-t border-[#e0d1c2] pt-4">
+                    <div className="text-[12px] font-medium text-[#8d8174]">
+                        <span className="inline-flex items-center gap-1.5">
+                            <Layers3 className="h-3.5 w-3.5 text-[#c66348]" strokeWidth={1.7} />
+                            {group.totalCount} {ta("totalUnits")}
+                        </span>
+                        {pricePerM2 ? (
+                            <span className="mt-1 block">{pricePerM2} / m²</span>
+                        ) : null}
+                    </div>
+                    <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#d8cabc] text-[#c66348] transition-colors group-hover:border-[#c66348] group-hover:bg-[#c66348] group-hover:text-white">
+                        <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" strokeWidth={1.8} />
+                    </span>
                 </div>
             </div>
         </button>
@@ -102,9 +131,9 @@ export default function GroupedApartmentCard({ group, onClick }: Props) {
 function InfoRow({ label, value }: { label: string; value: string }) {
     return (
         <div className="flex items-baseline gap-1">
-            <span className="text-sm text-slate-500 whitespace-nowrap">{label}</span>
-            <span className="flex-1 border-b border-dotted border-slate-300 min-w-[20px] relative top-[-3px]" />
-            <span className="text-sm font-semibold text-slate-700 whitespace-nowrap">{value}</span>
+            <span className="whitespace-nowrap text-[13px] font-medium text-[#8d8174]">{label}</span>
+            <span className="relative top-[-3px] min-w-[20px] flex-1 border-b border-dotted border-[#d7c8b8]" />
+            <span className="whitespace-nowrap text-[13px] font-semibold text-[#15120f]">{value}</span>
         </div>
     );
 }

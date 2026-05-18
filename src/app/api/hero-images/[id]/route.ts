@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { invalidateProject } from "@/lib/cache";
 
 // DELETE hero image
 export async function DELETE(
@@ -25,6 +26,7 @@ export async function DELETE(
       });
     }
 
+    invalidateProject();
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error deleting hero image:", error);

@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import prisma from "@/lib/prisma";
+import { FAQUpdateSchema } from "@/lib/schemas/faq";
+import { invalidInput } from "@/lib/schemas/common";
 
 // PUT update FAQ
 export async function PUT(
@@ -9,19 +12,18 @@ export async function PUT(
   try {
     const { id } = await params;
     const data = await req.json();
+    const parsed = FAQUpdateSchema.safeParse(data);
+    if (!parsed.success) return invalidInput(parsed.error);
+    const input = parsed.data;
 
     const faq = await prisma.fAQ.update({
       where: { id },
       data: {
-        questionUz: data.questionUz,
-        questionEn: data.questionEn,
-        questionRu: data.questionRu,
-        answerUz: data.answerUz,
-        answerEn: data.answerEn,
-        answerRu: data.answerRu,
+        ...input,
       },
     });
 
+    revalidateTag("faqs");
     return NextResponse.json(faq);
   } catch (error) {
     console.error("Error updating FAQ:", error);
@@ -53,6 +55,7 @@ export async function DELETE(
       });
     }
 
+    revalidateTag("faqs");
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error deleting FAQ:", error);

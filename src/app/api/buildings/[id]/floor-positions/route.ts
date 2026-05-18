@@ -1,24 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import prisma from "@/lib/prisma";
+import { FloorPositionsUpdateSchema } from "@/lib/schemas/building";
+import { invalidInput } from "@/lib/schemas/common";
 
 // PUT - Batch update floor positions for a building
-export async function PUT(
-  request: NextRequest,
-  _context: { params: { id: string } }
-) {
+export async function PUT(request: NextRequest) {
   try {
-    const { floorPositions } = await request.json();
-
-    if (!Array.isArray(floorPositions)) {
-      return NextResponse.json(
-        { error: "floorPositions must be an array" },
-        { status: 400 }
-      );
-    }
+    const body = await request.json();
+    const parsed = FloorPositionsUpdateSchema.safeParse(body);
+    if (!parsed.success) return invalidInput(parsed.error);
+    const { floorPositions } = parsed.data;
 
     // Update each floor's position
     const updates = floorPositions.map(
-      (fp: { floorId: string; positionData: { yStart: number; yEnd: number } }) =>
+      (fp: {
+        floorId: string;
+        positionData: {
+          yStart?: number;
+          yEnd?: number;
+          polygon?: { x: number; y: number }[];
+          label?: { x: number; y: number } | null;
+        };
+      }) =>
         prisma.floor.update({
           where: { id: fp.floorId },
           data: { positionData: fp.positionData },
@@ -26,6 +30,7 @@ export async function PUT(
     );
 
     await prisma.$transaction(updates);
+    revalidateTag("project");
 
     return NextResponse.json({ success: true, updated: floorPositions.length });
   } catch (error) {

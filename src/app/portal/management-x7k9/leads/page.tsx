@@ -1,4 +1,5 @@
 import prisma from "@/lib/prisma";
+import { requireAdmin } from "@/lib/auth";
 import LeadsClient from "./LeadsClient";
 
 export const dynamic = "force-dynamic";
@@ -6,6 +7,7 @@ export const dynamic = "force-dynamic";
 const LIMIT = 20;
 
 export default async function LeadsPage() {
+  await requireAdmin();
   const [leads, total] = await Promise.all([
     prisma.lead.findMany({
       orderBy: { createdAt: "desc" },

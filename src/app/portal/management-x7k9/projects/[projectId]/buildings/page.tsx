@@ -1,10 +1,12 @@
 import { notFound } from "next/navigation";
 import prisma from "@/lib/prisma";
+import { requireAdmin } from "@/lib/auth";
 import BuildingsClient from "./BuildingsClient";
 
 export const dynamic = "force-dynamic";
 
 export default async function BuildingsPage({ params }: { params: { projectId: string } }) {
+  await requireAdmin();
   const project = await prisma.project.findUnique({
     where: { id: params.projectId },
     select: {

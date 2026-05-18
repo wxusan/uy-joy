@@ -53,7 +53,7 @@ export default function LoginPage() {
         </div>
 
         <h1 className="text-[20px] font-semibold mb-1" style={{ color: "var(--a-text)" }}>
-          Sign in
+          {t("signIn")}
         </h1>
         <p className="text-[13px] mb-6" style={{ color: "var(--a-text-secondary)" }}>
           {t("subtitle")}
@@ -72,7 +72,7 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="a-input"
-              placeholder="admin@navruz.uz"
+              placeholder="admin@example.com"
               required
               style={{ height: 32, padding: "0 10px" }}
             />

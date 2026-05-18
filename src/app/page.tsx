@@ -3,7 +3,8 @@ import { getTranslations } from "next-intl/server";
 import { cookies } from "next/headers";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import LocationInfrastructure from "@/components/LocationInfrastructure";
+import dynamic from "next/dynamic";
+const LocationInfrastructure = dynamic(() => import("@/components/LocationInfrastructure"));
 import ContactForm from "@/components/ContactForm";
 import FAQ from "@/components/FAQ";
 import HomeStats from "@/components/HomeStats";
@@ -11,10 +12,11 @@ import FeaturedApartments from "@/components/FeaturedApartments";
 import ScrollReveal from "@/components/ScrollReveal";
 import ExploreClient from "@/components/ExploreClient";
 import { getCachedProject, getCachedHeroImages, getCachedFAQs } from "@/lib/cached-queries";
-import { getTranslation, Locale } from "@/lib/translations";
+import type { Locale } from "@/lib/translations";
 import { getHeroImageUrl, getCardImageUrl } from "@/lib/cloudinary";
+import { computeDisplayNumber } from "@/lib/unit-display";
 import Image from "next/image";
-import { CheckCircle2 } from "lucide-react";
+import { ArrowRight, Building2, KeyRound, ShieldCheck, Trees } from "lucide-react";
 
 // ISR: Revalidate every 60 seconds for faster loading
 export const revalidate = 60;
@@ -43,15 +45,43 @@ export default async function Home() {
     );
   }
 
-  // Get translated content
-  const projectName = getTranslation(project.nameTranslations, project.name, locale);
-  const projectDescription = getTranslation(project.descriptionTranslations, project.description || "", locale);
-  const projectAddress = getTranslation(project.addressTranslations, project.address || "", locale);
+  // Resolve project name / description / address from DB translations or fallback to project.name
+  const getTranslated = (json: string | null, fallback: string) => {
+    if (!json) return fallback;
+    try {
+      const parsed = JSON.parse(json) as Record<string, string>;
+      return parsed[locale]?.trim() || parsed["uz"]?.trim() || fallback;
+    } catch {
+      return fallback;
+    }
+  };
+
+  const projectName = getTranslated(project.nameTranslations, project.name);
+  const projectDescription = getTranslated(project.descriptionTranslations, project.description ?? "");
+  const projectAddress = getTranslated(project.addressTranslations, project.address ?? "");
+  const expectedYear = project.expectedYear ?? new Date().getFullYear() + 2;
+
+  const publicProject = {
+    ...project,
+    name: projectName,
+    description: projectDescription,
+    address: projectAddress,
+    expectedYear,
+  };
 
   const allUnits = project.buildings.flatMap((b) => b.floors.flatMap((f) => f.units));
   const available = allUnits.filter((u) => u.status === "available").length;
   const reserved = allUnits.filter((u) => u.status === "reserved").length;
   const sold = allUnits.filter((u) => u.status === "sold").length;
+  const availablePricePerM2Values = project.buildings.flatMap((building) =>
+    building.floors.flatMap((floor) =>
+      floor.units
+        .filter((unit) => unit.status === "available")
+        .map((unit) => unit.pricePerM2 ?? floor.basePricePerM2)
+        .filter((value): value is number => typeof value === "number" && value > 0)
+    )
+  );
+  const minPricePerM2 = availablePricePerM2Values.length ? Math.min(...availablePricePerM2Values) : null;
 
   const roomTypes = Array.from(new Set(allUnits.map((u) => u.rooms))).sort();
   const areaRange = allUnits.length > 0 ? {
@@ -60,6 +90,29 @@ export default async function Home() {
   } : { min: 0, max: 0 };
 
   const totalFloors = project.buildings.reduce((a, b) => a + b.floors.length, 0);
+  const aboutFeatures = [
+    {
+      icon: Building2,
+      title: t("project.buildingsFloors", { buildings: project.buildings.length, floors: totalFloors }),
+      description: t("about.featurePlanning"),
+    },
+    {
+      icon: Trees,
+      title: t("project.apartmentSizes", { min: areaRange.min, max: areaRange.max }),
+      description: t("about.featureCourtyard"),
+    },
+    {
+      icon: ShieldCheck,
+      title: t("project.roomOptions", { rooms: roomTypes.join(", ") }),
+      description: t("about.featurePricing"),
+    },
+    {
+      icon: KeyRound,
+      title: t("project.parkingSecurity"),
+      description: t("about.featureDeveloper"),
+    },
+  ];
+  const aboutImages = heroImages.slice(0, 2);
 
   // Transform units for featured apartments (only with polygons)
   const featuredUnitsData = project.buildings.flatMap((building) =>
@@ -67,8 +120,9 @@ export default async function Home() {
       floor.units
         .filter((u) => u.polygonData)
         .map((unit) => ({
-          id: unit.id,
-          unitNumber: unit.unitNumber,
+            id: unit.id,
+            unitNumber: unit.unitNumber,
+            displayNumber: computeDisplayNumber(unit.unitNumber, floor.number),
           rooms: unit.rooms,
           area: unit.area,
           status: unit.status,
@@ -93,28 +147,17 @@ export default async function Home() {
     <>
       <Navbar />
       <main className="flex-1">
-        {/* Hero — navy tokens instead of raw slate */}
-        <section className="bg-gradient-to-br from-navy-900 via-navy-800 to-emerald-900 text-white py-20">
-          <div className="max-w-6xl mx-auto px-4 text-center">
-            <ScrollReveal>
-              <div className="inline-block bg-emerald-500/20 text-emerald-300 px-4 py-2 rounded-full text-sm font-medium mb-6 border border-emerald-500/30">
-                {t("landing.premiumResidential")}
-              </div>
-              <h1 className="text-4xl md:text-6xl font-bold mb-4 text-white">
-                {projectName}
-              </h1>
-              <p className="text-lg text-navy-200 mb-2">{projectAddress}</p>
-              <p className="text-sm text-navy-300 mb-8 max-w-2xl mx-auto">{projectDescription}</p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                <Link
-                  href="/#explore"
-                  className="bg-shine inline-block bg-emerald-500 text-emerald-100 px-6 py-2.5 sm:px-8 sm:py-3 text-sm sm:text-base rounded-lg font-semibold hover:bg-emerald-400 transition"
-                >
-                  {t("landing.exploreApartments")}
-                </Link>
-              </div>
-            </ScrollReveal>
-          </div>
+        {/* Interactive Master Plan Hero */}
+        <section id="explore" className="bg-[#11100f] lg:-mt-[93px]">
+          <ExploreClient
+            project={JSON.parse(JSON.stringify(publicProject))}
+            heroTitle={projectName}
+            heroSubtitle={projectDescription}
+            heroMinPricePerM2={minPricePerM2}
+            heroAvailableCount={available}
+            heroTotalCount={allUnits.length}
+            heroExpectedYear={expectedYear}
+          />
         </section>
 
         {/* Quick Stats with Animated Counters + Progress Bars */}
@@ -131,67 +174,82 @@ export default async function Home() {
           }}
         />
 
-        {/* Interactive Master Plan / Visual Tour — pt-12 for balanced rhythm after stat overlap */}
-        <section id="explore" className="bg-slate-50 border-t border-slate-200 pt-12 pb-16">
-          <div className="max-w-7xl mx-auto">
-            <ExploreClient project={JSON.parse(JSON.stringify(project))} />
-          </div>
-        </section>
-
         {/* About */}
-        <section id="about" className="max-w-6xl mx-auto px-4 py-16">
-          <div className="grid md:grid-cols-2 gap-12 items-start">
+        <section id="about" className="bg-[#f4efe7] px-5 py-16 text-[#15120f] md:py-24">
+          <div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-[minmax(0,0.95fr)_minmax(420px,1.05fr)] lg:gap-20">
             <ScrollReveal direction="left">
-              <h2 className="text-3xl font-bold text-navy-900 mb-6">{t("project.aboutComplex")}</h2>
-              <p className="text-slate-600 leading-relaxed mb-6">{projectDescription}</p>
+              <div className="relative pl-8 md:pl-10">
+                <div className="absolute left-0 top-0 h-[262px] w-[3px] bg-[#b75f43]" />
+                <div className="mb-8 flex items-center gap-6">
+                  <p className="font-heading text-[18px] font-semibold uppercase tracking-[0.24em] text-[#b75f43] md:text-[22px]">
+                    {t("about.eyebrow", { name: projectName })}
+                  </p>
+                  <span className="h-px w-16 bg-[#b75f43]/65" />
+                </div>
 
-              <div className="space-y-3">
-                {[
-                  `${project.buildings.length} ${t("admin.buildings")}, ${totalFloors} ${t("explore.floors")}`,
-                  `${t("unit.area")}: ${areaRange.min}–${areaRange.max} m²`,
-                  `${t("unit.rooms")}: ${roomTypes.join(", ")} ${t("explore.room")}`,
-                  t("project.parkingSecurity"),
-                ].map((feature, i) => (
-                  <div key={i} className="flex items-center gap-3">
-                    <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" />
-                    <span className="text-slate-700">{feature}</span>
-                  </div>
-                ))}
+                <p className="max-w-[620px] text-[17px] font-medium leading-8 text-[#6f675e]">
+                  {projectDescription}
+                </p>
+
+                <div className="mt-10 grid gap-x-10 gap-y-7 sm:grid-cols-2">
+                  {aboutFeatures.map((feature, index) => {
+                    const Icon = feature.icon;
+
+                    return (
+                      <div
+                        key={feature.title}
+                        className={`flex gap-5 ${index > 1 ? "border-t border-[#d8cabc] pt-7" : ""}`}
+                      >
+                        <Icon className="mt-1 h-8 w-8 shrink-0 text-[#c66348]" strokeWidth={1.5} />
+                        <div>
+                          <h3 className="font-heading text-[18px] font-semibold leading-6 text-[#15120f]">
+                            {feature.title}
+                          </h3>
+                          <p className="mt-1.5 text-[14px] font-medium leading-6 text-[#6f675e]">
+                            {feature.description}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <Link
+                  href="/#contact"
+                  className="mt-9 inline-flex h-14 min-w-[190px] items-center justify-center gap-5 rounded-[6px] bg-[#c66348] px-7 font-heading text-[16px] font-semibold text-white shadow-[0_18px_38px_rgba(198,99,72,0.22)] transition-colors hover:bg-[#d87355]"
+                >
+                  {t("about.learnMore")}
+                  <ArrowRight className="h-5 w-5" strokeWidth={1.7} />
+                </Link>
               </div>
             </ScrollReveal>
 
-            {/* Gallery */}
-            <ScrollReveal direction="right" className="space-y-3">
-              {heroImages.length === 0 ? (
-                <div className="bg-slate-100 rounded-2xl h-72 flex items-center justify-center">
-                  <p className="text-slate-400">Rasm yuklanmagan</p>
-                </div>
-              ) : heroImages.length === 1 ? (
-                <div className="relative rounded-2xl overflow-hidden h-80">
-                  <Image src={getHeroImageUrl(heroImages[0].imageUrl)} alt="Building" fill className="object-cover" loading="lazy" />
-                </div>
-              ) : heroImages.length === 2 ? (
-                <div className="grid grid-cols-2 gap-3">
-                  {heroImages.map((img, i) => (
-                    <div key={img.id} className="relative rounded-xl overflow-hidden h-64">
-                      <Image src={getCardImageUrl(img.imageUrl)} alt={`Building ${i + 1}`} fill className="object-cover" loading="lazy" />
+            <ScrollReveal direction="right">
+              <div className="grid gap-5">
+                {aboutImages.length > 0 ? (
+                  aboutImages.map((img, index) => (
+                    <div
+                      key={img.id}
+                      className={`relative overflow-hidden rounded-[7px] border border-[#ddcec0] bg-[#e7ddd1] shadow-[0_22px_60px_rgba(30,24,18,0.12)] ${
+                        index === 0 ? "h-[260px] md:h-[350px]" : "h-[240px] md:h-[330px]"
+                      }`}
+                    >
+                      <Image
+                        src={index === 0 ? getHeroImageUrl(img.imageUrl) : getCardImageUrl(img.imageUrl)}
+                        alt={`${projectName} ${index + 1}`}
+                        fill
+                        className="object-cover"
+                        sizes="(min-width: 1024px) 48vw, 100vw"
+                        loading="lazy"
+                      />
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <>
-                  <div className="relative rounded-2xl overflow-hidden h-56">
-                    <Image src={getHeroImageUrl(heroImages[0].imageUrl)} alt="Building" fill className="object-cover" loading="lazy" />
+                  ))
+                ) : (
+                  <div className="flex h-[360px] items-center justify-center rounded-[7px] border border-[#ddcec0] bg-[#e7ddd1] text-[#8a7d70]">
+                    {t("about.noImages")}
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    {heroImages.slice(1).map((img, i) => (
-                      <div key={img.id} className="relative rounded-xl overflow-hidden h-28">
-                        <Image src={getCardImageUrl(img.imageUrl)} alt={`Building ${i + 2}`} fill className="object-cover" loading="lazy" />
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
+                )}
+              </div>
             </ScrollReveal>
           </div>
         </section>
@@ -200,10 +258,9 @@ export default async function Home() {
         <FeaturedApartments
           units={featuredUnitsData}
           projectName={projectName}
-          expectedYear={project.expectedYear}
+          expectedYear={expectedYear}
+          telegramUrl={project.telegramUrl}
         />
-
-
 
         {/* Location & Infrastructure */}
         {project.latitude && project.longitude ? (
@@ -237,26 +294,43 @@ export default async function Home() {
         )}
 
         {/* FAQ & Contact Form */}
-        <section className="bg-slate-50 py-16">
-          <div className="max-w-6xl mx-auto px-4">
-            <div className="grid md:grid-cols-2 gap-12">
-              <FAQ items={faqs} locale={locale} />
-              <ContactForm projectId={project.id} projectName={projectName} />
+        <section id="contact" className="relative overflow-hidden border-y border-[#ded2c6] bg-[#f4efe7] px-5 py-16 md:py-24">
+          <div className="relative mx-auto max-w-7xl">
+            <div className="grid gap-12 lg:grid-cols-[minmax(0,1.05fr)_minmax(420px,0.95fr)] lg:gap-20">
+              <ScrollReveal>
+                <FAQ items={faqs} locale={locale} />
+              </ScrollReveal>
+              <ScrollReveal delay={90}>
+                <ContactForm
+                  projectId={project.id}
+                  projectName={projectName}
+                  phoneNumber={project.phoneNumber}
+                  telegramUrl={project.telegramUrl}
+                  salesOfficeAddress={project.salesOfficeAddress}
+                />
+              </ScrollReveal>
             </div>
           </div>
         </section>
 
-        {/* CTA — navy keeps brand coherent, emerald as accent button */}
-        <section className="bg-navy-900 text-white py-12">
-          <div className="max-w-6xl mx-auto px-4 text-center">
+        {/* Find Best Option CTA */}
+        <section className="relative overflow-hidden border-t border-[#2f2b25] bg-[#151716] px-5 py-16 text-[#fff8ec] md:py-20">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(198,99,72,0.18),transparent_38%)]" />
+          <div className="relative mx-auto max-w-5xl text-center">
             <ScrollReveal>
-              <h2 className="text-2xl sm:text-3xl font-bold mb-4">{t("project.findPerfectApartment")}</h2>
-              <p className="text-navy-300 mb-8 text-sm sm:text-base">{t("project.useInteractiveFloorPlan")}</p>
+              <div className="mx-auto mb-6 h-[2px] w-16 bg-[#c66348]" />
+              <h2 className="font-display text-[42px] font-semibold leading-none tracking-normal md:text-[58px]">
+                {t("project.findPerfectApartment")}
+              </h2>
+              <p className="mx-auto mt-5 max-w-[620px] text-[16px] font-medium leading-8 text-[#d8c8b5]">
+                {t("project.useInteractiveFloorPlan")}
+              </p>
               <Link
                 href="/#explore"
-                className="bg-shine inline-block bg-emerald-500 text-white px-6 py-2.5 sm:px-8 sm:py-3 text-sm sm:text-base rounded-lg font-semibold hover:bg-emerald-400 transition"
+                className="mt-9 inline-flex h-14 min-w-[210px] items-center justify-center gap-4 rounded-[6px] bg-[#c66348] px-7 font-heading text-[16px] font-semibold text-white shadow-[0_18px_38px_rgba(198,99,72,0.22)] transition-colors hover:bg-[#d87355]"
               >
-                {t("project.exploreFloorPlans")} →
+                {t("project.exploreFloorPlans")}
+                <ArrowRight className="h-5 w-5" strokeWidth={1.7} />
               </Link>
             </ScrollReveal>
           </div>

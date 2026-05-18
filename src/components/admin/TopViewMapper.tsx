@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
+import usePrecisionCursorSize from "@/hooks/usePrecisionCursorSize";
 
 type Point = { x: number; y: number };
 
@@ -24,7 +26,18 @@ interface Props {
   onSaved: () => void;
 }
 
+interface BuildingPositionPayload {
+  polygonData: Point[] | null;
+  labelX: number | null;
+  labelY: number | null;
+  pointX: number | null;
+  pointY: number | null;
+  labelScale: number;
+}
+
 export default function TopViewMapper({ imageUrl, buildings, onClose, onSaved }: Props) {
+  const tc = useTranslations("common");
+  const ta = useTranslations("admin");
   const containerRef = useRef<HTMLDivElement>(null);
   const [activeId, setActiveId] = useState<string | null>(buildings[0]?.id || null);
   const [polygons, setPolygons] = useState<Record<string, Point[]>>({});
@@ -36,6 +49,8 @@ export default function TopViewMapper({ imageUrl, buildings, onClose, onSaved }:
   const [saving, setSaving] = useState(false);
   const [draggingLabelId, setDraggingLabelId] = useState<string | null>(null);
   const [draggingPointId, setDraggingPointId] = useState<string | null>(null);
+  const [cursorPoint, setCursorPoint] = useState<Point | null>(null);
+  const cursorSize = usePrecisionCursorSize();
 
   useEffect(() => {
     const initial: Record<string, Point[]> = {};
@@ -149,7 +164,7 @@ export default function TopViewMapper({ imageUrl, buildings, onClose, onSaved }:
         const pts = polygons[b.id];
         const labelPts = labelPositions[b.id];
 
-        const body: any = {
+        const body: BuildingPositionPayload = {
           polygonData: pts && pts.length >= 3 ? pts : null,
           labelX: labelPts ? labelPts.x : null,
           labelY: labelPts ? labelPts.y : null,
@@ -171,25 +186,39 @@ export default function TopViewMapper({ imageUrl, buildings, onClose, onSaved }:
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl w-full max-w-6xl max-h-[95vh] overflow-hidden flex flex-col">
+      <div className="bg-white rounded-xl w-full max-w-[min(98vw,1920px)] max-h-[95vh] overflow-hidden flex flex-col">
         <div className="p-4 border-b flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Binolar hududlarini belgilash</h2>
+          <h2 className="text-lg font-semibold">{ta("mapBuildingAreas")}</h2>
           <div className="flex gap-2">
-            <button onClick={onClose} className="px-3 py-1.5 bg-slate-100 rounded-lg hover:bg-slate-200">Yopish</button>
+            <button onClick={onClose} className="px-3 py-1.5 bg-slate-100 rounded-lg hover:bg-slate-200">{tc("close")}</button>
             <button onClick={save} disabled={saving} className="px-4 py-1.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50">
-              {saving ? "Saqlanmoqda..." : "Saqlash"}
+              {saving ? ta("saving") : tc("save")}
             </button>
           </div>
         </div>
-        <div className="flex-1 grid grid-cols-12 gap-4 p-4 overflow-auto">
-          <div className="col-span-8">
+        <div className="flex-1 grid gap-4 p-4 overflow-auto lg:grid-cols-[minmax(0,1fr)_340px]">
+          <div>
             <div
               ref={containerRef}
-              className="relative w-full aspect-[4/3] bg-slate-100 rounded-lg overflow-hidden cursor-crosshair"
+              className="relative w-full cursor-none overflow-hidden rounded-lg bg-slate-100"
               onClick={handleClick}
               onDoubleClick={handleDoubleClick}
+              onMouseMove={(e) => setCursorPoint(getPoint(e))}
+              onMouseLeave={() => {
+                setCursorPoint(null);
+                setDraggingLabelId(null);
+                setDraggingPointId(null);
+              }}
             >
-              <Image src={imageUrl} alt="Top view" fill className="object-cover select-none pointer-events-none" draggable={false} />
+              <Image
+                src={imageUrl}
+                alt="Top view"
+                width={1800}
+                height={1013}
+                unoptimized
+                className="block h-auto w-full select-none pointer-events-none"
+                draggable={false}
+              />
 
               {/* SVG overlay for polygons */}
               <svg
@@ -323,7 +352,7 @@ export default function TopViewMapper({ imageUrl, buildings, onClose, onSaved }:
                               className="select-none"
                               style={{ letterSpacing: "0.04em" }}
                             >
-                              {floorsCount} floors
+                              {floorsCount} {ta("floors")}
                             </text>
                           </g>
                         );
@@ -348,15 +377,26 @@ export default function TopViewMapper({ imageUrl, buildings, onClose, onSaved }:
                   </>
                 )}
               </svg>
+              {cursorPoint && (
+                <div
+                  className="pointer-events-none absolute z-30 -translate-x-1/2 -translate-y-1/2 rounded-full bg-black shadow-[0_0_0_0.6px_rgba(255,255,255,0.95),0_0_0_1px_rgba(0,0,0,0.34)]"
+                  style={{
+                    left: `${cursorPoint.x}%`,
+                    top: `${cursorPoint.y}%`,
+                    width: cursorSize,
+                    height: cursorSize,
+                  }}
+                />
+              )}
             </div>
             <p className="text-xs text-slate-500 mt-2">
-              O&apos;ng tomondan binoni tanlang, keyin rasmda nuqtalarni bosib polygon chizing. Yakunlash uchun ikki marta bosing.
+              {ta("mapInstruction")}
               <br />
-              <b>Yangi:</b> Binoning belgisini (yozuvli to&apos;rtburchak va nuqtani) sichqoncha bilan ushlab, ixtiyoriy joyga surib qoldirishingiz mumkin.
+              <b>↑</b> {ta("mapInstructionNew")}
             </p>
           </div>
-          <div className="col-span-4 space-y-2">
-            <h3 className="font-medium">Binolar</h3>
+          <div className="space-y-2">
+            <h3 className="font-medium">{ta("buildings")}</h3>
             {buildings.map((b) => (
               <div key={b.id} className="flex flex-col gap-2">
                 <div
@@ -369,7 +409,7 @@ export default function TopViewMapper({ imageUrl, buildings, onClose, onSaved }:
                   >
                     <span className="font-medium">{b.name}</span>
                     <span className={`ml-2 text-xs ${polygons[b.id] ? "text-emerald-600" : "text-slate-400"}`}>
-                      {polygons[b.id] ? `✓ ${polygons[b.id].length} nuqta` : "Belgilanmagan"}
+                      {polygons[b.id] ? `✓ ${polygons[b.id].length}` : ta("notMapped")}
                     </span>
                   </button>
                   {polygons[b.id] && (
@@ -385,7 +425,7 @@ export default function TopViewMapper({ imageUrl, buildings, onClose, onSaved }:
                 {activeId === b.id && polygons[b.id] && (
                   <div className="ml-2 pl-2 border-l-2 border-slate-200 mt-2">
                     <label className="text-xs text-slate-500 block mb-1">
-                      Yozuv o&apos;lchami: <span className="font-semibold">{labelScales[b.id] || 1}x</span>
+                      {ta("labelScale")}: <span className="font-semibold">{labelScales[b.id] || 1}x</span>
                     </label>
                     <input
                       type="range"
@@ -403,13 +443,13 @@ export default function TopViewMapper({ imageUrl, buildings, onClose, onSaved }:
             {currentPoints.length > 0 && (
               <div className="mt-4 p-3 bg-amber-50 rounded-lg border border-amber-200">
                 <p className="text-xs text-amber-800">
-                  {currentPoints.length} nuqta qo&apos;yildi. Yakunlash uchun ikki marta bosing yoki davom eting.
+                  {ta("pointsPlaced", { count: currentPoints.length })}
                 </p>
                 <button
                   onClick={() => setCurrentPoints([])}
                   className="mt-2 text-xs text-red-600 hover:underline"
                 >
-                  Bekor qilish
+                  {tc("cancel")}
                 </button>
               </div>
             )}

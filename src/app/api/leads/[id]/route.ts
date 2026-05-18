@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { LeadUpdateSchema } from "@/lib/schemas/lead";
 
 // PUT - Update lead status
 export async function PUT(
@@ -9,7 +10,16 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await request.json();
-    const { status, notes, assignedTo, nextFollowUp } = body;
+    const parsed = LeadUpdateSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Invalid input", details: parsed.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const { status, notes, assignedTo, nextFollowUp } = parsed.data;
 
     const lead = await prisma.lead.update({
       where: { id },

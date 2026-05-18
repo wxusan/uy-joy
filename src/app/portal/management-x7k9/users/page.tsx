@@ -56,7 +56,7 @@ export default function AdminUsers() {
       <div className="flex items-end justify-between gap-4">
         <div>
           <h1 className="a-page-title">{t("users")}</h1>
-          <p className="a-page-sub">{users.length} member{users.length === 1 ? "" : "s"}</p>
+          <p className="a-page-sub">{users.length} {users.length === 1 ? t("memberSingular") : t("memberPlural")}</p>
         </div>
         <button
           onClick={() => setShowForm(!showForm)}
@@ -107,7 +107,7 @@ export default function AdminUsers() {
               onChange={(e) => setForm({ ...form, role: e.target.value })}
               className="a-input"
             >
-              <option value="admin">Admin</option>
+              <option value="admin">{t("adminRole")}</option>
               <option value="superadmin">{t("superadmin")}</option>
             </select>
           </div>
@@ -151,8 +151,8 @@ export default function AdminUsers() {
                     {user.role === "superadmin"
                       ? t("superadmin")
                       : user.role === "developer"
-                      ? "Developer"
-                      : "Admin"}
+                      ? t("developerRole")
+                      : t("adminRole")}
                   </span>
                 </td>
                 <td style={{ textAlign: "right" }}>

@@ -1,28 +1,45 @@
 import prisma from "@/lib/prisma";
+import { requireAdmin } from "@/lib/auth";
 import ProjectsClient from "./ProjectsClient";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminProjects() {
-  const project = await prisma.project.findFirst({
-    select: {
-      id: true,
-      name: true,
-      nameTranslations: true,
-      description: true,
-      descriptionTranslations: true,
-      topViewImage: true,
-      expectedYear: true,
-      buildings: {
-        select: {
-          id: true,
-          name: true,
-          polygonData: true,
+  await requireAdmin();
+  const [project, heroImages] = await Promise.all([
+    prisma.project.findFirst({
+      select: {
+        id: true,
+        name: true,
+        topViewImage: true,
+        buildings: {
+          select: {
+            id: true,
+            name: true,
+            frontViewImage: true,
+            backViewImage: true,
+            leftViewImage: true,
+            rightViewImage: true,
+            polygonData: true,
+            floors: {
+              select: {
+                id: true,
+              },
+            },
+          },
+          orderBy: { sortOrder: "asc" },
         },
-        orderBy: { sortOrder: "asc" },
       },
-    },
-  });
+    }),
+    prisma.heroImage.findMany({
+      select: {
+        id: true,
+        imageUrl: true,
+        sortOrder: true,
+      },
+      orderBy: { sortOrder: "asc" },
+    }),
+  ]);
 
-  return <ProjectsClient initialProject={project as any} />;
+  return <ProjectsClient initialProject={project as any} initialHeroImages={heroImages} />;
 }

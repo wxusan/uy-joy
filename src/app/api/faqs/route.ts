@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import prisma from "@/lib/prisma";
+import { FAQCreateSchema } from "@/lib/schemas/faq";
+import { invalidInput } from "@/lib/schemas/common";
 
 // GET all FAQs
 export async function GET() {
@@ -19,22 +22,26 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const data = await req.json();
+    const parsed = FAQCreateSchema.safeParse(data);
+    if (!parsed.success) return invalidInput(parsed.error);
+    const input = parsed.data;
     
     // Get current count for sortOrder
     const count = await prisma.fAQ.count();
 
     const faq = await prisma.fAQ.create({
       data: {
-        questionUz: data.questionUz,
-        questionEn: data.questionEn,
-        questionRu: data.questionRu,
-        answerUz: data.answerUz,
-        answerEn: data.answerEn,
-        answerRu: data.answerRu,
+        questionUz: input.questionUz,
+        questionEn: input.questionEn,
+        questionRu: input.questionRu,
+        answerUz: input.answerUz,
+        answerEn: input.answerEn,
+        answerRu: input.answerRu,
         sortOrder: count,
       },
     });
 
+    revalidateTag("faqs");
     return NextResponse.json(faq);
   } catch (error) {
     console.error("Error creating FAQ:", error);

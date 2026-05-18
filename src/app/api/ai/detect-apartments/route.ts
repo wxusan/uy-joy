@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { readFile } from "fs/promises";
-import path from "path";
+import { ImageInputError, readSafeImageInput } from "@/lib/secure-image-input";
+import { DetectApartmentsSchema } from "@/lib/schemas/ai";
+import { invalidInput } from "@/lib/schemas/common";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
@@ -16,30 +17,11 @@ interface DetectedApartment {
   suggestedArea: number;
 }
 
-// Get image as base64 and mime type
-async function getImageData(imageUrl: string): Promise<{ base64: string; mimeType: string }> {
-  if (imageUrl.startsWith("/uploads/")) {
-    const filePath = path.join(process.cwd(), "public", imageUrl);
-    const fileBuffer = await readFile(filePath);
-    const base64 = fileBuffer.toString("base64");
-    const ext = path.extname(imageUrl).slice(1).toLowerCase();
-    const mimeType = ext === "jpg" ? "image/jpeg" : `image/${ext}`;
-    return { base64, mimeType };
-  }
-  // External URL - fetch and convert
-  const response = await fetch(imageUrl);
-  const arrayBuffer = await response.arrayBuffer();
-  const base64 = Buffer.from(arrayBuffer).toString("base64");
-  const mimeType = response.headers.get("content-type") || "image/jpeg";
-  return { base64, mimeType };
-}
-
 export async function POST(req: Request) {
-  const { imageUrl } = await req.json();
-
-  if (!imageUrl) {
-    return NextResponse.json({ error: "Image URL is required" }, { status: 400 });
-  }
+  const body = await req.json();
+  const parsedInput = DetectApartmentsSchema.safeParse(body);
+  if (!parsedInput.success) return invalidInput(parsedInput.error);
+  const { imageUrl } = parsedInput.data;
 
   if (!process.env.GEMINI_API_KEY) {
     return NextResponse.json(
@@ -49,7 +31,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { base64, mimeType } = await getImageData(imageUrl);
+    const { base64, mimeType } = await readSafeImageInput(imageUrl);
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const prompt = `You are an expert at analyzing architectural floor plans. 
@@ -130,6 +112,10 @@ Rules:
 
     return NextResponse.json({ apartments: validApartments });
   } catch (error) {
+    if (error instanceof ImageInputError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
+
     console.error("AI detection error:", error);
     return NextResponse.json(
       { error: "AI detection failed. Please try again." },

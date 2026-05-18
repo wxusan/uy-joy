@@ -35,17 +35,6 @@ interface Props {
   onClose: () => void;
 }
 
-const statusLabel = (status: string) => {
-  if (status === "reserved") return "Bron qilingan";
-  if (status === "sold") return "Sotilgan";
-  return "Mavjud";
-};
-
-const formatPrice = (value: number | null | undefined) => {
-  if (!value) return "Narx belgilanmagan";
-  return `${Math.round(value).toLocaleString("ru-RU")} so'm`;
-};
-
 const resolveTelegramUrl = (url?: string | null): string | null => {
   if (!url) return null;
   return url.startsWith("http") ? url : `https://t.me/${url.replace(/^@/, "")}`;
@@ -53,12 +42,24 @@ const resolveTelegramUrl = (url?: string | null): string | null => {
 
 export default function ApartmentLeadModal({ unit, allUnits = [], telegramUrl, source, onClose }: Props) {
   const t = useTranslations("contact");
+  const tu = useTranslations("unit");
   const [activeUnit, setActiveUnit] = useState(unit);
   const [formData, setFormData] = useState({ name: "", phone: "" });
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
   const resolvedTelegramUrl = resolveTelegramUrl(telegramUrl);
+
+  const statusLabel = (status: string) => {
+    if (status === "reserved") return tu("reserved");
+    if (status === "sold") return tu("sold");
+    return tu("available");
+  };
+
+  const formatPrice = (value: number | null | undefined) => {
+    if (!value) return t("priceOnRequest", { ns: "apartments" });
+    return `${Math.round(value).toLocaleString("ru-RU")} so'm`;
+  };
 
   useEffect(() => {
     setActiveUnit(unit);
@@ -103,7 +104,7 @@ export default function ApartmentLeadModal({ unit, allUnits = [], telegramUrl, s
           phone: formData.phone,
           unitId: activeUnit.id,
           unitNumber: displayNumber,
-          projectName: `${activeUnit.buildingName || "UyJoy"} - ${activeUnit.floorNumber}-qavat`,
+          projectName: `${activeUnit.buildingName || "UyJoy"} - ${activeUnit.floorNumber}`,
           source: leadSource,
         }),
       });
@@ -178,7 +179,7 @@ export default function ApartmentLeadModal({ unit, allUnits = [], telegramUrl, s
               />
             ) : (
               <div className="grid h-full place-items-center text-[14px] font-medium text-[#6f6256]">
-                Reja hali yuklanmagan
+                {t("planNotUploaded")}
               </div>
             )}
           </div>
@@ -203,7 +204,7 @@ export default function ApartmentLeadModal({ unit, allUnits = [], telegramUrl, s
         <div className="p-5 md:overflow-y-auto">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-[13px] font-medium text-[#cdbdac]">Tanlangan xonadon</p>
+              <p className="text-[13px] font-medium text-[#cdbdac]">{t("selectedApartment")}</p>
               <div className="mt-3 flex items-center gap-3">
                 <h2 className="font-display text-[40px] font-semibold leading-none text-[#fff4e8]">{displayNumber}</h2>
                 <span className="rounded-full bg-[#203625] px-3 py-1 text-[12px] font-semibold text-[#a7d891]">
@@ -215,7 +216,7 @@ export default function ApartmentLeadModal({ unit, allUnits = [], telegramUrl, s
               type="button"
               onClick={onClose}
               className="grid h-9 w-9 place-items-center rounded-full text-[#cdbdac] transition hover:bg-white/6 hover:text-white"
-              aria-label="Close"
+              aria-label={tu("apartment")}
             >
               <X className="h-5 w-5" strokeWidth={1.6} />
             </button>
@@ -223,10 +224,10 @@ export default function ApartmentLeadModal({ unit, allUnits = [], telegramUrl, s
 
           <div className="mt-6 grid grid-cols-4 gap-2 text-center text-[12px] font-medium text-[#d7c8b7]">
             {[
-              { icon: Layers, value: `${activeUnit.floorNumber}-qavat` },
+              { icon: Layers, value: `${activeUnit.floorNumber} ${tu("floor")}` },
               { icon: Ruler, value: `${activeUnit.area} m²` },
-              { icon: MessageCircle, value: `${activeUnit.rooms} xona` },
-              { icon: Building2, value: activeUnit.buildingName || "Bino" },
+              { icon: MessageCircle, value: `${activeUnit.rooms} ${tu("rooms")}` },
+              { icon: Building2, value: activeUnit.buildingName || t("buildingDefault") },
             ].map((item) => {
               const Icon = item.icon;
               return (
@@ -240,22 +241,22 @@ export default function ApartmentLeadModal({ unit, allUnits = [], telegramUrl, s
 
           <div className="mt-6 grid grid-cols-2 overflow-hidden rounded-[6px] border border-[#f0d7be]/10">
             <div className="border-r border-[#f0d7be]/10 p-3">
-              <p className="text-[12px] font-medium text-[#8f8172]">Umumiy narx</p>
+              <p className="text-[12px] font-medium text-[#8f8172]">{tu("totalPrice")}</p>
               <p className="mt-2 text-[18px] font-semibold leading-snug text-[#fff4e8]">{formatPrice(totalPrice)}</p>
             </div>
             <div className="p-3">
-              <p className="text-[12px] font-medium text-[#8f8172]">Narx / m²</p>
+              <p className="text-[12px] font-medium text-[#8f8172]">{tu("pricePerM2")}</p>
               <p className="mt-2 text-[15px] font-semibold leading-snug text-[#d7c8b7]">{formatPrice(pricePerM2)}</p>
             </div>
           </div>
 
           <div className="mt-6 space-y-3 text-[13px]">
             {[
-              ["Xonalar soni", `${activeUnit.rooms} xona`],
-              ["Maydon", `${activeUnit.area} m²`],
-              ["Qavat", `${activeUnit.floorNumber}`],
-              ["Holati", statusLabel(activeUnit.status)],
-              ["Soni", "1 ta"],
+              [tu("rooms"), `${activeUnit.rooms} ${tu("rooms")}`],
+              [tu("area"), `${activeUnit.area} m²`],
+              [tu("floor"), `${activeUnit.floorNumber}`],
+              [tu("status"), statusLabel(activeUnit.status)],
+              [t("quantity"), t("oneUnit")],
             ].map(([label, value]) => (
               <div key={label} className="flex items-center justify-between gap-4">
                 <span className="text-[#8f8172]">{label}</span>
@@ -268,8 +269,8 @@ export default function ApartmentLeadModal({ unit, allUnits = [], telegramUrl, s
             {submitted ? (
               <div className="rounded-[6px] border border-[#9fd287]/25 bg-[#9fd287]/10 p-4 text-center">
                 <CircleCheck className="mx-auto h-8 w-8 text-[#9fd287]" strokeWidth={1.7} />
-                <p className="mt-3 text-[15px] font-semibold text-[#fff4e8]">Rahmat, so&apos;rovingiz yuborildi.</p>
-                <p className="mt-1 text-[12px] font-medium text-[#b8aa9a]">Tez orada siz bilan bog&apos;lanamiz.</p>
+                <p className="mt-3 text-[15px] font-semibold text-[#fff4e8]">{t("thankYouSent")}</p>
+                <p className="mt-1 text-[12px] font-medium text-[#b8aa9a]">{t("weWillContactSoon")}</p>
                 {resolvedTelegramUrl && (
                   <a
                     href={resolvedTelegramUrl}
@@ -290,7 +291,7 @@ export default function ApartmentLeadModal({ unit, allUnits = [], telegramUrl, s
                   value={formData.name}
                   onChange={(event) => setFormData({ ...formData, name: event.target.value })}
                   className="h-12 w-full rounded-[6px] border border-[#f0d7be]/12 bg-[#0c0f10] px-4 text-[14px] font-medium text-[#fff4e8] outline-none transition placeholder:text-[#7b7065] focus:border-[#d58a69]"
-                  placeholder="Ismingiz"
+                  placeholder={t("namePlaceholder")}
                   autoComplete="name"
                 />
                 <input
@@ -309,7 +310,7 @@ export default function ApartmentLeadModal({ unit, allUnits = [], telegramUrl, s
                   disabled={submitting}
                   className="h-12 w-full rounded-[6px] bg-[#c66348] text-[14px] font-semibold text-white transition hover:bg-[#d37152] disabled:opacity-60"
                 >
-                  {submitting ? "Yuborilmoqda..." : "Xonadonni bron qilish"}
+                  {submitting ? t("submitting") : t("bookApartment")}
                 </button>
                 <p className="text-[11px] font-semibold leading-5 text-[#cdbdac]">{t("responseSLA")}</p>
                 <p className="text-[11px] font-medium leading-5 text-[#b8aa9a]">
@@ -326,9 +327,9 @@ export default function ApartmentLeadModal({ unit, allUnits = [], telegramUrl, s
                   onSubmit={handleWaitlistSubmit}
                   className="rounded-[6px] border border-[#f0d7be]/10 bg-white/[0.03] p-4"
                 >
-                  <h3 className="text-[15px] font-semibold text-[#fff4e8]">O&apos;xshash xonadon ochilsa xabar bering</h3>
+                  <h3 className="text-[15px] font-semibold text-[#fff4e8]">{t("notifyWhenAvailable")}</h3>
                   <p className="mt-2 text-[12px] font-medium leading-5 text-[#b8aa9a]">
-                    Bu xonadon hozir {statusLabel(activeUnit.status).toLowerCase()}. Navbatga yoziling, savdo bo&apos;limi mos variantlarni yuboradi.
+                    {t("notifyWhenUnavailable", { status: statusLabel(activeUnit.status).toLowerCase() })}
                   </p>
                   <div className="mt-4 space-y-3">
                     <input
@@ -337,7 +338,7 @@ export default function ApartmentLeadModal({ unit, allUnits = [], telegramUrl, s
                       value={formData.name}
                       onChange={(event) => setFormData({ ...formData, name: event.target.value })}
                       className="h-11 w-full rounded-[6px] border border-[#f0d7be]/12 bg-[#0c0f10] px-4 text-[14px] font-medium text-[#fff4e8] outline-none transition placeholder:text-[#7b7065] focus:border-[#d58a69]"
-                      placeholder="Ismingiz"
+                      placeholder={t("namePlaceholder")}
                       autoComplete="name"
                     />
                     <input
@@ -356,7 +357,7 @@ export default function ApartmentLeadModal({ unit, allUnits = [], telegramUrl, s
                       disabled={submitting}
                       className="h-11 w-full rounded-[6px] bg-[#c66348] text-[14px] font-semibold text-white transition hover:bg-[#d37152] disabled:opacity-60"
                     >
-                      {submitting ? "Yuborilmoqda..." : "Xabar berish"}
+                      {submitting ? t("submitting") : t("notify")}
                     </button>
                     <p className="text-[11px] font-medium leading-5 text-[#b8aa9a]">
                       {t("privacyNoticePrefix")}{" "}

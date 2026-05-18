@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import PolygonEditor, { Point, Polygon } from "@/components/admin/PolygonEditor";
 import Image from "next/image";
 import { SHOW_AI } from "@/lib/flags";
+import { getStatusMeta } from "@/lib/status-style";
 
 interface Unit {
   id: string;
@@ -41,6 +42,7 @@ interface Floor {
 export default function FloorPlanEditorPage() {
   const params = useParams();
   const t = useTranslations("admin");
+  const tc = useTranslations("common");
   const [floor, setFloor] = useState<Floor | null>(null);
   const [polygons, setPolygons] = useState<Polygon[]>([]);
   const [selectedPolygonId, setSelectedPolygonId] = useState<string | null>(null);
@@ -49,6 +51,12 @@ export default function FloorPlanEditorPage() {
   const [saving, setSaving] = useState(false);
   const [aiDetecting, setAiDetecting] = useState(false);
   const [copying, setCopying] = useState(false);
+  const [copyConfirmOpen, setCopyConfirmOpen] = useState(false);
+  const [copyConfirmInput, setCopyConfirmInput] = useState("");
+  const [copyConfirmInfo, setCopyConfirmInfo] = useState<{
+    targetFloors: { id: string; number: number; preservedCount: number }[];
+  } | null>(null);
+  const [copyConfirmLoading, setCopyConfirmLoading] = useState(false);
 
   // Form state for selected unit (rooms/area as strings so user can freely edit)
   const [unitForm, setUnitForm] = useState({
@@ -81,7 +89,7 @@ export default function FloorPlanEditorPage() {
         id: u.id,
         points: u.polygonData as Point[],
         unitId: u.id,
-        color: getStatusColor(u.status),
+        color: getStatusMeta(u.status).fillColor,
         label: u.unitNumber,
       }));
     setPolygons(polys);
@@ -111,19 +119,6 @@ export default function FloorPlanEditorPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPolygonId]);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "available":
-        return "rgba(34, 197, 94, 0.5)";
-      case "reserved":
-        return "rgba(234, 179, 8, 0.5)";
-      case "sold":
-        return "rgba(239, 68, 68, 0.4)";
-      default:
-        return "rgba(34, 197, 94, 0.5)";
-    }
-  };
-
   // Handle floor plan image upload
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -147,7 +142,7 @@ export default function FloorPlanEditorPage() {
 
       await loadFloor();
     } catch {
-      alert("Failed to upload image");
+      alert(t("imageUploadError"));
     } finally {
       setUploading(false);
     }
@@ -184,7 +179,7 @@ export default function FloorPlanEditorPage() {
           id: newUnit.id,
           points,
           unitId: newUnit.id,
-          color: getStatusColor("available"),
+          color: getStatusMeta("available").fillColor,
           label: defaultUnitNumber,
         },
       ]);
@@ -192,7 +187,7 @@ export default function FloorPlanEditorPage() {
       await loadFloor();
       setSelectedPolygonId(newUnit.id);
     } catch {
-      alert("Failed to create unit");
+      alert(t("createUnitError"));
     } finally {
       setSaving(false);
     }
@@ -215,7 +210,7 @@ export default function FloorPlanEditorPage() {
 
   // Handle polygon deletion
   const handlePolygonDelete = async (id: string) => {
-    if (!confirm("Delete this unit?")) return;
+    if (!confirm(t("confirmDeleteUnit"))) return;
 
     setSaving(true);
     try {
@@ -224,7 +219,7 @@ export default function FloorPlanEditorPage() {
       setSelectedPolygonId(null);
       await loadFloor();
     } catch {
-      alert("Failed to delete unit");
+      alert(t("deleteUnitError"));
     } finally {
       setSaving(false);
     }
@@ -252,14 +247,15 @@ export default function FloorPlanEditorPage() {
       setPolygons((prev) =>
         prev.map((p) =>
           p.id === selectedPolygonId
-            ? { ...p, color: getStatusColor(unitForm.status), label: unitForm.unitNumber }
+            ? { ...p, color: getStatusMeta(unitForm.status).fillColor, label: unitForm.unitNumber }
             : p
         )
       );
 
+      setSelectedPolygonId(null);
       await loadFloor();
     } catch {
-      alert("Failed to save unit");
+      alert(t("saveUnitError"));
     } finally {
       setSaving(false);
     }
@@ -268,7 +264,7 @@ export default function FloorPlanEditorPage() {
   // Handle AI detection
   const handleAIDetect = async () => {
     if (!floor?.floorPlanImage) {
-      alert("Please upload a floor plan image first");
+      alert(t("pleaseUploadFloorPlanFirst"));
       return;
     }
 
@@ -308,7 +304,7 @@ export default function FloorPlanEditorPage() {
       }
 
       await loadFloor();
-      alert(`AI detected ${apartments.length} apartments!`);
+      alert(t("aiDetectedApartments", { count: apartments.length }));
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "AI detection failed";
       alert(message);
@@ -317,17 +313,42 @@ export default function FloorPlanEditorPage() {
     }
   };
 
-  // Copy layout to all floors
-  const handleCopyToAllFloors = async () => {
+  // Open the typed-confirm modal: load target floors + count reserved/sold per floor
+  const openCopyConfirm = async () => {
     if (!floor?.units.length) {
       alert(t("noUnitsToCopy"));
       return;
     }
 
-    if (!confirm(t("confirmCopyToAllFloors"))) {
-      return;
-    }
+    setCopyConfirmLoading(true);
+    try {
+      const res = await fetch(
+        `/api/floors?buildingId=${params.buildingId}`
+      );
+      const allFloors: { id: string; number: number; units: { status: string }[] }[] = await res.json();
+      const targetFloors = allFloors
+        .filter((f) => f.id !== params.floorId)
+        .sort((a, b) => a.number - b.number)
+        .map((f) => ({
+          id: f.id,
+          number: f.number,
+          preservedCount: (f.units || []).filter(
+            (u) => u.status === "reserved" || u.status === "sold"
+          ).length,
+        }));
 
+      setCopyConfirmInfo({ targetFloors });
+      setCopyConfirmInput("");
+      setCopyConfirmOpen(true);
+    } catch {
+      alert(t("copyFailed"));
+    } finally {
+      setCopyConfirmLoading(false);
+    }
+  };
+
+  // Run the actual copy-to-all once the admin has typed the floor number
+  const handleCopyToAllFloors = async () => {
     setCopying(true);
     try {
       const res = await fetch(`/api/floors/${params.floorId}/copy-to-all`, {
@@ -337,6 +358,10 @@ export default function FloorPlanEditorPage() {
 
       if (res.ok) {
         alert(t("layoutCopied", { count: data.copiedCount }));
+        setCopyConfirmOpen(false);
+        setCopyConfirmInfo(null);
+        setCopyConfirmInput("");
+        await loadFloor();
       } else {
         throw new Error(data.error || t("copyFailed"));
       }
@@ -351,9 +376,7 @@ export default function FloorPlanEditorPage() {
   // Renumber all units on this floor to floor+order format (e.g., 701, 702, ...)
   const handleRenumberAll = async () => {
     if (!floor || floor.units.length === 0) return;
-    if (!confirm(
-      `Barcha ${floor.units.length} kvartira ${floor.number}01, ${floor.number}02, ... formatiga o'zgartiriladi. Davom etasizmi?`
-    )) return;
+    if (!confirm(t("confirmRenumber", { count: floor.units.length, floor: floor.number }))) return;
 
     setSaving(true);
     try {
@@ -380,9 +403,9 @@ export default function FloorPlanEditorPage() {
       }
 
       await loadFloor();
-      alert(`${floor.units.length} kvartira raqamlandi`);
+      alert(t("renumberSuccess", { count: floor.units.length }));
     } catch {
-      alert("Raqamlashda xatolik");
+      alert(t("renumberError"));
     } finally {
       setSaving(false);
     }
@@ -390,7 +413,7 @@ export default function FloorPlanEditorPage() {
 
   // Delete floor plan image
   const handleImageDelete = async () => {
-    if (!confirm("Qavat rejasi rasmini o'chirmoqchimisiz?")) return;
+    if (!confirm(t("confirmDeleteFloorImage"))) return;
     setUploading(true);
     try {
       await fetch(`/api/floors/${params.floorId}`, {
@@ -400,7 +423,7 @@ export default function FloorPlanEditorPage() {
       });
       await loadFloor();
     } catch {
-      alert("O'chirishda xatolik");
+      alert(t("deleteImageError"));
     } finally {
       setUploading(false);
     }
@@ -413,37 +436,37 @@ export default function FloorPlanEditorPage() {
   const selectedUnit = floor.units.find((u) => u.id === selectedPolygonId);
 
   return (
-    <div>
+    <div className="space-y-4">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 gap-2">
+      <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold">{t("floorPlanEditor")}</h1>
-          <p className="text-slate-500 text-sm">
+          <h1 className="text-[22px] font-semibold text-neutral-950">{t("floorPlanEditor")}</h1>
+          <p className="mt-1 text-sm text-neutral-500">
             {floor.building?.name} · {t("floor")} {floor.number}
           </p>
         </div>
         <Link
           href={`/portal/management-x7k9/projects/${params.projectId}/buildings/${params.buildingId}/floors`}
-          className="text-sm text-slate-500 hover:text-slate-700"
+          className="rounded-[6px] border border-neutral-200 bg-white px-3 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50"
         >
           ← {t("backToFloors")}
         </Link>
       </div>
 
       {/* Main Content */}
-      <div className="grid lg:grid-cols-3 gap-4 sm:gap-6">
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
         {/* Editor Column */}
-        <div className="lg:col-span-2 order-1">
+        <div className="min-w-0 space-y-3">
           {/* Image Upload */}
-          <div className="bg-white rounded-xl shadow-sm border p-4 mb-4">
-            <div className="flex items-center justify-between">
+          <div className="rounded-[8px] border border-neutral-200 bg-white p-3 shadow-sm">
+            <div className="flex flex-col justify-between gap-3 lg:flex-row lg:items-center">
               <div>
-                <h3 className="font-medium">Qavat rejasi rasmi</h3>
-                <p className="text-sm text-slate-500">
-                  {floor.floorPlanImage ? "Rasm yuklandi" : "Boshlash uchun rasm yuklang"}
+                <h3 className="text-sm font-semibold text-neutral-950">{t("floorPlan")}</h3>
+                <p className="mt-0.5 text-xs text-neutral-500">
+                  {floor.floorPlanImage ? t("floorPlanUploaded") : t("floorPlanUploadHint")}
                 </p>
               </div>
-              <div className="flex gap-2 flex-wrap">
+              <div className="flex flex-wrap gap-2">
                 <input
                   type="file"
                   accept="image/*"
@@ -454,53 +477,55 @@ export default function FloorPlanEditorPage() {
                 />
                 <label
                   htmlFor="floor-image-upload"
-                  className={`px-4 py-2 rounded-lg text-sm font-medium cursor-pointer transition ${uploading
-                    ? "bg-slate-200 text-slate-500"
-                    : "bg-emerald-600 text-white hover:bg-emerald-700"
+                  className={`cursor-pointer rounded-[6px] px-3 py-2 text-sm font-medium transition ${uploading
+                    ? "bg-neutral-100 text-neutral-400"
+                    : floor.floorPlanImage
+                      ? "border border-neutral-200 bg-white text-neutral-800 hover:bg-neutral-50"
+                      : "bg-black text-white hover:bg-neutral-800"
                     }`}
                 >
-                  {uploading ? t("loading") : floor.floorPlanImage ? "Rasmni o'zgartirish" : "Rasm yuklash"}
+                  {uploading ? t("loading") : floor.floorPlanImage ? t("replaceImage") : t("uploadImage")}
                 </label>
                 {floor.floorPlanImage && (
                   <button
                     onClick={handleImageDelete}
                     disabled={uploading}
-                    className="px-4 py-2 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 disabled:bg-slate-300 transition"
+                    className="rounded-[6px] border border-neutral-200 bg-white px-3 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 disabled:text-neutral-400"
                   >
-                    O&apos;chirish
+                    {tc("delete")}
                   </button>
                 )}
                 {SHOW_AI && (
                   <button
                     onClick={handleAIDetect}
                     disabled={aiDetecting || !floor.floorPlanImage}
-                    className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 disabled:bg-slate-300 transition"
+                    className="rounded-[6px] border border-neutral-200 bg-white px-3 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 disabled:text-neutral-400"
                   >
-                    {aiDetecting ? "Aniqlanmoqda..." : "AI Aniqlash"}
+                    {aiDetecting ? t("aiDetecting") : t("aiDetect")}
                   </button>
                 )}
                 <button
-                  onClick={handleCopyToAllFloors}
-                  disabled={copying || floor.units.length === 0}
-                  className="px-4 py-2 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600 disabled:bg-slate-300 transition"
+                  onClick={openCopyConfirm}
+                  disabled={copying || copyConfirmLoading || floor.units.length === 0}
+                  className="rounded-[6px] border border-neutral-200 bg-white px-3 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 disabled:text-neutral-400"
                   title={t("copyToAllFloors")}
                 >
-                  {copying ? t("copying") : t("copyToAllFloors")}
+                  {copying ? t("copying") : copyConfirmLoading ? t("loading") : t("copyToAllFloors")}
                 </button>
                 <button
                   onClick={handleRenumberAll}
                   disabled={saving || floor.units.length === 0}
-                  className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 disabled:bg-slate-300 transition"
-                  title={`Kvartiralarni ${floor.number}01, ${floor.number}02, ... formatida raqamlash`}
+                  className="rounded-[6px] border border-neutral-200 bg-white px-3 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 disabled:text-neutral-400"
+                  title={t("renumber")}
                 >
-                  {saving ? "..." : "Raqamlash"}
+                  {saving ? "..." : t("renumber")}
                 </button>
               </div>
             </div>
           </div>
 
           {/* Polygon Editor */}
-          <div className="bg-white rounded-xl shadow-sm border p-4">
+          <div className="rounded-[8px] border border-neutral-200 bg-white p-3 shadow-sm">
             <PolygonEditor
               imageUrl={floor.floorPlanImage}
               polygons={polygons}
@@ -514,48 +539,48 @@ export default function FloorPlanEditorPage() {
         </div>
 
         {/* Sidebar */}
-        <div className="space-y-4">
+        <div className="space-y-3">
           {/* Unit Details Form */}
           {selectedPolygonId && selectedUnit ? (
-            <div className="bg-white rounded-xl shadow-sm border p-4">
-              <h3 className="font-semibold mb-4">Kvartira ma&apos;lumotlari</h3>
+            <div className="rounded-[8px] border border-neutral-200 bg-white p-4 shadow-sm">
+              <h3 className="mb-4 text-base font-semibold text-neutral-950">{t("unitDetails")}</h3>
               <div className="space-y-3">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Kvartira raqami</label>
+                  <label className="mb-1 block text-sm font-medium text-neutral-700">{t("unitNumberLabel")}</label>
                   <input
                     type="text"
                     value={unitForm.unitNumber}
                     onChange={(e) => setUnitForm({ ...unitForm, unitNumber: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-lg"
+                    className="w-full rounded-[6px] border border-neutral-200 px-3 py-2 text-sm outline-none transition focus:border-neutral-400"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Xonalar</label>
+                    <label className="mb-1 block text-sm font-medium text-neutral-700">{t("roomsLabel")}</label>
                     <input
                       type="number"
                       value={unitForm.rooms}
                       onChange={(e) => setUnitForm({ ...unitForm, rooms: e.target.value })}
-                      className="w-full px-3 py-2 border rounded-lg"
+                      className="w-full rounded-[6px] border border-neutral-200 px-3 py-2 text-sm outline-none transition focus:border-neutral-400"
                       min={1}
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Maydon (m²)</label>
+                    <label className="mb-1 block text-sm font-medium text-neutral-700">{t("areaM2")}</label>
                     <input
                       type="number"
                       value={unitForm.area}
                       onChange={(e) => setUnitForm({ ...unitForm, area: e.target.value })}
-                      className="w-full px-3 py-2 border rounded-lg"
+                      className="w-full rounded-[6px] border border-neutral-200 px-3 py-2 text-sm outline-none transition focus:border-neutral-400"
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">{t("status")}</label>
+                  <label className="mb-1 block text-sm font-medium text-neutral-700">{t("status")}</label>
                   <select
                     value={unitForm.status}
                     onChange={(e) => setUnitForm({ ...unitForm, status: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-lg"
+                    className="w-full rounded-[6px] border border-neutral-200 px-3 py-2 text-sm outline-none transition focus:border-neutral-400"
                   >
                     <option value="available">{t("available")}</option>
                     <option value="reserved">{t("reserved")}</option>
@@ -563,29 +588,29 @@ export default function FloorPlanEditorPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Narx/m² (ixtiyoriy)
+                  <label className="mb-1 block text-sm font-medium text-neutral-700">
+                    {t("pricePerM2Optional")}
                   </label>
                   <input
                     type="number"
                     value={unitForm.pricePerM2}
                     onChange={(e) => setUnitForm({ ...unitForm, pricePerM2: e.target.value })}
-                    placeholder={floor.basePricePerM2?.toString() || "Asosiy narxni ishlatish"}
-                    className="w-full px-3 py-2 border rounded-lg"
+                    placeholder={floor.basePricePerM2?.toString() || t("useBasePrice")}
+                    className="w-full rounded-[6px] border border-neutral-200 px-3 py-2 text-sm outline-none transition focus:border-neutral-400"
                   />
                 </div>
 
                 {/* Photos (up to 4) */}
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
-                    Rasmlar (4 tagacha)
+                  <label className="mb-2 block text-sm font-medium text-neutral-700">
+                    {t("photosLabel")}
                   </label>
                   <div className="grid grid-cols-2 gap-2">
                     {(["sketchImage", "sketchImage2", "sketchImage3", "sketchImage4"] as const).map((field, idx) => {
                       const photo = selectedUnit[field];
                       const slotNum = idx + 1;
                       return (
-                        <div key={field} className="relative border rounded-lg overflow-hidden bg-slate-50 aspect-video flex items-center justify-center">
+                        <div key={field} className="relative flex aspect-video items-center justify-center overflow-hidden rounded-[6px] border border-neutral-200 bg-neutral-50">
                           {photo ? (
                             <>
                               <Image src={photo} alt={`Photo ${slotNum}`} fill className="object-cover" />
@@ -598,7 +623,7 @@ export default function FloorPlanEditorPage() {
                                   });
                                   await loadFloor();
                                 }}
-                                className="absolute top-1 right-1 w-6 h-6 bg-red-500 hover:bg-red-600 text-white text-xs rounded-full flex items-center justify-center"
+                                className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black text-xs text-white transition hover:bg-neutral-800"
                               >
                                 ✕
                               </button>
@@ -629,7 +654,7 @@ export default function FloorPlanEditorPage() {
                                     });
                                     await loadFloor();
                                   } catch {
-                                    alert("Failed to upload");
+                                    alert(t("imageUploadError"));
                                   } finally {
                                     setUploadingSlot(null);
                                     e.target.value = "";
@@ -638,14 +663,14 @@ export default function FloorPlanEditorPage() {
                               />
                               <label
                                 htmlFor={`photo-upload-${slotNum}`}
-                                className="flex flex-col items-center gap-1 cursor-pointer text-slate-400 hover:text-emerald-600 transition p-2 text-center"
+                                className="flex cursor-pointer flex-col items-center gap-1 p-2 text-center text-neutral-400 transition hover:text-neutral-900"
                               >
                                 {uploadingSlot === slotNum ? (
                                   <span className="text-xs">{t("loading")}</span>
                                 ) : (
                                   <>
                                     <span className="text-lg text-slate-400">+</span>
-                                    <span className="text-xs">{slotNum}-rasm</span>
+                                    <span className="text-xs">{t("photoSlot", { n: slotNum })}</span>
                                   </>
                                 )}
                               </label>
@@ -660,46 +685,52 @@ export default function FloorPlanEditorPage() {
                 <button
                   onClick={handleUnitSave}
                   disabled={saving}
-                  className="w-full px-4 py-2 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 disabled:bg-slate-300 transition"
+                  className="w-full rounded-[6px] bg-black px-4 py-2 text-sm font-medium text-white transition hover:bg-neutral-800 disabled:bg-neutral-200"
                 >
-                  {saving ? t("saving") : "Saqlash"}
+                  {saving ? t("saving") : tc("save")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handlePolygonDelete(selectedPolygonId)}
+                  disabled={saving}
+                  className="w-full rounded-[6px] border border-neutral-200 bg-white px-4 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 disabled:text-neutral-400"
+                >
+                  {t("deleteUnit")}
                 </button>
               </div>
             </div>
           ) : (
-            <div className="bg-slate-50 rounded-xl p-4 text-center text-slate-500">
-              <p>Polygon chizing yoki kvartira ma&apos;lumotlarini tahrirlash uchun tanlang</p>
+            <div className="rounded-[8px] border border-neutral-200 bg-neutral-50 p-4 text-center text-sm text-neutral-500">
+              <p>{t("drawOrSelectUnit")}</p>
             </div>
           )}
 
           {/* Units List */}
-          <div className="bg-white rounded-xl shadow-sm border p-4">
-            <h3 className="font-semibold mb-3">Kvartiralar ({floor.units.length})</h3>
-            <div className="space-y-2 max-h-64 overflow-y-auto">
+          <div className="rounded-[8px] border border-neutral-200 bg-white p-4 shadow-sm">
+            <h3 className="mb-3 text-base font-semibold text-neutral-950">{t("unitsListTitle", { count: floor.units.length })}</h3>
+            <div className="max-h-[360px] space-y-2 overflow-y-auto pr-1">
               {floor.units.length === 0 ? (
-                <p className="text-sm text-slate-500">Hali kvartiralar yo&apos;q. Qavat rejasida polygon chizing.</p>
+                <p className="text-sm text-neutral-500">{t("noUnitsDrawn")}</p>
               ) : (
                 floor.units.map((unit) => (
                   <button
                     key={unit.id}
                     onClick={() => setSelectedPolygonId(unit.id)}
-                    className={`w-full flex items-center justify-between p-2 rounded-lg text-left transition ${selectedPolygonId === unit.id
-                      ? "bg-blue-50 border border-blue-200"
-                      : "hover:bg-slate-50"
+                    className={`flex w-full items-center justify-between rounded-[6px] border p-2 text-left transition ${selectedPolygonId === unit.id
+                      ? "border-black bg-black text-white"
+                      : "border-neutral-200 bg-white text-neutral-900 hover:bg-neutral-50"
                       }`}
                   >
                     <div>
                       <p className="font-medium text-sm">{unit.unitNumber}</p>
-                      <p className="text-xs text-slate-500">
+                      <p className={`text-xs ${selectedPolygonId === unit.id ? "text-neutral-300" : "text-neutral-500"}`}>
                         {unit.rooms}R · {unit.area}m²
                       </p>
                     </div>
                     <span
-                      className={`px-2 py-0.5 rounded-full text-xs font-medium ${unit.status === "available"
-                        ? "bg-green-100 text-green-700"
-                        : unit.status === "reserved"
-                          ? "bg-yellow-100 text-yellow-700"
-                          : "bg-red-100 text-red-700"
+                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${selectedPolygonId === unit.id
+                        ? "bg-white/15 text-white"
+                        : "bg-neutral-100 text-neutral-700"
                         }`}
                     >
                       {unit.status}
@@ -711,6 +742,80 @@ export default function FloorPlanEditorPage() {
           </div>
         </div>
       </div>
+
+      {/* Copy-to-all typed-confirm modal */}
+      {copyConfirmOpen && copyConfirmInfo && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="w-full max-w-md rounded-[10px] bg-white p-5 shadow-xl">
+            <h3 className="text-base font-semibold text-neutral-950">
+              {t("copyToAllFloors")}
+            </h3>
+            <p className="mt-2 text-sm text-neutral-600">
+              {t("copyConfirmFloors", { floors: copyConfirmInfo.targetFloors.map((f) => f.number).join(", ") || "—" })}
+            </p>
+
+            {copyConfirmInfo.targetFloors.length > 0 && (
+              <div className="mt-3 rounded-[6px] border border-neutral-200 bg-neutral-50 p-3">
+                <p className="text-xs font-medium uppercase tracking-wide text-neutral-500">
+                  {t("preservedPerFloor")}
+                </p>
+                <ul className="mt-2 space-y-1 text-sm text-neutral-800">
+                  {copyConfirmInfo.targetFloors.map((f) => (
+                    <li key={f.id} className="flex items-center justify-between">
+                      <span>{t("floor")} {f.number}</span>
+                      <span className="text-neutral-500">
+                        {t("reservedSoldPreserved", { count: f.preservedCount })}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            <div className="mt-4">
+              <label className="mb-1 block text-sm font-medium text-neutral-700">
+                {t("typeToConfirm", { number: floor.number })}
+              </label>
+              <input
+                type="text"
+                value={copyConfirmInput}
+                onChange={(e) => setCopyConfirmInput(e.target.value)}
+                className="w-full rounded-[6px] border border-neutral-200 px-3 py-2 text-sm outline-none transition focus:border-neutral-400"
+                autoFocus
+              />
+            </div>
+
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setCopyConfirmOpen(false);
+                  setCopyConfirmInfo(null);
+                  setCopyConfirmInput("");
+                }}
+                disabled={copying}
+                className="rounded-[6px] border border-neutral-200 bg-white px-3 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 disabled:text-neutral-400"
+              >
+                {tc("cancel")}
+              </button>
+              <button
+                type="button"
+                onClick={handleCopyToAllFloors}
+                disabled={
+                  copying || copyConfirmInput.trim() !== String(floor.number)
+                }
+                className="rounded-[6px] bg-black px-3 py-2 text-sm font-medium text-white transition hover:bg-neutral-800 disabled:bg-neutral-300"
+              >
+                {copying ? t("copying") : t("copyToAllFloors")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

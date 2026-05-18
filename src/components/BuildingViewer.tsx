@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { ArrowRight, Building2, CheckCircle2, Home, Images, ParkingSquare, ShieldCheck } from "lucide-react";
 import ImageCoordinateStage, { ImagePoint } from "@/components/ImageCoordinateStage";
 
@@ -36,6 +37,8 @@ interface Props {
 }
 
 export default function BuildingViewer({ building, onBack, onFloorSelect }: Props) {
+  const t = useTranslations("explore");
+  const tc = useTranslations("common");
   const sortedFloors = useMemo(() => [...building.floors].sort((a, b) => b.number - a.number), [building.floors]);
   const [hoveredFloorId, setHoveredFloorId] = useState<string | null>(null);
   const [activeGalleryIndex, setActiveGalleryIndex] = useState(0);
@@ -56,10 +59,10 @@ export default function BuildingViewer({ building, onBack, onFloorSelect }: Prop
   const displayName = /^(block|building)\s*/i.test(building.name) ? `${buildingLetter} Building` : building.name;
 
   const galleryImages = [
-    { label: "Old ko'rinish", src: viewImages.front },
-    { label: "Orqa ko'rinish", src: viewImages.back },
-    { label: "Chap ko'rinish", src: viewImages.left },
-    { label: "O'ng ko'rinish", src: viewImages.right },
+    { label: t("frontView"), src: viewImages.front },
+    { label: t("backView"), src: viewImages.back },
+    { label: t("leftView"), src: viewImages.left },
+    { label: t("rightView"), src: viewImages.right },
   ].filter((item): item is { label: string; src: string } => Boolean(item.src));
 
   const selectedGallery = galleryImages[activeGalleryIndex] ?? galleryImages[0];
@@ -252,7 +255,7 @@ export default function BuildingViewer({ building, onBack, onFloorSelect }: Prop
                 top: `${labelPosition.y}%`,
                 transform: "translate(-50%, -50%)",
               }}
-              aria-label={`${floor.number}-qavat`}
+              aria-label={`${t("floor")} ${floor.number}`}
             >
               <span className="text-[13px] font-semibold text-[#fff4e8] drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] md:text-[16px]">
                 {floor.number}
@@ -263,9 +266,9 @@ export default function BuildingViewer({ building, onBack, onFloorSelect }: Prop
 
         {hoveredFloor && (
           <div className="pointer-events-none absolute left-[83%] top-1/2 hidden w-[112px] -translate-y-1/2 rounded-[5px] border border-[#ff8a5f]/55 bg-[#151819]/78 p-4 text-[#f8ead8] shadow-[0_18px_45px_rgba(0,0,0,0.42)] backdrop-blur-md md:block">
-            <p className="text-[15px] font-semibold">{hoveredFloor.number}-qavat</p>
-            <p className="mt-2 text-[12px] font-medium text-[#d7c6b5]">{getFloorStats(hoveredFloor).total} xonadon</p>
-            <p className="mt-1 text-[12px] font-medium text-[#9ed287]">{getFloorStats(hoveredFloor).available} ta mavjud</p>
+            <p className="text-[15px] font-semibold">{t("floor")} {hoveredFloor.number}</p>
+            <p className="mt-2 text-[12px] font-medium text-[#d7c6b5]">{t("floorUnitCount", { count: getFloorStats(hoveredFloor).total })}</p>
+            <p className="mt-1 text-[12px] font-medium text-[#9ed287]">{t("floorAvailableCount", { count: getFloorStats(hoveredFloor).available })}</p>
           </div>
         )}
     </div>
@@ -308,7 +311,7 @@ export default function BuildingViewer({ building, onBack, onFloorSelect }: Prop
             </ImageCoordinateStage>
           ) : (
             <div className="relative flex h-[360px] items-center justify-center bg-[#101414] text-[14px] font-medium text-[#8d7f70] sm:h-[430px] lg:absolute lg:inset-0 lg:h-auto">
-              Bino rasmi hali yuklanmagan
+              {t("noBuildingImage")}
             </div>
           )}
 
@@ -317,11 +320,11 @@ export default function BuildingViewer({ building, onBack, onFloorSelect }: Prop
           <div className="pointer-events-none relative z-30 bg-[#090b0c] px-5 py-6 lg:flex lg:min-h-[calc(100vh-92px)] lg:flex-col lg:bg-transparent lg:px-[clamp(24px,3vw,48px)] lg:pb-3 lg:pt-[116px]">
             <div className="flex items-center gap-3 text-[13px] font-medium text-[#d7c8b7]/72">
               <button onClick={onBack} className="pointer-events-auto transition-colors hover:text-[#f4eadc]">
-                Bosh sahifa
+                {tc("home")}
               </button>
               <span className="text-[#806f61]">/</span>
               <button onClick={onBack} className="pointer-events-auto transition-colors hover:text-[#f4eadc]">
-                Barcha binolar
+                {t("allBuildings")}
               </button>
               <span className="text-[#806f61]">/</span>
               <span className="text-[#f4eadc]">{displayName}</span>
@@ -333,19 +336,19 @@ export default function BuildingViewer({ building, onBack, onFloorSelect }: Prop
                   {displayName}
                 </h2>
                 <span className="mt-2 h-2 w-2 rounded-full bg-[#89bf74]" />
-                <span className="mt-2 text-[14px] font-medium text-[#dacdbd]">Sotuvda</span>
+                <span className="mt-2 text-[14px] font-medium text-[#dacdbd]">{t("forSale")}</span>
               </div>
               <p className="mt-5 text-[16px] font-medium text-[#e6d6c6]">
-                {building.floors.length} qavatli turar-joy binosi
+                {t("storiesBuilding", { count: building.floors.length })}
               </p>
 
               <div className="mt-6 grid grid-cols-2 gap-4 lg:mt-8 lg:block lg:space-y-5">
                 {[
-                  { icon: Building2, value: building.floors.length, label: "qavat" },
-                  { icon: Home, value: totalUnits, label: "xonadon" },
-                  { icon: CheckCircle2, value: availableUnits, label: "mavjud" },
-                  { icon: ParkingSquare, value: "24/7", label: "avtoturargoh" },
-                  { icon: ShieldCheck, value: "Yuqori", label: "xavfsizlik" },
+                  { icon: Building2, value: building.floors.length, label: t("floors") },
+                  { icon: Home, value: totalUnits, label: t("apartments") },
+                  { icon: CheckCircle2, value: availableUnits, label: t("available") },
+                  { icon: ParkingSquare, value: "24/7", label: t("parking") },
+                  { icon: ShieldCheck, value: "✓", label: t("security") },
                 ].map((item) => {
                   const Icon = item.icon;
                   return (
@@ -365,7 +368,7 @@ export default function BuildingViewer({ building, onBack, onFloorSelect }: Prop
             <div className="pointer-events-auto mt-7 lg:mt-auto lg:translate-y-4">
               <div className="mb-5 inline-flex h-11 items-center gap-4 rounded-[6px] border border-[#f0d7be]/10 bg-[#0d1111]/74 px-4 text-[13px] font-medium text-[#e8d8c7] backdrop-blur-md">
                 <Images className="h-4 w-4" strokeWidth={1.5} />
-                <span>Bino suratlari</span>
+                <span>{t("buildingPhotos")}</span>
                 <span className="text-[#fff4e8]">{galleryImages.length}</span>
               </div>
 
@@ -395,7 +398,7 @@ export default function BuildingViewer({ building, onBack, onFloorSelect }: Prop
                 </div>
               ) : (
                 <div className="rounded-[6px] border border-[#f0d7be]/10 bg-[#0d1111]/74 px-4 py-5 text-[13px] font-medium text-[#a79888]">
-                  Admin paneldan bino suratlarini yuklang.
+                  {t("uploadBuildingPhotos")}
                 </div>
               )}
             </div>
@@ -403,9 +406,9 @@ export default function BuildingViewer({ building, onBack, onFloorSelect }: Prop
         </div>
 
         <aside className="bg-[#0d1011] px-5 pb-6 pt-6 text-[#f4eadc] lg:mt-[104px] lg:h-[calc(100vh-104px)] lg:overflow-y-auto lg:border-l lg:border-t lg:border-[#f0d7be]/10 lg:px-6">
-          <h3 className="font-display text-[27px] font-semibold leading-none text-[#fff4e8]">Qavatni tanlang</h3>
+          <h3 className="font-display text-[27px] font-semibold leading-none text-[#fff4e8]">{t("encourageFloor")}</h3>
           <p className="mt-3 text-[13px] leading-5 text-[#b8aa9a]">
-            Kerakli qavatni tanlab, reja va mavjud xonadonlarni ko&apos;ring.
+            {t("floorPlanSubtitle")}
           </p>
 
           <div className="mt-4 overflow-hidden rounded-[6px] border border-[#f0d7be]/10">
@@ -428,11 +431,11 @@ export default function BuildingViewer({ building, onBack, onFloorSelect }: Prop
                   style={{ animationDelay: `${(sortedFloors.length - index - 1) * 90}ms` }}
                 >
                   <span>
-                    <span className="block text-[15px] font-semibold">{floor.number}-qavat</span>
-                    <span className="mt-0.5 block text-[12px] font-medium text-[#bba998]">{stats.total} xonadon</span>
+                    <span className="block text-[15px] font-semibold">{t("floor")} {floor.number}</span>
+                    <span className="mt-0.5 block text-[12px] font-medium text-[#bba998]">{t("floorUnitCount", { count: stats.total })}</span>
                   </span>
                   <span className="flex items-center gap-3 text-[12px] font-semibold text-[#a8d995]">
-                    {stats.available} ta mavjud
+                    {t("floorAvailableCount", { count: stats.available })}
                     <ArrowRight className={`h-4 w-4 shrink-0 transition-colors ${isHovered ? "text-[#f7d2bf]" : "text-[#5a4f46]"}`} strokeWidth={1.6} />
                   </span>
                 </button>
@@ -442,22 +445,22 @@ export default function BuildingViewer({ building, onBack, onFloorSelect }: Prop
 
           {previewFloor && (
             <div className="mt-4 rounded-[6px] border border-[#f0d7be]/10 bg-[#101414] p-4">
-              <h4 className="text-[15px] font-semibold text-[#fff4e8]">{previewFloor.number}-qavat rejasi</h4>
+              <h4 className="text-[15px] font-semibold text-[#fff4e8]">{t("floorPlanPreviewTitle", { number: previewFloor.number })}</h4>
               <p className="mt-1.5 text-[12px] font-medium text-[#bba998]">
-                {previewFloorStats.total} xonadon <span className="mx-2 text-[#5c5149]">•</span>
-                <span className="text-[#9ed287]">{previewFloorStats.available} ta mavjud</span>
+                {t("floorUnitCount", { count: previewFloorStats.total })} <span className="mx-2 text-[#5c5149]">•</span>
+                <span className="text-[#9ed287]">{t("floorAvailableCount", { count: previewFloorStats.available })}</span>
               </p>
 
               <button
                 type="button"
                 onClick={() => onFloorSelect?.(previewFloor.id)}
                 className="group relative mt-3 block h-[190px] w-full overflow-hidden rounded-[4px] border border-[#f0d7be]/10 bg-[#f2efe7] sm:h-[220px] lg:h-[240px]"
-                aria-label={`${previewFloor.number}-qavat rejasini ko'rish`}
+                aria-label={t("viewFloorPlanLabel", { number: previewFloor.number })}
               >
                 {previewFloor.floorPlanImage ? (
                   <ImageCoordinateStage
                     src={previewFloor.floorPlanImage}
-                    alt={`${previewFloor.number}-qavat rejasi`}
+                    alt={t("floorPlanPreviewTitle", { number: previewFloor.number })}
                     className="absolute inset-0"
                     imageClassName="select-none"
                     sizes="(min-width: 1024px) 360px, calc(100vw - 96px)"

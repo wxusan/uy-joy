@@ -1,74 +1,48 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import TopViewMapper from "@/components/admin/TopViewMapper";
-import { Building2, Home, Map, ArrowUpRight, Save, Upload } from "lucide-react";
-
-type Lang = "uz" | "ru" | "en";
+import { Building2, Home, Map, ArrowUpRight, Upload, Image as ImageIcon, Trash2 } from "lucide-react";
 
 interface Building {
   id: string;
   name: string;
+  frontViewImage: string | null;
+  backViewImage: string | null;
+  leftViewImage: string | null;
+  rightViewImage: string | null;
   polygonData: { x: number; y: number }[] | null;
+  floors?: { id: string }[];
 }
 
 interface Project {
   id: string;
   name: string;
-  nameTranslations: string | null;
-  description: string | null;
-  descriptionTranslations: string | null;
   topViewImage: string | null;
-  expectedYear: number | null;
   buildings: Building[];
+}
+
+interface HeroImage {
+  id: string;
+  imageUrl: string;
+  sortOrder: number;
 }
 
 interface Props {
   initialProject: Project | null;
+  initialHeroImages: HeroImage[];
 }
 
-export default function ProjectsClient({ initialProject }: Props) {
+export default function ProjectsClient({ initialProject, initialHeroImages }: Props) {
+  const t = useTranslations("admin");
   const [project, setProject] = useState<Project | null>(initialProject);
   const [uploadingTopView, setUploadingTopView] = useState(false);
   const [showMapper, setShowMapper] = useState(false);
-
-  // Multilingual text editor
-  const [activeLang, setActiveLang] = useState<Lang>("uz");
-  const [saving, setSaving] = useState(false);
-  const [saveSuccess, setSaveSuccess] = useState(false);
-
-  const parseTrans = (json: string | null | undefined): Record<Lang, string> => {
-    try { return { uz: "", ru: "", en: "", ...JSON.parse(json || "{}") }; }
-    catch { return { uz: "", ru: "", en: "" }; }
-  };
-
-  const [names, setNames] = useState<Record<Lang, string>>(() =>
-    parseTrans(initialProject?.nameTranslations)
-  );
-  const [descs, setDescs] = useState<Record<Lang, string>>(() =>
-    parseTrans(initialProject?.descriptionTranslations)
-  );
-
-  const saveTexts = async () => {
-    if (!project) return;
-    setSaving(true);
-    const nameJson = JSON.stringify({ uz: names.uz, ru: names.ru, en: names.en });
-    const descJson = JSON.stringify({ uz: descs.uz, ru: descs.ru, en: descs.en });
-    await fetch(`/api/projects/${project.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: names.uz || project.name,
-        nameTranslations: nameJson,
-        description: descs.uz || project.description,
-        descriptionTranslations: descJson,
-      }),
-    });
-    setSaving(false);
-    setSaveSuccess(true);
-    setTimeout(() => setSaveSuccess(false), 2500);
-  };
+  const [heroImages, setHeroImages] = useState<HeroImage[]>(initialHeroImages);
+  const [uploadingHero, setUploadingHero] = useState(false);
+  const heroInputRef = useRef<HTMLInputElement>(null);
 
   const loadProject = async () => {
     if (!project) return;
@@ -94,21 +68,72 @@ export default function ProjectsClient({ initialProject }: Props) {
     await loadProject();
   };
 
+  const loadHeroImages = async () => {
+    const r = await fetch("/api/hero-images");
+    setHeroImages(await r.json());
+  };
+
+  const handleHeroUpload = async (file: File) => {
+    if (heroImages.length >= 3) return;
+    setUploadingHero(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("type", "hero");
+      formData.append("id", `hero-${Date.now()}`);
+
+      const uploadRes = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+      if (!uploadRes.ok) throw new Error("Upload failed");
+
+      const { url } = await uploadRes.json();
+      const createRes = await fetch("/api/hero-images", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageUrl: url }),
+      });
+      if (!createRes.ok) throw new Error("Failed to save hero image");
+
+      await loadHeroImages();
+    } catch (error) {
+      console.error("Hero upload failed:", error);
+      alert(t("failedToSubmit"));
+    } finally {
+      setUploadingHero(false);
+      if (heroInputRef.current) heroInputRef.current.value = "";
+    }
+  };
+
+  const handleHeroDelete = async (id: string) => {
+    if (!confirm(t("confirmDeleteImage"))) return;
+    await fetch(`/api/hero-images/${id}`, { method: "DELETE" });
+    await loadHeroImages();
+  };
+
   if (!project) {
     return (
       <p className="text-[13px]" style={{ color: "var(--a-text-tertiary)" }}>
-        Loyiha topilmadi.
+        {t("projectNotFound")}
       </p>
     );
   }
+
+  const getBuildingPreview = (building: Building) =>
+    building.frontViewImage ||
+    building.backViewImage ||
+    building.leftViewImage ||
+    building.rightViewImage;
 
   return (
     <div className="flex flex-col gap-6">
       {/* Page header */}
       <div className="flex items-end justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="a-page-title">Project</h1>
-          <p className="a-page-sub">Manage buildings, units, content and translations</p>
+          <h1 className="a-page-title">{t("projectsTitle")}</h1>
+          <p className="a-page-sub">{t("projectsSubtitle")}</p>
         </div>
         <div className="flex gap-2">
           <a
@@ -117,7 +142,7 @@ export default function ProjectsClient({ initialProject }: Props) {
             rel="noopener noreferrer"
             className="a-btn"
           >
-            View on site
+            {t("viewOnSite")}
             <ArrowUpRight className="w-3.5 h-3.5" />
           </a>
           <a
@@ -126,7 +151,7 @@ export default function ProjectsClient({ initialProject }: Props) {
             rel="noopener noreferrer"
             className="a-btn"
           >
-            Floor plan
+            {t("floorPlan")}
             <ArrowUpRight className="w-3.5 h-3.5" />
           </a>
         </div>
@@ -137,10 +162,10 @@ export default function ProjectsClient({ initialProject }: Props) {
         <div className="flex items-start justify-between gap-3 mb-3">
           <div>
             <h2 className="text-[14px] font-semibold" style={{ color: "var(--a-text)" }}>
-              Top-view of the complex
+              {t("topViewTitle")}
             </h2>
             <p className="text-[12px] mt-0.5" style={{ color: "var(--a-text-secondary)" }}>
-              Visitors click buildings on this image
+              {t("topViewHint")}
             </p>
           </div>
         </div>
@@ -165,7 +190,7 @@ export default function ProjectsClient({ initialProject }: Props) {
                 style={{ color: "var(--a-text-tertiary)" }}
               >
                 <Map className="w-6 h-6" />
-                <span className="text-[11px]">No image</span>
+                <span className="text-[11px]">{t("noImage")}</span>
               </div>
             )}
           </div>
@@ -175,7 +200,7 @@ export default function ProjectsClient({ initialProject }: Props) {
               style={{ cursor: uploadingTopView ? "not-allowed" : "pointer" }}
             >
               <Upload className="w-3.5 h-3.5" />
-              {uploadingTopView ? "Uploading…" : "Upload image"}
+              {uploadingTopView ? t("uploading") : t("uploadImage")}
               <input
                 type="file"
                 accept="image/*"
@@ -188,10 +213,86 @@ export default function ProjectsClient({ initialProject }: Props) {
             </label>
             {project.topViewImage && project.buildings?.length > 0 && (
               <button onClick={() => setShowMapper(true)} className="a-btn">
-                Map building areas
+                {t("mapBuildingAreas")}
               </button>
             )}
           </div>
+        </div>
+      </section>
+
+      {/* Homepage hero images */}
+      <section className="a-card p-4 sm:p-5">
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <h2 className="text-[14px] font-semibold" style={{ color: "var(--a-text)" }}>
+              {t("homepageImages")}
+            </h2>
+            <p className="text-[12px] mt-0.5" style={{ color: "var(--a-text-secondary)" }}>
+              {t("homepageImagesHint")}
+            </p>
+          </div>
+          <label
+            className={`a-btn ${heroImages.length >= 3 || uploadingHero ? "" : "a-btn-primary"}`}
+            style={{
+              cursor: heroImages.length >= 3 || uploadingHero ? "not-allowed" : "pointer",
+            }}
+          >
+            <Upload className="w-3.5 h-3.5" />
+            {uploadingHero ? t("uploading") : heroImages.length >= 3 ? t("limitReached") : t("upload")}
+            <input
+              ref={heroInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              disabled={heroImages.length >= 3 || uploadingHero}
+              onChange={(e) => e.target.files?.[0] && handleHeroUpload(e.target.files[0])}
+            />
+          </label>
+        </div>
+
+        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          {heroImages.length === 0 ? (
+            <div
+              className="flex h-24 items-center justify-center gap-2 rounded border border-dashed sm:col-span-3"
+              style={{
+                borderColor: "var(--a-border)",
+                color: "var(--a-text-tertiary)",
+                background: "var(--a-bg-subtle)",
+              }}
+            >
+              <ImageIcon className="w-4 h-4" />
+              <span className="text-[12px]">{t("noHomepageImagesYet")}</span>
+            </div>
+          ) : (
+            heroImages.map((image, index) => (
+              <div
+                key={image.id}
+                className="group relative h-24 overflow-hidden rounded"
+                style={{
+                  background: "var(--a-bg-subtle)",
+                  border: "1px solid var(--a-border)",
+                }}
+              >
+                <img
+                  src={image.imageUrl}
+                  alt={`Homepage image ${index + 1}`}
+                  className="h-full w-full object-cover"
+                />
+                <div className="absolute left-2 top-2 rounded bg-black/60 px-1.5 py-0.5 text-[11px] text-white">
+                  #{index + 1}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleHeroDelete(image.id)}
+                  className="absolute right-2 top-2 inline-flex h-7 w-7 items-center justify-center rounded bg-black/65 text-white opacity-0 transition group-hover:opacity-100"
+                  aria-label={t("deleteImage")}
+                  title={t("deleteImage")}
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ))
+          )}
         </div>
       </section>
 
@@ -220,7 +321,7 @@ export default function ProjectsClient({ initialProject }: Props) {
             borderBottom: "1px solid var(--a-border)",
           }}
         >
-          Inventory
+          {t("inventory")}
         </div>
         <Link
           href={`/portal/management-x7k9/projects/${project.id}/buildings`}
@@ -233,10 +334,10 @@ export default function ProjectsClient({ initialProject }: Props) {
           />
           <div className="flex-1 min-w-0">
             <div className="text-[13px] font-medium" style={{ color: "var(--a-text)" }}>
-              Buildings
+              {t("buildings")}
             </div>
             <div className="text-[12px]" style={{ color: "var(--a-text-secondary)" }}>
-              Add buildings, upload facade images, edit floors
+              {t("buildingsDescription")}
             </div>
           </div>
           <span className="text-[12px]" style={{ color: "var(--a-text-tertiary)" }}>
@@ -247,6 +348,60 @@ export default function ProjectsClient({ initialProject }: Props) {
             style={{ color: "var(--a-text-tertiary)" }}
           />
         </Link>
+        {project.buildings?.length > 0 && (
+          <div
+            className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3"
+            style={{ borderBottom: "1px solid var(--a-border)" }}
+          >
+            {project.buildings.map((building) => {
+              const preview = getBuildingPreview(building);
+
+              return (
+                <Link
+                  key={building.id}
+                  href={`/portal/management-x7k9/projects/${project.id}/images/${building.id}`}
+                  className="group overflow-hidden rounded"
+                  style={{
+                    background: "var(--a-bg-subtle)",
+                    border: "1px solid var(--a-border)",
+                  }}
+                >
+                  <div className="relative h-28 overflow-hidden bg-[var(--a-bg-active)]">
+                    {preview ? (
+                      <img
+                        src={preview}
+                        alt={building.name}
+                        className="h-full w-full object-cover transition duration-200 group-hover:scale-[1.02]"
+                      />
+                    ) : (
+                      <div
+                        className="flex h-full items-center justify-center gap-2 text-[12px]"
+                        style={{ color: "var(--a-text-tertiary)" }}
+                      >
+                        <ImageIcon className="h-4 w-4" />
+                        {t("noBuildingImage")}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex items-center justify-between gap-3 px-3 py-2">
+                    <div className="min-w-0">
+                      <div className="truncate text-[13px] font-medium" style={{ color: "var(--a-text)" }}>
+                        {building.name}
+                      </div>
+                      <div className="text-[12px]" style={{ color: "var(--a-text-secondary)" }}>
+                        {building.floors?.length || 0} {t("floors")}
+                      </div>
+                    </div>
+                    <ArrowUpRight
+                      className="h-3.5 w-3.5 shrink-0"
+                      style={{ color: "var(--a-text-tertiary)" }}
+                    />
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        )}
         <Link
           href={`/portal/management-x7k9/projects/${project.id}/units`}
           className="flex items-center gap-3 px-4 py-3 hover:bg-[var(--a-bg-hover)]"
@@ -257,10 +412,10 @@ export default function ProjectsClient({ initialProject }: Props) {
           />
           <div className="flex-1 min-w-0">
             <div className="text-[13px] font-medium" style={{ color: "var(--a-text)" }}>
-              Units
+              {t("units")}
             </div>
             <div className="text-[12px]" style={{ color: "var(--a-text-secondary)" }}>
-              Manage available, reserved and sold apartments
+              {t("unitsDescription")}
             </div>
           </div>
           <ArrowUpRight
@@ -268,135 +423,6 @@ export default function ProjectsClient({ initialProject }: Props) {
             style={{ color: "var(--a-text-tertiary)" }}
           />
         </Link>
-      </section>
-
-      {/* Multilingual text editor */}
-      <section className="a-card p-4 sm:p-5">
-        <h2 className="text-[14px] font-semibold mb-1" style={{ color: "var(--a-text)" }}>
-          Project name and description
-        </h2>
-        <p className="text-[12px] mb-4" style={{ color: "var(--a-text-secondary)" }}>
-          Public-facing copy — Uzbek / Russian / English
-        </p>
-
-        {/* Language tabs */}
-        <div
-          className="inline-flex items-center gap-0 mb-4 p-0.5"
-          style={{
-            background: "var(--a-bg-active)",
-            borderRadius: "var(--a-radius-sm)",
-          }}
-        >
-          {(["uz", "ru", "en"] as Lang[]).map((lang) => (
-            <button
-              key={lang}
-              onClick={() => setActiveLang(lang)}
-              className="px-3 py-1 text-[12px] font-medium uppercase tracking-wide"
-              style={{
-                background: activeLang === lang ? "var(--a-bg)" : "transparent",
-                color:
-                  activeLang === lang
-                    ? "var(--a-text)"
-                    : "var(--a-text-secondary)",
-                borderRadius: "calc(var(--a-radius-sm) - 1px)",
-                border:
-                  activeLang === lang
-                    ? "1px solid var(--a-border)"
-                    : "1px solid transparent",
-              }}
-            >
-              {lang}
-            </button>
-          ))}
-        </div>
-
-        <div className="flex flex-col gap-3">
-          <div>
-            <label
-              className="block text-[12px] font-medium mb-1"
-              style={{ color: "var(--a-text-secondary)" }}
-            >
-              Project name
-            </label>
-            <input
-              type="text"
-              value={names[activeLang]}
-              onChange={(e) => setNames({ ...names, [activeLang]: e.target.value })}
-              placeholder={
-                activeLang === "uz"
-                  ? "Navruz Residence"
-                  : activeLang === "ru"
-                  ? "Навруз Резиденс"
-                  : "Navruz Residence"
-              }
-              className="a-input"
-            />
-          </div>
-          <div>
-            <label
-              className="block text-[12px] font-medium mb-1"
-              style={{ color: "var(--a-text-secondary)" }}
-            >
-              About the complex
-            </label>
-            <textarea
-              rows={4}
-              value={descs[activeLang]}
-              onChange={(e) => setDescs({ ...descs, [activeLang]: e.target.value })}
-              placeholder={
-                activeLang === "uz"
-                  ? "Toshkent markazida zamonaviy turar-joy majmuasi…"
-                  : activeLang === "ru"
-                  ? "Современный жилой комплекс в центре Ташкента…"
-                  : "Premium residential complex in the heart of Tashkent…"
-              }
-              className="a-input"
-              style={{ resize: "vertical", padding: "8px 10px" }}
-            />
-          </div>
-        </div>
-
-        <button
-          onClick={saveTexts}
-          disabled={saving}
-          className="a-btn a-btn-primary mt-4"
-        >
-          <Save className="w-3.5 h-3.5" />
-          {saving ? "Saving…" : saveSuccess ? "Saved ✓" : "Save"}
-        </button>
-      </section>
-
-      {/* Expected year */}
-      <section className="a-card p-4 sm:p-5">
-        <h2 className="text-[14px] font-semibold mb-1" style={{ color: "var(--a-text)" }}>
-          Expected completion
-        </h2>
-        <p className="text-[12px] mb-3" style={{ color: "var(--a-text-secondary)" }}>
-          Year the project is expected to be delivered (e.g. 2028)
-        </p>
-        <div className="flex items-center gap-2">
-          <input
-            type="number"
-            min={2024}
-            max={2040}
-            placeholder="2028"
-            value={project.expectedYear || ""}
-            onChange={async (e) => {
-              const val = e.target.value ? parseInt(e.target.value) : null;
-              setProject({ ...project, expectedYear: val });
-              await fetch(`/api/projects/${project.id}`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ expectedYear: val }),
-              });
-            }}
-            className="a-input"
-            style={{ width: 96, fontWeight: 600 }}
-          />
-          <span className="text-[12px]" style={{ color: "var(--a-text-tertiary)" }}>
-            year
-          </span>
-        </div>
       </section>
     </div>
   );

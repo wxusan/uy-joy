@@ -7,6 +7,7 @@ import { getCardImageUrl } from "@/lib/cloudinary";
 interface Unit {
   id: string;
   unitNumber: string;
+  displayNumber: string;
   rooms: number;
   area: number;
   status: string;
@@ -29,19 +30,9 @@ interface Props {
   onClick: () => void;
 }
 
-
 export default function ApartmentCard({ unit, onClick }: Props) {
   const t = useTranslations("unit");
-
-  // Auto-construct display number
-  const getDisplayNumber = (unitNumber: string, floorNumber: number) => {
-    if (/^\d{1,2}$/.test(unitNumber)) {
-      return `${floorNumber}${unitNumber.padStart(2, "0")}`;
-    }
-    return unitNumber;
-  };
-
-  const displayNumber = getDisplayNumber(unit.unitNumber, unit.floor.number);
+  const displayNumber = unit.displayNumber;
   return (
     <button
       onClick={onClick}
@@ -70,9 +61,9 @@ export default function ApartmentCard({ unit, onClick }: Props) {
 
       {/* Specs — compact, below image */}
       <div className="px-4 py-3 space-y-1.5">
-        <InfoRow label={t("area") || "Maydon"} value={`${unit.area} m²`} />
-        <InfoRow label={t("rooms") || "Xonalar"} value={`${unit.rooms} xona`} />
-        <InfoRow label={t("floor") || "Qavat"} value={`${unit.floor.number}-qavat`} />
+        <InfoRow label={t("area")} value={`${unit.area} m²`} />
+        <InfoRow label={t("rooms")} value={`${unit.rooms} ${t("rooms").toLowerCase()}`} />
+        <InfoRow label={t("floor")} value={`${unit.floor.number}`} />
       </div>
     </button>
   );

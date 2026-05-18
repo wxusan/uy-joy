@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -18,6 +19,8 @@ model User {
 
 model Project {
   id          String     @id @default(cuid())
+  slug        String?    @unique   // e.g. "navruz" — used for tenant routing
+  domain      String?    @unique   // e.g. "navruz.uy-joy.com" — custom domain for tenant
   name        String
   nameTranslations String?  // JSON: {"en": "...", "ru": "...", "uz": "..."}
   description String?
@@ -30,6 +33,16 @@ model Project {
   longitude   Float?     // GPS longitude
   infrastructure Json?   // nearby places data
   expectedYear Int?      // Expected year of project completion (e.g., 2028)
+  // Contact / tenant settings
+  phoneNumber       String?   // e.g. "+998 77 041 12 22"
+  telegramUrl       String?   // full t.me/... URL
+  instagramUrl      String?   // Instagram profile URL
+  salesOfficeAddress String?  // Physical address of sales office
+  salesHoursStart   String?   // HH:mm e.g. "09:00"
+  salesHoursEnd     String?   // HH:mm e.g. "19:00"
+  salesDaysJson     String?   // Comma-separated ISO day numbers "1,2,3,4,5,6" (1=Mon)
+  masterPlanImage   String?   // Fallback aerial / master-plan image
+  brandLogo         String?   // Project logo image URL
   buildings   Building[]
   createdAt   DateTime   @default(now())
 }
@@ -53,6 +66,8 @@ model Building {
   labelScale     Float?   // Scale multiplier for the label box (default 1.0)
   sortOrder      Int      @default(0)  // For ordering buildings A, B, C...
   createdAt      DateTime @default(now())
+
+  @@index([projectId])
 }
 
 model Floor {
@@ -65,6 +80,8 @@ model Floor {
   positionData   Json?    // {yStart, yEnd} for clickable area on building view
   units          Unit[]
   createdAt      DateTime @default(now())
+
+  @@index([buildingId])
 }
 
 model Unit {
@@ -94,6 +111,9 @@ model Unit {
   statusChangedAt DateTime?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@index([floorId])
+  @@index([status])
 }
 
 model Lead {
@@ -109,7 +129,19 @@ model Lead {
   source        String?   // "kvartiralar", "vizual", "bosh-sahifa"
   assignedTo    String?   // Name of the team member handling this lead
   nextFollowUp  DateTime? // When to call this person back
+  // Snapshot fields — captured at lead-creation time so reports still work
+  // if the unit is later deleted or renamed.
+  unitNumberSnapshot   String?
+  unitAreaSnapshot     Float?
+  unitRoomsSnapshot    Int?
+  unitPriceSnapshot    Float?
+  buildingNameSnapshot String?
+  floorNumberSnapshot  Int?
   createdAt     DateTime  @default(now())
+
+  @@index([projectId])
+  @@index([unitId])
+  @@index([status, createdAt(sort: Desc)])
 }
 
 model HeroImage {

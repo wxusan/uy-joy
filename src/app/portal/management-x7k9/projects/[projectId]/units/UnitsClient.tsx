@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { formatPrice } from "@/lib/utils";
 
 interface Unit {
   id: string;
   unitNumber: string;
+  displayNumber: string;
   rooms: number;
   area: number;
   status: string;
@@ -34,6 +35,12 @@ interface Props {
   projectId: string;
 }
 
+const statusMeta = (status: string) => {
+  if (status === "reserved") return { dot: "bg-neutral-500", labelClass: "text-neutral-700" };
+  if (status === "sold") return { dot: "bg-neutral-900", labelClass: "text-neutral-900" };
+  return { dot: "bg-neutral-300", labelClass: "text-neutral-700" };
+};
+
 export default function UnitsClient({ initialUnits, initialBuildings, projectId }: Props) {
   const t = useTranslations("admin");
   const tc = useTranslations("common");
@@ -54,15 +61,19 @@ export default function UnitsClient({ initialUnits, initialBuildings, projectId 
     qs.set("projectId", projectId);
     if (status) qs.set("status", status);
     if (rooms) qs.set("rooms", rooms);
+    qs.set("all", "true");
     fetch(`/api/units?${qs}`)
       .then((r) => r.json())
       .then(setUnits);
   };
 
   useEffect(() => {
-    if (!isMounted.current) { isMounted.current = true; return; }
+    if (!isMounted.current) {
+      isMounted.current = true;
+      return;
+    }
     loadUnits(filterStatus, filterRooms);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterStatus, filterRooms]);
 
   const updateUnit = async (unitId: string, data: Record<string, unknown>) => {
@@ -105,7 +116,7 @@ export default function UnitsClient({ initialUnits, initialBuildings, projectId 
     });
     return Object.entries(groups)
       .sort(([a], [b]) => parseInt(b) - parseInt(a))
-      .map(([floor, units]) => ({ floor: parseInt(floor), units }));
+      .map(([floor, floorUnits]) => ({ floor: parseInt(floor), units: floorUnits }));
   }, [buildingUnits]);
 
   const getBuildingStats = (buildingId: string) => {
@@ -119,99 +130,129 @@ export default function UnitsClient({ initialUnits, initialBuildings, projectId 
   };
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-6">{t("manageUnits")}</h1>
+    <div className="space-y-5 text-neutral-950">
+      <div>
+        <h1 className="text-2xl font-semibold tracking-[-0.02em]">{t("manageUnits")}</h1>
+        <p className="mt-1 text-sm text-neutral-500">{t("unitAdminSubtitle")}</p>
+      </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
         {buildings.map((building) => {
           const stats = getBuildingStats(building.id);
           const isSelected = selectedBuildingId === building.id;
           return (
-            <button key={building.id} onClick={() => setSelectedBuildingId(building.id)}
-              className={`p-4 rounded-xl border-2 text-left transition ${isSelected ? "border-emerald-500 bg-emerald-50" : "border-slate-200 hover:border-emerald-300 bg-white"}`}>
-              <h3 className="font-semibold text-lg">{building.name}</h3>
-              <div className="flex gap-3 mt-2 text-xs">
-                <span className="text-emerald-600">{stats.available} {t("available")}</span>
-                <span className="text-yellow-600">{stats.reserved} {t("reserved")}</span>
-                <span className="text-red-600">{stats.sold} {t("sold")}</span>
+            <button
+              key={building.id}
+              onClick={() => setSelectedBuildingId(building.id)}
+              className={`rounded-[8px] border p-4 text-left transition ${
+                isSelected ? "border-neutral-950 bg-neutral-950 text-white" : "border-neutral-200 bg-white hover:border-neutral-400"
+              }`}
+            >
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="text-lg font-semibold">{building.name}</h3>
+                <span className={isSelected ? "text-sm text-neutral-300" : "text-sm text-neutral-500"}>{stats.total}</span>
+              </div>
+              <div className={`mt-3 grid grid-cols-3 gap-2 text-xs ${isSelected ? "text-neutral-300" : "text-neutral-500"}`}>
+                <span>{stats.available} {t("available")}</span>
+                <span>{stats.reserved} {t("reserved")}</span>
+                <span>{stats.sold} {t("sold")}</span>
               </div>
             </button>
           );
         })}
       </div>
 
-      <div className="flex gap-3 mb-4 flex-wrap items-center">
-        <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}
-          className="px-3 py-2 border rounded-lg text-sm bg-white">
+      <div className="flex flex-wrap items-center gap-3">
+        <select
+          value={filterStatus}
+          onChange={(e) => setFilterStatus(e.target.value)}
+          className="h-10 rounded-[6px] border border-neutral-200 bg-white px-3 text-sm outline-none transition focus:border-neutral-500"
+        >
           <option value="">{t("allStatus")}</option>
           <option value="available">{t("available")}</option>
           <option value="reserved">{t("reserved")}</option>
           <option value="sold">{t("sold")}</option>
         </select>
-        <select value={filterRooms} onChange={(e) => setFilterRooms(e.target.value)}
-          className="px-3 py-2 border rounded-lg text-sm bg-white">
+        <select
+          value={filterRooms}
+          onChange={(e) => setFilterRooms(e.target.value)}
+          className="h-10 rounded-[6px] border border-neutral-200 bg-white px-3 text-sm outline-none transition focus:border-neutral-500"
+        >
           <option value="">{t("allRooms")}</option>
-          {roomOptions.map((r) => <option key={r} value={r}>{r}</option>)}
+          {roomOptions.map((r) => (
+            <option key={r} value={r}>{r}</option>
+          ))}
         </select>
-        <span className="text-sm text-slate-500 ml-2">{buildingUnits.length} {t("units")}</span>
+        <span className="text-sm text-neutral-500">{buildingUnits.length} {t("units")}</span>
       </div>
 
       {groupedByFloor.length === 0 ? (
-        <div className="bg-slate-50 rounded-xl p-8 text-center text-slate-500">{t("noUnitsYet")}</div>
+        <div className="rounded-[8px] border border-neutral-200 bg-neutral-50 p-8 text-center text-sm text-neutral-500">
+          {t("noUnitsYet")}
+        </div>
       ) : (
         <div className="space-y-4">
           {groupedByFloor.map(({ floor, units: floorUnits }) => (
-            <div key={floor} className="bg-white rounded-xl shadow-sm border overflow-hidden">
-              <div className="bg-slate-50 px-4 py-3 border-b flex items-center justify-between">
+            <div key={floor} className="overflow-hidden rounded-[8px] border border-neutral-200 bg-white shadow-sm">
+              <div className="flex items-center justify-between border-b border-neutral-200 bg-neutral-50 px-4 py-3">
                 <div className="flex items-center gap-3">
-                  <input type="checkbox" className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
-                    checked={floorUnits.length > 0 && floorUnits.every(u => selectedUnits.includes(u.id))}
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 cursor-pointer rounded border-neutral-300 accent-neutral-950"
+                    checked={floorUnits.length > 0 && floorUnits.every((u) => selectedUnits.includes(u.id))}
                     onChange={(e) => {
-                      if (e.target.checked) setSelectedUnits(prev => Array.from(new Set([...prev, ...floorUnits.map(u => u.id)])));
-                      else setSelectedUnits(prev => prev.filter(id => !floorUnits.find(u => u.id === id)));
-                    }} />
-                  <h3 className="font-semibold text-slate-700">{t("floor")} {floor}</h3>
+                      if (e.target.checked) setSelectedUnits((prev) => Array.from(new Set([...prev, ...floorUnits.map((u) => u.id)])));
+                      else setSelectedUnits((prev) => prev.filter((id) => !floorUnits.find((u) => u.id === id)));
+                    }}
+                  />
+                  <h3 className="font-semibold text-neutral-900">{t("floor")} {floor}</h3>
                 </div>
-                <span className="text-xs text-slate-500">{floorUnits.length} {t("units")}</span>
+                <span className="text-xs text-neutral-500">{floorUnits.length} {t("units")}</span>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 p-4">
+              <div className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {floorUnits.map((unit) => {
                   const pricePerM2 = unit.pricePerM2 || unit.floor.basePricePerM2 || 0;
                   const totalPrice = unit.totalPrice || pricePerM2 * unit.area;
+                  const meta = statusMeta(unit.status);
+
                   return (
-                    <div key={unit.id} className={`p-3 rounded-lg border ${
-                      unit.status === "available" ? "border-emerald-200 bg-emerald-50"
-                      : unit.status === "reserved" ? "border-yellow-200 bg-yellow-50"
-                      : "border-red-200 bg-red-50"}`}>
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <input type="checkbox" className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                    <div key={unit.id} className="rounded-[7px] border border-neutral-200 bg-white p-3 transition hover:border-neutral-400">
+                      <div className="mb-3 flex items-center justify-between gap-2">
+                        <div className="flex min-w-0 items-center gap-2">
+                          <input
+                            type="checkbox"
+                            className="h-4 w-4 cursor-pointer rounded border-neutral-300 accent-neutral-950"
                             checked={selectedUnits.includes(unit.id)}
                             onChange={(e) => {
-                              if (e.target.checked) setSelectedUnits(prev => [...prev, unit.id]);
-                              else setSelectedUnits(prev => prev.filter(id => id !== unit.id));
-                            }} />
-                          <span className="font-bold">№{unit.unitNumber}</span>
+                              if (e.target.checked) setSelectedUnits((prev) => [...prev, unit.id]);
+                              else setSelectedUnits((prev) => prev.filter((id) => id !== unit.id));
+                            }}
+                          />
+                          <span className="truncate text-[15px] font-semibold">№{unit.displayNumber}</span>
                         </div>
-                        <select value={unit.status} onChange={(e) => handleStatusChange(unit, e.target.value)}
-                          className={`text-xs font-medium px-2 py-1 rounded-full border-0 cursor-pointer ${
-                            unit.status === "available" ? "bg-emerald-200 text-emerald-800"
-                            : unit.status === "reserved" ? "bg-yellow-200 text-yellow-800"
-                            : "bg-red-200 text-red-800"}`}>
+                        <select
+                          value={unit.status}
+                          onChange={(e) => handleStatusChange(unit, e.target.value)}
+                          className={`rounded-[6px] border border-neutral-200 bg-neutral-50 px-2 py-1 text-xs font-medium outline-none ${meta.labelClass}`}
+                        >
                           <option value="available">{t("available")}</option>
                           <option value="reserved">{t("reserved")}</option>
                           <option value="sold">{t("sold")}</option>
                         </select>
                       </div>
-                      <div className="text-sm text-slate-600 space-y-1">
+                      <div className="space-y-1 text-sm text-neutral-600">
                         <p>{unit.rooms} {t("rooms")} · {unit.area} m²</p>
-                        <p className="font-medium text-slate-800">{formatPrice(totalPrice)}</p>
+                        <p className="font-medium text-neutral-900">{formatPrice(totalPrice)}</p>
+                        <p className="inline-flex items-center gap-2 text-xs">
+                          <span className={`h-1.5 w-1.5 rounded-full ${meta.dot}`} />
+                          {t(unit.status as "available" | "reserved" | "sold")}
+                        </p>
                       </div>
                       {(unit.status === "reserved" || unit.status === "sold") && unit.customerName && (
-                        <div className="mt-2 pt-2 border-t border-slate-200 text-xs">
-                          <p className="font-medium">{unit.customerName}</p>
-                          {unit.customerPhone && <p className="text-slate-500">{unit.customerPhone}</p>}
-                          {unit.customerNotes && <p className="text-slate-400 truncate">{unit.customerNotes}</p>}
+                        <div className="mt-3 border-t border-neutral-200 pt-2 text-xs">
+                          <p className="font-medium text-neutral-900">{unit.customerName}</p>
+                          {unit.customerPhone && <p className="text-neutral-500">{unit.customerPhone}</p>}
+                          {unit.customerNotes && <p className="truncate text-neutral-400">{unit.customerNotes}</p>}
                         </div>
                       )}
                     </div>
@@ -227,44 +268,65 @@ export default function UnitsClient({ initialUnits, initialBuildings, projectId 
         <ReservationModal
           unit={reservationModal}
           onClose={() => setReservationModal(null)}
-          onSave={async (data) => { await updateUnit(reservationModal.id, data); setReservationModal(null); }}
+          onSave={async (data) => {
+            await updateUnit(reservationModal.id, data);
+            setReservationModal(null);
+          }}
           translations={{
-            reserve: t("reserve"), sell: t("sell"),
-            customerName: t("customerName"), customerPhone: t("customerPhone"), customerNotes: t("customerNotes"),
-            customerNamePlaceholder: t("customerNamePlaceholder"), customerNotesPlaceholder: t("customerNotesPlaceholder"),
-            saving: t("saving"), cancel: tc("cancel"),
+            reserve: t("reserve"),
+            sell: t("sell"),
+            customerName: t("customerName"),
+            customerPhone: t("customerPhone"),
+            customerNotes: t("customerNotes"),
+            customerNamePlaceholder: t("customerNamePlaceholder"),
+            customerNotesPlaceholder: t("customerNotesPlaceholder"),
+            saving: t("saving"),
+            cancel: tc("cancel"),
           }}
         />
       )}
 
       {selectedUnits.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] p-4 z-[100] animate-in slide-in-from-bottom flex justify-end">
-          <div className="max-w-7xl mx-auto w-full flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="fixed inset-x-0 bottom-0 z-[100] border-t border-neutral-200 bg-white/95 p-4 shadow-[0_-10px_40px_rgba(0,0,0,0.08)] backdrop-blur-md">
+          <div className="mx-auto flex w-full max-w-7xl flex-col items-center justify-between gap-4 sm:flex-row">
             <div className="flex items-center gap-4">
-              <span className="bg-indigo-100 text-indigo-700 font-bold px-4 py-2 rounded-xl">{selectedUnits.length} ta xonadon tanlandi</span>
-              <button onClick={() => setSelectedUnits([])} className="text-sm font-semibold text-slate-500 hover:text-slate-700 transition">Bekor qilish</button>
+              <span className="rounded-[6px] bg-neutral-950 px-4 py-2 text-sm font-semibold text-white">
+                {t("selectedUnits", { count: selectedUnits.length })}
+              </span>
+              <button onClick={() => setSelectedUnits([])} className="text-sm font-semibold text-neutral-500 transition hover:text-neutral-900">
+                {t("clearSelection")}
+              </button>
             </div>
-            <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-              <select value={bulkStatus} onChange={(e) => setBulkStatus(e.target.value)}
-                className="px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-medium">
-                <option value="">Statusni o&apos;zgartirish</option>
-                <option value="available">Sotuvda (Available)</option>
-                <option value="reserved">Band qilingan (Reserved)</option>
-                <option value="sold">Sotilgan (Sold)</option>
+            <div className="flex w-full flex-wrap items-center gap-3 sm:w-auto">
+              <select
+                value={bulkStatus}
+                onChange={(e) => setBulkStatus(e.target.value)}
+                className="h-10 rounded-[6px] border border-neutral-200 bg-white px-3 text-sm outline-none focus:border-neutral-500"
+              >
+                <option value="">{t("changeStatus")}</option>
+                <option value="available">{t("availableOption")}</option>
+                <option value="reserved">{t("reservedOption")}</option>
+                <option value="sold">{t("soldOption")}</option>
               </select>
-              <input type="number" placeholder="Yangi 1 m² narxi (so'm)" value={bulkPricing}
+              <input
+                type="number"
+                placeholder={t("newPricePerM2")}
+                value={bulkPricing}
                 onChange={(e) => setBulkPricing(e.target.value)}
-                className="px-4 py-2.5 w-48 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-medium" />
+                className="h-10 w-52 rounded-[6px] border border-neutral-200 bg-white px-3 text-sm outline-none focus:border-neutral-500"
+              />
               <button
                 onClick={async () => {
-                  if (!bulkStatus && !bulkPricing) return alert("Narx yoki statusni kiriting");
+                  if (!bulkStatus && !bulkPricing) return alert(t("enterPriceOrStatus"));
                   setIsBulkLoading(true);
                   const data: Record<string, unknown> = {};
                   if (bulkStatus) data.status = bulkStatus;
                   if (bulkPricing) data.pricePerM2 = parseInt(bulkPricing);
                   const previousUnits = units.filter((u) => selectedUnits.includes(u.id));
-                  setUnits((prev) => prev.map((u) => selectedUnits.includes(u.id) ? { ...u, ...data } : u));
-                  setSelectedUnits([]); setBulkStatus(""); setBulkPricing("");
+                  setUnits((prev) => prev.map((u) => (selectedUnits.includes(u.id) ? { ...u, ...data } : u)));
+                  setSelectedUnits([]);
+                  setBulkStatus("");
+                  setBulkPricing("");
                   try {
                     const res = await fetch("/api/units", {
                       method: "PATCH",
@@ -273,19 +335,22 @@ export default function UnitsClient({ initialUnits, initialBuildings, projectId 
                     });
                     if (!res.ok) {
                       previousUnits.forEach((prev) => {
-                        setUnits((units) => units.map((u) => (u.id === prev.id ? prev : u)));
+                        setUnits((currentUnits) => currentUnits.map((u) => (u.id === prev.id ? prev : u)));
                       });
                     }
                   } catch {
                     previousUnits.forEach((prev) => {
-                      setUnits((units) => units.map((u) => (u.id === prev.id ? prev : u)));
+                      setUnits((currentUnits) => currentUnits.map((u) => (u.id === prev.id ? prev : u)));
                     });
-                    alert("Xatolik yuz berdi");
-                  } finally { setIsBulkLoading(false); }
+                    alert(t("failedToSubmit"));
+                  } finally {
+                    setIsBulkLoading(false);
+                  }
                 }}
                 disabled={isBulkLoading || (!bulkStatus && !bulkPricing)}
-                className="bg-indigo-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-indigo-700 hover:shadow-lg disabled:opacity-50 transition-all cursor-pointer">
-                {isBulkLoading ? "Saqlanmoqda..." : "Ommaviy Saqlash"}
+                className="h-10 rounded-[6px] bg-neutral-950 px-5 text-sm font-semibold text-white transition hover:bg-neutral-800 disabled:opacity-50"
+              >
+                {isBulkLoading ? t("saving") : t("bulkSave")}
               </button>
             </div>
           </div>
@@ -295,11 +360,26 @@ export default function UnitsClient({ initialUnits, initialBuildings, projectId 
   );
 }
 
-function ReservationModal({ unit, onClose, onSave, translations: tr }: {
+function ReservationModal({
+  unit,
+  onClose,
+  onSave,
+  translations: tr,
+}: {
   unit: Unit;
   onClose: () => void;
   onSave: (data: Record<string, unknown>) => Promise<void>;
-  translations: { reserve: string; sell: string; customerName: string; customerPhone: string; customerNotes: string; customerNamePlaceholder: string; customerNotesPlaceholder: string; saving: string; cancel: string; };
+  translations: {
+    reserve: string;
+    sell: string;
+    customerName: string;
+    customerPhone: string;
+    customerNotes: string;
+    customerNamePlaceholder: string;
+    customerNotesPlaceholder: string;
+    saving: string;
+    cancel: string;
+  };
 }) {
   const [customerName, setCustomerName] = useState(unit.customerName || "");
   const [customerPhone, setCustomerPhone] = useState(unit.customerPhone || "");
@@ -315,30 +395,47 @@ function ReservationModal({ unit, onClose, onSave, translations: tr }: {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
-        <h2 className="text-xl font-bold mb-4">{isReserved ? tr.reserve : tr.sell} — №{unit.unitNumber}</h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4" onClick={onClose}>
+      <div className="w-full max-w-md rounded-[8px] border border-neutral-200 bg-white p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <h2 className="mb-5 text-xl font-semibold tracking-[-0.02em]">{isReserved ? tr.reserve : tr.sell} — №{unit.displayNumber}</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">{tr.customerName} {isReserved ? "" : "*"}</label>
-            <input type="text" value={customerName} onChange={(e) => setCustomerName(e.target.value)}
-              required={!isReserved} className="w-full px-4 py-2 border rounded-lg" placeholder={tr.customerNamePlaceholder} />
+            <label className="mb-1 block text-sm font-medium text-neutral-700">{tr.customerName} {isReserved ? "" : "*"}</label>
+            <input
+              type="text"
+              value={customerName}
+              onChange={(e) => setCustomerName(e.target.value)}
+              required={!isReserved}
+              className="h-10 w-full rounded-[6px] border border-neutral-200 px-3 text-sm outline-none focus:border-neutral-500"
+              placeholder={tr.customerNamePlaceholder}
+            />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">{tr.customerPhone}</label>
-            <input type="tel" inputMode="tel" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)}
-              className="w-full px-4 py-2 border rounded-lg" placeholder="+998 90 123 45 67" />
+            <label className="mb-1 block text-sm font-medium text-neutral-700">{tr.customerPhone}</label>
+            <input
+              type="tel"
+              inputMode="tel"
+              value={customerPhone}
+              onChange={(e) => setCustomerPhone(e.target.value)}
+              className="h-10 w-full rounded-[6px] border border-neutral-200 px-3 text-sm outline-none focus:border-neutral-500"
+              placeholder="+998 XX XXX XX XX"
+            />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">{tr.customerNotes}</label>
-            <textarea value={customerNotes} onChange={(e) => setCustomerNotes(e.target.value)}
-              rows={3} className="w-full px-4 py-2 border rounded-lg resize-none" placeholder={tr.customerNotesPlaceholder} />
+            <label className="mb-1 block text-sm font-medium text-neutral-700">{tr.customerNotes}</label>
+            <textarea
+              value={customerNotes}
+              onChange={(e) => setCustomerNotes(e.target.value)}
+              rows={3}
+              className="w-full resize-none rounded-[6px] border border-neutral-200 px-3 py-2 text-sm outline-none focus:border-neutral-500"
+              placeholder={tr.customerNotesPlaceholder}
+            />
           </div>
-          <div className="flex gap-3">
-            <button type="button" onClick={onClose}
-              className="flex-1 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg font-medium hover:bg-slate-200 transition">{tr.cancel}</button>
-            <button type="submit" disabled={saving}
-              className={`flex-1 px-4 py-2 text-white rounded-lg font-medium transition ${isReserved ? "bg-yellow-500 hover:bg-yellow-600" : "bg-red-500 hover:bg-red-600"} disabled:opacity-50`}>
+          <div className="flex gap-3 pt-1">
+            <button type="button" onClick={onClose} className="h-10 flex-1 rounded-[6px] border border-neutral-200 bg-white text-sm font-semibold text-neutral-700 transition hover:bg-neutral-50">
+              {tr.cancel}
+            </button>
+            <button type="submit" disabled={saving} className="h-10 flex-1 rounded-[6px] bg-neutral-950 text-sm font-semibold text-white transition hover:bg-neutral-800 disabled:opacity-50">
               {saving ? tr.saving : isReserved ? tr.reserve : tr.sell}
             </button>
           </div>

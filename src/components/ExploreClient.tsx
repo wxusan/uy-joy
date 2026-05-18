@@ -1,20 +1,17 @@
 "use client";
 
 import posthog from "posthog-js";
-import { useState, useEffect } from "react";
-import { useTranslations } from "next-intl";
+import { useEffect, useState } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import ProjectTopView from "@/components/ProjectTopView";
 import BuildingViewer from "@/components/BuildingViewer";
-import FloorPlanSVG from "@/components/FloorPlanSVG";
-import FloorPlanPolygon from "@/components/FloorPlanPolygon";
-import UnitDetailModal from "@/components/UnitDetailModal";
-import PriceLegend from "@/components/PriceLegend";
+import FloorPlanView from "@/components/FloorPlanView";
 
 interface ProjectData {
   id: string;
   name: string;
   topViewImage: string | null;
+  telegramUrl?: string | null;
   buildings: {
     id: string;
     name: string;
@@ -32,11 +29,16 @@ interface ProjectData {
       id: string;
       number: number;
       basePricePerM2: number | null;
-      positionData: { yStart: number; yEnd: number } | null;
+      positionData: {
+        yStart?: number;
+        yEnd?: number;
+        polygon?: { x: number; y: number }[];
+      } | string | null;
       floorPlanImage: string | null;
       units: {
         id: string;
         unitNumber: string;
+        displayNumber: string;
         rooms: number;
         area: number;
         status: string;
@@ -57,12 +59,32 @@ interface ProjectData {
 interface Props {
   project: ProjectData;
   initialBuildingId?: string;
+  heroTitle?: string;
+  heroSubtitle?: string;
+  heroMinPricePerM2?: number | null;
+  heroAvailableCount?: number;
+  heroTotalCount?: number;
+  heroExpectedYear?: number | null;
 }
 
 type ViewStep = "project" | "building" | "floor";
+type ProjectUnit = ProjectData["buildings"][number]["floors"][number]["units"][number];
+type SelectedUnit = ProjectUnit & {
+  floorNumber: number;
+  basePricePerM2: number | null;
+  buildingName?: string;
+};
 
-export default function ExploreClient({ project, initialBuildingId }: Props) {
-  const t = useTranslations("explore");
+export default function ExploreClient({
+  project,
+  initialBuildingId,
+  heroTitle,
+  heroSubtitle,
+  heroMinPricePerM2,
+  heroAvailableCount,
+  heroTotalCount,
+  heroExpectedYear,
+}: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -97,7 +119,7 @@ export default function ExploreClient({ project, initialBuildingId }: Props) {
   const [currentStep, setCurrentStep] = useState<ViewStep>(initialStep);
   const [selectedBuildingId, setSelectedBuildingId] = useState<string | null>(resolvedInitialBuilding);
   const [selectedFloorId, setSelectedFloorId] = useState<string | null>(resolvedInitialFloor);
-  const [selectedUnit, setSelectedUnit] = useState<any>(null);
+  const [selectedUnit, setSelectedUnit] = useState<SelectedUnit | null>(null);
 
   // Update URL whenever navigation changes — so links are shareable
   const updateURL = (buildingId: string | null, floorId: string | null) => {
@@ -125,96 +147,73 @@ export default function ExploreClient({ project, initialBuildingId }: Props) {
     }
     setSelectedBuildingId(buildingId);
     setSelectedFloorId(null);
+    setSelectedUnit(null);
     setCurrentStep("building");
     updateURL(buildingId, null);
-  };
-
-  const handleFloorSelect = (floorId: string) => {
-    const floor = selectedBuilding?.floors.find((f) => f.id === floorId);
-    if (floor && selectedBuilding) {
-      posthog.capture("Viewed Floor", {
-        block: selectedBuilding.name,
-        floor: floor.number,
-        project_name: project.name,
-        source: "3D Visualizer",
-      });
-    }
-    setSelectedFloorId(floorId);
-    setCurrentStep("floor");
-    updateURL(selectedBuildingId, floorId);
   };
 
   const handleBackToProject = () => {
     setSelectedBuildingId(null);
     setSelectedFloorId(null);
+    setSelectedUnit(null);
     setCurrentStep("project");
     updateURL(null, null);
   };
 
   const handleBackToBuilding = () => {
     setSelectedFloorId(null);
+    setSelectedUnit(null);
     setCurrentStep("building");
     updateURL(selectedBuildingId, null);
   };
 
-  // Breadcrumb navigation
-  const renderBreadcrumb = () => (
-    <div className="flex items-center gap-2 text-sm text-slate-500 mb-4 flex-wrap">
-      <button
-        onClick={handleBackToProject}
-        className={`hover:text-emerald-600 transition ${currentStep === "project" ? "text-emerald-600 font-medium" : ""}`}
-      >
-        {project.name}
-      </button>
-      {selectedBuilding && (
-        <>
-          <span>/</span>
-          <button
-            onClick={handleBackToBuilding}
-            className={`hover:text-emerald-600 transition ${currentStep === "building" ? "text-emerald-600 font-medium" : ""}`}
-          >
-            {selectedBuilding.name}
-          </button>
-        </>
-      )}
-      {selectedFloor && (
-        <>
-          <span>/</span>
-          <span className="text-emerald-600 font-medium">
-            {t("floor")} {selectedFloor.number}
-          </span>
-        </>
-      )}
-    </div>
-  );
+  const handleFloorSelect = (floorId: string) => {
+    if (!selectedBuildingId) return;
+    setSelectedFloorId(floorId);
+    setSelectedUnit(null);
+    setCurrentStep("floor");
+    updateURL(selectedBuildingId, floorId);
+  };
+
+  useEffect(() => {
+    if (currentStep === "floor") {
+      window.scrollTo(0, 0);
+    }
+  }, [currentStep, selectedFloorId]);
+
+  const handleUnitSelect = (unit: ProjectUnit) => {
+    if (!selectedFloor) return;
+
+    const detailUnit = {
+      ...unit,
+      floorNumber: selectedFloor.number,
+      basePricePerM2: selectedFloor.basePricePerM2,
+      buildingName: selectedBuilding?.name,
+    };
+
+    setSelectedUnit(detailUnit);
+  };
+
+  const shellClassName =
+    currentStep === "project"
+      ? "w-full"
+      : currentStep === "building" || currentStep === "floor"
+      ? "w-full bg-[#090b0c]"
+      : "w-full";
 
   return (
-    <div className="max-w-7xl mx-auto px-3 sm:px-4 py-6 sm:py-8">
-      {/* Breadcrumb */}
-      {renderBreadcrumb()}
-
-      {/* Header with legend */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-3">
-        <div>
-          <h2 className="text-xl font-bold text-slate-800">
-            {currentStep === "project" && project.name}
-            {currentStep === "building" && selectedBuilding?.name}
-            {currentStep === "floor" && `${t("floor")} ${selectedFloor?.number}`}
-          </h2>
-          <p className="text-sm text-slate-500">
-            {currentStep === "project" && t("selectBuilding")}
-            {currentStep === "building" && t("selectFloor")}
-            {currentStep === "floor" && `${selectedFloor?.units.length} ${t("apartments")}`}
-          </p>
-        </div>
-        {currentStep === "floor" && <PriceLegend />}
-      </div>
-
+    <div className={shellClassName}>
       {/* Main content based on current step */}
       {currentStep === "project" && (
         <ProjectTopView
           topViewImage={project.topViewImage}
           buildings={project.buildings}
+          heroTitle={heroTitle || project.name}
+          heroSubtitle={heroSubtitle}
+          minPricePerM2={heroMinPricePerM2}
+          availableCount={heroAvailableCount}
+          totalCount={heroTotalCount}
+          expectedYear={heroExpectedYear}
           onBuildingSelect={handleBuildingSelect}
         />
       )}
@@ -222,59 +221,25 @@ export default function ExploreClient({ project, initialBuildingId }: Props) {
       {currentStep === "building" && selectedBuilding && (
         <BuildingViewer
           building={selectedBuilding}
-          onFloorSelect={handleFloorSelect}
           onBack={project.buildings.length > 1 ? handleBackToProject : () => {}}
+          onFloorSelect={handleFloorSelect}
         />
       )}
 
-      {currentStep === "floor" && selectedFloor && (
-        <div>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-2">
-            <h3 className="font-semibold text-slate-700">
-              {t("floor")} {selectedFloor.number} — {selectedFloor.units.length} {t("apartments")}
-            </h3>
-            <button
-              onClick={handleBackToBuilding}
-              className="text-sm text-slate-500 hover:text-slate-700 transition"
-            >
-              ← {t("backToBuilding")}
-            </button>
-          </div>
-
-          {selectedFloor.units.some((u) => u.polygonData) || selectedFloor.floorPlanImage ? (
-            <FloorPlanPolygon
-              units={selectedFloor.units}
-              floorPlanImage={selectedFloor.floorPlanImage}
-              basePricePerM2={selectedFloor.basePricePerM2}
-              floorNumber={selectedFloor.number}
-              onUnitClick={(unit) =>
-                setSelectedUnit({
-                  ...unit,
-                  floorNumber: selectedFloor.number,
-                  basePricePerM2: selectedFloor.basePricePerM2,
-                  buildingName: selectedBuilding?.name,
-                })
-              }
-            />
-          ) : (
-            <FloorPlanSVG
-              units={selectedFloor.units}
-              basePricePerM2={selectedFloor.basePricePerM2}
-              onUnitClick={(unit) =>
-                setSelectedUnit({
-                  ...unit,
-                  floorNumber: selectedFloor.number,
-                  basePricePerM2: selectedFloor.basePricePerM2,
-                  buildingName: selectedBuilding?.name,
-                })
-              }
-            />
-          )}
-        </div>
+      {currentStep === "floor" && selectedBuilding && selectedFloor && (
+        <FloorPlanView
+          building={selectedBuilding}
+          selectedFloor={selectedFloor}
+          selectedFloorId={selectedFloorId}
+          onFloorSelect={handleFloorSelect}
+          onBackToBuilding={handleBackToBuilding}
+          onBackToMaster={handleBackToProject}
+          onUnitClick={handleUnitSelect}
+          selectedUnit={selectedUnit}
+          onUnitClose={() => setSelectedUnit(null)}
+          telegramUrl={project.telegramUrl}
+        />
       )}
-
-      {/* Unit detail modal */}
-      <UnitDetailModal unit={selectedUnit} onClose={() => setSelectedUnit(null)} />
     </div>
   );
 }

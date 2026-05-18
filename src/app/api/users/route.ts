@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth";
 import bcrypt from "bcryptjs";
 import prisma from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
+import { UserCreateSchema } from "@/lib/schemas/user";
+import { invalidInput } from "@/lib/schemas/common";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -22,13 +24,16 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
   const body = await req.json();
-  const hashedPassword = await bcrypt.hash(body.password, 10);
+  const parsed = UserCreateSchema.safeParse(body);
+  if (!parsed.success) return invalidInput(parsed.error);
+  const input = parsed.data;
+  const hashedPassword = await bcrypt.hash(input.password, 10);
   const user = await prisma.user.create({
     data: {
-      email: body.email,
+      email: input.email,
       password: hashedPassword,
-      name: body.name,
-      role: body.role || "admin",
+      name: input.name,
+      role: input.role || "admin",
     },
     select: { id: true, email: true, name: true, role: true },
   });

@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add -A)",
+      "Bash(git commit:*)",
+      "Bash(git push)",
+      "Bash(python3 generate_pptx.py)"
+    ]
+  }
+}

@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
-import { revalidateTag } from "next/cache";
+import { Prisma } from "@prisma/client";
+import { getServerSession } from "next-auth";
 import prisma from "@/lib/prisma";
+import { authOptions } from "@/lib/auth";
+import { attachUnitDisplayNumber, publicUnitWithLocationSelect } from "@/lib/public-selects";
+import { invalidateProject } from "@/lib/cache";
+import { UnitBulkUpdateSchema, UnitCreateSchema } from "@/lib/schemas/unit";
+import { invalidInput } from "@/lib/schemas/common";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -8,8 +14,9 @@ export async function GET(req: Request) {
   const status = searchParams.get("status");
   const projectId = searchParams.get("projectId");
   const rooms = searchParams.get("rooms");
+  const all = searchParams.get("all") === "true";
 
-  const where: any = {};
+  const where: Prisma.UnitWhereInput = {};
   if (floorId) where.floorId = floorId;
   if (status) where.status = status;
   if (rooms) where.rooms = parseInt(rooms);
@@ -24,61 +31,66 @@ export async function GET(req: Request) {
   const pageParam = searchParams.get("page");
   const limitParam = searchParams.get("limit");
 
-  // Paginate only when page param is explicitly provided
-  if (pageParam !== null) {
-    const page = Math.max(1, parseInt(pageParam || "1"));
-    const limit = Math.min(200, Math.max(1, parseInt(limitParam || "50")));
-    const skip = (page - 1) * limit;
+  if (all) {
+    // The unbounded inventory dump is admin-only — it's the full price /
+    // availability list of every unit in one response, which is a prime
+    // scraping target for competitors.
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+    }
 
-    const [units, total] = await Promise.all([
-      prisma.unit.findMany({
-        where,
-        include: { floor: { include: { building: true } } },
-        orderBy: [{ floor: { number: "asc" } }, { unitNumber: "asc" }],
-        take: limit,
-        skip,
-      }),
-      prisma.unit.count({ where }),
-    ]);
+    const units = await prisma.unit.findMany({
+      where,
+      select: publicUnitWithLocationSelect,
+      orderBy: [{ floor: { number: "asc" } }, { unitNumber: "asc" }],
+    });
 
-    return NextResponse.json({ data: units, total, page, pages: Math.ceil(total / limit) });
+    return NextResponse.json(units.map(attachUnitDisplayNumber));
   }
 
-  const units = await prisma.unit.findMany({
-    where,
-    include: {
-      floor: {
-        include: {
-          building: true,
-        },
-      },
-    },
-    orderBy: [{ floor: { number: "asc" } }, { unitNumber: "asc" }],
-  });
+  const page = Math.max(1, parseInt(pageParam || "1"));
+  const limit = Math.min(200, Math.max(1, parseInt(limitParam || "50")));
+  const skip = (page - 1) * limit;
 
-  return NextResponse.json(units);
+  const [units, total] = await Promise.all([
+    prisma.unit.findMany({
+      where,
+      select: publicUnitWithLocationSelect,
+      orderBy: [{ floor: { number: "asc" } }, { unitNumber: "asc" }],
+      take: limit,
+      skip,
+    }),
+    prisma.unit.count({ where }),
+  ]);
+
+  return NextResponse.json({ data: units.map(attachUnitDisplayNumber), total, page, pages: Math.ceil(total / limit) });
 }
 
 export async function POST(req: Request) {
   const body = await req.json();
+  const parsed = UnitCreateSchema.safeParse(body);
+  if (!parsed.success) return invalidInput(parsed.error);
+  const input = parsed.data;
 
   const unit = await prisma.unit.create({
     data: {
-      unitNumber: body.unitNumber,
-      floorId: body.floorId,
-      rooms: body.rooms || 1,
-      area: body.area || 0,
-      status: body.status || "available",
-      pricePerM2: body.pricePerM2 || null,
-      totalPrice: body.totalPrice || null,
-      polygonData: body.polygonData || null,
-      labelX: body.labelX || null,
-      labelY: body.labelY || null,
-      description: body.description || null,
-      features: body.features || null,
+      unitNumber: input.unitNumber,
+      floorId: input.floorId,
+      rooms: input.rooms || 1,
+      area: input.area || 0,
+      status: input.status || "available",
+      pricePerM2: input.pricePerM2 || null,
+      totalPrice: input.totalPrice || null,
+      polygonData: input.polygonData ?? Prisma.JsonNull,
+      labelX: input.labelX || null,
+      labelY: input.labelY || null,
+      description: input.description || null,
+      features: input.features ?? Prisma.JsonNull,
     },
   });
 
+  invalidateProject();
   return NextResponse.json(unit);
 }
 
@@ -86,13 +98,11 @@ export async function POST(req: Request) {
 export async function PATCH(req: Request) {
   try {
     const body = await req.json();
-    const { unitIds, data } = body;
+    const parsed = UnitBulkUpdateSchema.safeParse(body);
+    if (!parsed.success) return invalidInput(parsed.error);
+    const { unitIds, data } = parsed.data;
 
-    if (!unitIds || !Array.isArray(unitIds) || unitIds.length === 0) {
-      return NextResponse.json({ error: "No unit IDs provided" }, { status: 400 });
-    }
-
-    const updateData: any = {};
+    const updateData: Prisma.UnitUpdateManyMutationInput = {};
     if (data.status !== undefined) {
       updateData.status = data.status;
       updateData.statusChangedAt = new Date();
@@ -108,7 +118,7 @@ export async function PATCH(req: Request) {
       data: updateData
     });
 
-    revalidateTag("project");
+    invalidateProject();
 
     return NextResponse.json({ success: true, count: result.count });
   } catch (error) {

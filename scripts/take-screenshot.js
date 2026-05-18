@@ -5,14 +5,14 @@ const puppeteer = require('puppeteer');
   await page.setViewport({ width: 1440, height: 900 });
   
   // Go to the apartments page
-  await page.goto('http://localhost:3000/kvartiralar', { waitUntil: 'networkidle0' });
+  await page.goto('http://localhost:3000/apartments', { waitUntil: 'networkidle0' });
   
   // Wait for the apartments to load then click the first "View Details" (Batafsil / Подробнее) button
   // We'll use a broad selector that targets the link/button inside the card
-  await page.waitForSelector('a[href^="/kvartiralar/"], button', { timeout: 10000 });
+  await page.waitForSelector('a[href^="/apartments/"], button', { timeout: 10000 });
   
   // Click the first card's link to open the modal
-  const cards = await page.$$('a[href^="/kvartiralar/"].group');
+  const cards = await page.$$('a[href^="/apartments/"].group');
   if (cards.length > 0) {
       await cards[0].click();
       // Wait for modal to appear and animation to finish

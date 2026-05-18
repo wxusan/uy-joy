@@ -1,7 +1,13 @@
 import { NextAuthOptions } from "next-auth";
+import { getServerSession } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import { redirect } from "next/navigation";
 import bcrypt from "bcryptjs";
 import prisma from "./prisma";
+
+if (process.env.NODE_ENV === "production" && !process.env.NEXTAUTH_SECRET) {
+  throw new Error("NEXTAUTH_SECRET is required in production");
+}
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -56,3 +62,16 @@ export const authOptions: NextAuthOptions = {
   },
   secret: process.env.NEXTAUTH_SECRET,
 };
+
+const ADMIN_ROLES = ["admin", "superadmin", "developer"] as const;
+
+export async function requireAdmin(allowedRoles: readonly string[] = ADMIN_ROLES) {
+  const session = await getServerSession(authOptions);
+  const role = (session?.user as { role?: string } | undefined)?.role;
+
+  if (!session?.user || !role || !allowedRoles.includes(role)) {
+    redirect("/portal/management-x7k9/login");
+  }
+
+  return session;
+}

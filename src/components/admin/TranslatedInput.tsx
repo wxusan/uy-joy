@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Translations, parseTranslations, createTranslationsJson } from "@/lib/translations";
 import { SHOW_AI } from "@/lib/flags";
 
@@ -29,6 +30,7 @@ export default function TranslatedInput({
   placeholder,
   context,
 }: Props) {
+  const ta = useTranslations("admin");
   const [showTranslations, setShowTranslations] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
@@ -45,7 +47,7 @@ export default function TranslatedInput({
 
   const fetchAiTranslations = async () => {
     if (!value.trim()) {
-      setAiError("Asosiy matnni kiriting");
+      setAiError(ta("enterMainText"));
       return;
     }
 
@@ -71,7 +73,7 @@ export default function TranslatedInput({
         } catch {
           try { detail = await response.text(); } catch { }
         }
-        throw new Error(`AI tarjimasi muvaffaqiyatsiz bo'ldi${detail ? `: ${detail}` : ''}`);
+        throw new Error(`${ta("translationError")}${detail ? `: ${detail}` : ''}`);
       }
 
       const data = await response.json();
@@ -88,7 +90,7 @@ export default function TranslatedInput({
       }
     } catch (error) {
       console.error("AI translation error:", error);
-      setAiError("Tarjima qilishda xatolik yuz berdi");
+      setAiError(ta("translationError"));
     } finally {
       setAiLoading(false);
     }
@@ -105,7 +107,7 @@ export default function TranslatedInput({
           onClick={() => setShowTranslations(!showTranslations)}
           className="text-xs text-blue-600 hover:underline"
         >
-          {showTranslations ? "Tarjimalarni yashirish" : "Tarjima qo\u2019shish"}
+          {showTranslations ? ta("hideTranslations") : ta("addTranslation")}
         </button>
       </div>
 
@@ -125,7 +127,7 @@ export default function TranslatedInput({
           {/* AI Translation Button */}
           <div className="flex items-center justify-between">
             <p className="text-xs text-slate-500">
-              Har bir til uchun tarjimani qo&apos;shing. Bo&apos;sh bo&apos;lsa, asosiy matn ishlatiladi.
+              {ta("translationHint")}
             </p>
             {SHOW_AI && (
               <button
@@ -142,12 +144,12 @@ export default function TranslatedInput({
                 {aiLoading ? (
                   <>
                     <span className="animate-spin">⏳</span>
-                    Tarjima qilinmoqda...
+                    {ta("translating")}
                   </>
                 ) : (
                   <>
                     <span>AI</span>
-                    AI bilan tarjima
+                    {ta("translateWithAI")}
                   </>
                 )}
               </button>

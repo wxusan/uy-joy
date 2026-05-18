@@ -1,30 +1,24 @@
-import Link from "next/link";
 import { getTranslations, getLocale } from "next-intl/server";
-import LanguageSwitcher from "./LanguageSwitcher";
+import NavbarClient from "./NavbarClient";
+import { getCurrentTenant } from "@/lib/tenant";
 
 export default async function Navbar() {
   const t = await getTranslations("common");
   const locale = await getLocale();
+  const tenant = await getCurrentTenant();
 
   return (
-    <nav className="bg-slate-900 text-white relative z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          <Link href="/" className="text-xl font-bold tracking-tight">
-            <span className="text-emerald-400">Uy</span>Joy
-          </Link>
-          <div className="flex items-center gap-4">
-            <Link
-              href="/#explore"
-              className="text-sm hover:text-emerald-400 transition"
-            >
-              {t("explore")}
-            </Link>
-
-            <LanguageSwitcher currentLocale={locale} />
-          </div>
-        </div>
-      </div>
-    </nav>
+    <NavbarClient
+      currentLocale={locale}
+      phoneNumber={tenant?.phoneNumber ?? null}
+      labels={{
+        residence: t("residence"),
+        apartments: t("apartments"),
+        location: t("location"),
+        aboutUyjoy: t("aboutUyjoy"),
+        contacts: t("contacts"),
+        contactSales: t("contactSales"),
+      }}
+    />
   );
 }

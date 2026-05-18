@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useTranslations } from "next-intl";
 
 interface Floor {
@@ -116,69 +117,72 @@ export default function BuildingsClient({ initialProject, projectId }: Props) {
   const sortedBuildings = [...project.buildings].sort((a, b) => a.sortOrder - b.sortOrder);
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">{t("buildings")}</h1>
-          <p className="text-slate-500 text-sm">{project.name}</p>
+          <h1 className="text-[22px] font-semibold text-neutral-950">{t("buildings")}</h1>
+          <p className="mt-1 text-sm text-neutral-500">{project.name}</p>
         </div>
-        <Link href="/portal/management-x7k9/projects" className="text-sm text-slate-500 hover:text-slate-700">
-          ← Loyihalar
+        <Link
+          href="/portal/management-x7k9/projects"
+          className="rounded-[6px] border border-neutral-200 bg-white px-3 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50"
+        >
+          ← {t("projects")}
         </Link>
       </div>
 
-      <form onSubmit={handleAddBuilding} className="bg-white rounded-xl shadow-sm border p-4 mb-6">
-        <div className="flex gap-3">
+      <form onSubmit={handleAddBuilding} className="rounded-[8px] border border-neutral-200 bg-white p-3 shadow-sm">
+        <div className="flex flex-col gap-2 sm:flex-row">
           <input
             type="text" value={newBuildingName} onChange={(e) => setNewBuildingName(e.target.value)}
             placeholder={t("newBuildingName")} disabled={loading}
-            className="flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+            className="min-h-11 flex-1 rounded-[6px] border border-neutral-200 px-4 py-2 text-sm outline-none transition placeholder:text-neutral-400 focus:border-neutral-400"
           />
           <button type="submit" disabled={loading || !newBuildingName.trim()}
-            className="px-6 py-2 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 disabled:bg-slate-300 transition">
+            className="min-h-11 rounded-[6px] bg-black px-6 py-2 text-sm font-medium text-white transition hover:bg-neutral-800 disabled:bg-neutral-200 disabled:text-neutral-400">
             {t("addBuilding")}
           </button>
         </div>
       </form>
 
       {sortedBuildings.length === 0 ? (
-        <div className="bg-slate-50 rounded-xl p-8 text-center text-slate-500">{t("noBuildingsYet")}</div>
+        <div className="rounded-[8px] border border-dashed border-neutral-300 bg-neutral-50 p-8 text-center text-sm text-neutral-500">{t("noBuildingsYet")}</div>
       ) : (
         <div className="space-y-3">
           {sortedBuildings.map((building) => {
             const totalUnits = building.floors.reduce((sum, f) => sum + f.units.length, 0);
             return (
-              <div key={building.id} className="bg-white rounded-xl shadow-sm border p-4 flex items-center gap-4">
-                <div className="flex gap-2 flex-shrink-0">
+              <div key={building.id} className="flex flex-col gap-4 rounded-[8px] border border-neutral-200 bg-white p-4 shadow-sm lg:flex-row lg:items-center">
+                <div className="grid flex-shrink-0 grid-cols-4 gap-2">
                   {([
-                    { field: "frontViewImage", label: "Oldingi", image: building.frontViewImage },
-                    { field: "backViewImage", label: "Orqa", image: building.backViewImage },
-                    { field: "leftViewImage", label: "Chap", image: building.leftViewImage },
-                    { field: "rightViewImage", label: "O\u2019ng", image: building.rightViewImage },
+                    { field: "frontViewImage", label: t("front"), image: building.frontViewImage },
+                    { field: "backViewImage", label: t("back"), image: building.backViewImage },
+                    { field: "leftViewImage", label: t("left"), image: building.leftViewImage },
+                    { field: "rightViewImage", label: t("right"), image: building.rightViewImage },
                   ] as { field: string; label: string; image: string | null }[]).map(({ field, label, image }) => (
-                    <div key={field} className="flex flex-col items-center gap-1 w-16">
-                      <div className="w-16 h-16 bg-slate-100 rounded-lg overflow-hidden relative group">
+                    <div key={field} className="flex w-[72px] flex-col items-center gap-1">
+                      <div className="group relative h-[64px] w-[72px] overflow-hidden rounded-[6px] border border-neutral-200 bg-neutral-100">
                         {image ? (
                           <>
-                            <img src={image} alt={label} className="w-full h-full object-cover" />
+                            <Image src={image} alt={label} fill className="object-cover" sizes="72px" />
                             <button onClick={() => handleImageDelete(building.id, field)}
-                              className="absolute top-0 right-0 w-5 h-5 bg-red-500 hover:bg-red-600 text-white text-xs rounded-bl-lg opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+                              className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black text-xs text-white opacity-0 transition hover:bg-neutral-800 group-hover:opacity-100">
                               ✕
                             </button>
                           </>
                         ) : (
-                          <label className="w-full h-full flex items-center justify-center text-slate-300 text-lg cursor-pointer hover:bg-slate-200 transition">
-                            Yuklash
+                          <label className="flex h-full w-full cursor-pointer items-center justify-center px-1 text-center text-xs font-medium text-neutral-400 transition hover:bg-neutral-200 hover:text-neutral-700">
+                            {t("uploadBuildingImage")}
                             <input type="file" accept="image/*" className="hidden"
                               onChange={(e) => handleImageUpload(building.id, field, e)}
                               disabled={uploadingBuildingId === building.id} />
                           </label>
                         )}
                       </div>
-                      <span className="text-[10px] text-slate-500 text-center leading-tight">{label}</span>
+                      <span className="text-center text-[10px] leading-tight text-neutral-500">{label}</span>
                       {image && (
-                        <label className="text-[9px] text-blue-600 hover:underline cursor-pointer">
-                          O&apos;zgartirish
+                        <label className="cursor-pointer text-[9px] font-medium text-neutral-500 hover:text-neutral-900">
+                          {t("replace")}
                           <input type="file" accept="image/*" className="hidden"
                             onChange={(e) => handleImageUpload(building.id, field, e)}
                             disabled={uploadingBuildingId === building.id} />
@@ -188,33 +192,33 @@ export default function BuildingsClient({ initialProject, projectId }: Props) {
                   ))}
                 </div>
 
-                <div className="flex-1">
+                <div className="min-w-0 flex-1">
                   {editingId === building.id ? (
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)}
-                        className="px-3 py-1 border rounded-lg text-lg font-semibold" autoFocus />
+                        className="rounded-[6px] border border-neutral-200 px-3 py-2 text-sm font-semibold outline-none transition focus:border-neutral-400" autoFocus />
                       <button onClick={() => handleUpdateBuilding(building.id)}
-                        className="px-3 py-1 bg-emerald-600 text-white rounded-lg text-sm">{tc("save")}</button>
+                        className="rounded-[6px] bg-black px-3 py-2 text-sm font-medium text-white transition hover:bg-neutral-800">{tc("save")}</button>
                       <button onClick={() => setEditingId(null)}
-                        className="px-3 py-1 bg-slate-200 rounded-lg text-sm">{tc("cancel")}</button>
+                        className="rounded-[6px] border border-neutral-200 bg-white px-3 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50">{tc("cancel")}</button>
                     </div>
                   ) : (
-                    <h3 className="text-lg font-semibold text-slate-800">{building.name}</h3>
+                    <h3 className="truncate text-base font-semibold text-neutral-950">{building.name}</h3>
                   )}
-                  <p className="text-sm text-slate-500">{building.floors.length} {t("floors")} · {totalUnits} {t("units")}</p>
+                  <p className="mt-1 text-sm text-neutral-500">{building.floors.length} {t("floors")} · {totalUnits} {t("units")}</p>
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2 lg:justify-end">
                   <Link href={`/portal/management-x7k9/projects/${projectId}/buildings/${building.id}/floors`}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition">
+                    className="rounded-[6px] bg-black px-4 py-2 text-sm font-medium text-white transition hover:bg-neutral-800">
                     {t("manageFloors")}
                   </Link>
                   <button onClick={() => { setEditingId(building.id); setEditName(building.name); }}
-                    className="px-3 py-2 bg-slate-100 text-slate-600 rounded-lg text-sm hover:bg-slate-200 transition">
+                    className="rounded-[6px] border border-neutral-200 bg-white px-3 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50">
                     {tc("edit")}
                   </button>
                   <button onClick={() => handleDeleteBuilding(building.id, building.name)}
-                    className="px-3 py-2 bg-red-50 text-red-600 rounded-lg text-sm hover:bg-red-100 transition">
+                    className="rounded-[6px] border border-neutral-200 bg-white px-3 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50">
                     {tc("delete")}
                   </button>
                 </div>
@@ -223,15 +227,6 @@ export default function BuildingsClient({ initialProject, projectId }: Props) {
           })}
         </div>
       )}
-
-      <div className="mt-8 p-4 bg-blue-50 rounded-xl text-sm text-blue-800">
-        <p className="font-medium mb-2">{t("tips")}</p>
-        <ul className="list-disc list-inside space-y-1 text-blue-700">
-          <li>{t("tipUploadFacade")}</li>
-          <li>{t("tipFloorPositions")}</li>
-          <li>{t("tipFloorPlanEditor")}</li>
-        </ul>
-      </div>
     </div>
   );
 }

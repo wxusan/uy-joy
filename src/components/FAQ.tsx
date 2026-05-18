@@ -41,49 +41,57 @@ export default function FAQ({ items, locale = "uz" }: Props) {
     }
   };
 
-  // Build FAQ items from database or use default translations
-  const faqItems = items && items.length > 0 
-    ? items.map(item => ({
-        question: getLocalizedText(item, "question"),
-        answer: getLocalizedText(item, "answer"),
-      }))
-    : [
-        { question: t("q1"), answer: t("a1") },
-        { question: t("q2"), answer: t("a2") },
-        { question: t("q3"), answer: t("a3") },
-        { question: t("q4"), answer: t("a4") },
-      ];
+  const faqItems = (items || [])
+    .map((item) => ({
+      question: getLocalizedText(item, "question"),
+      answer: getLocalizedText(item, "answer"),
+    }))
+    .filter((item) => item.question && item.answer);
 
   return (
-    <div>
-      <h3 className="text-xl font-bold text-slate-800 mb-6">
-        {t("title")}
-      </h3>
-      
-      <div className="space-y-3">
-        {faqItems.map((item, idx) => (
-          <div
-            key={idx}
-            className="border border-slate-200 rounded-lg overflow-hidden"
-          >
+    <div className="relative">
+      <div className="mb-8">
+        <h2 className="font-display text-[38px] font-semibold leading-[0.98] tracking-normal text-[#15120f] md:text-[50px]">
+          {t("heading")}
+        </h2>
+        <div className="mt-5 h-[2px] w-16 bg-[#c66348]" />
+        <p className="mt-5 max-w-[540px] text-[15px] font-medium leading-7 text-[#6f675e]">
+          {t("subtitle")}
+        </p>
+      </div>
+
+      {faqItems.length === 0 ? (
+        <div className="border-t border-[#d8cabc] py-8 text-[14px] font-medium text-[#8a7d70]">
+          {t("noItems")}
+        </div>
+      ) : (
+        <div className="border-t border-[#d8cabc]">
+          {faqItems.map((item, idx) => (
+          <div key={idx} className="border-b border-[#d8cabc]">
             <button
               onClick={() => setOpenIndex(openIndex === idx ? null : idx)}
-              className="w-full flex items-center justify-between p-4 text-left hover:bg-slate-50 transition"
+              className="group flex w-full items-center gap-5 py-6 text-left transition-colors hover:text-[#c66348]"
             >
-              <span className="font-medium text-slate-700">{item.question}</span>
-              <span className={`text-slate-400 transition-transform ${openIndex === idx ? "rotate-180" : ""}`}>
-                ▼
+              <span className="w-8 shrink-0 font-display text-[20px] font-semibold leading-none text-[#b75f43]">
+                {idx + 1}.
+              </span>
+              <span className="flex-1 font-heading text-[17px] font-semibold leading-6 text-[#15120f] transition-colors group-hover:text-[#b75f43]">
+                {item.question}
+              </span>
+              <span className="ml-4 text-[26px] font-light leading-none text-[#b75f43]">
+                {openIndex === idx ? "-" : "+"}
               </span>
             </button>
-            
+
             {openIndex === idx && (
-              <div className="px-4 pb-4 text-slate-600 border-t border-slate-100 pt-3">
+              <div className="pb-7 pl-[52px] pr-12 text-[14px] font-medium leading-7 text-[#6f675e]">
                 {item.answer}
               </div>
             )}
           </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

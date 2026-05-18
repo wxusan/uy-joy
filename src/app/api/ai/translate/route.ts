@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { TranslateSchema } from "@/lib/schemas/ai";
+import { invalidInput } from "@/lib/schemas/common";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
 export async function POST(request: NextRequest) {
   try {
-    const { text, existingTranslations, context } = await request.json();
-
-    if (!text || text.trim() === "") {
-      return NextResponse.json({ error: "Text is required" }, { status: 400 });
-    }
+    const body = await request.json();
+    const parsed = TranslateSchema.safeParse(body);
+    if (!parsed.success) return invalidInput(parsed.error);
+    const { text, existingTranslations, context } = parsed.data;
 
     if (!process.env.GEMINI_API_KEY) {
       return NextResponse.json({ error: "Gemini API key not configured" }, { status: 500 });

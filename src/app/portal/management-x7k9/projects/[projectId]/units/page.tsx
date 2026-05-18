@@ -1,10 +1,13 @@
 import { notFound } from "next/navigation";
 import prisma from "@/lib/prisma";
+import { requireAdmin } from "@/lib/auth";
+import { computeDisplayNumber } from "@/lib/unit-display";
 import UnitsClient from "./UnitsClient";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminUnits({ params }: { params: { projectId: string } }) {
+  await requireAdmin();
   const project = await prisma.project.findUnique({
     where: { id: params.projectId },
     select: {
@@ -49,7 +52,10 @@ export default async function AdminUnits({ params }: { params: { projectId: stri
 
   return (
     <UnitsClient
-      initialUnits={units}
+      initialUnits={units.map((unit) => ({
+        ...unit,
+        displayNumber: computeDisplayNumber(unit.unitNumber, unit.floor.number),
+      }))}
       initialBuildings={project.buildings}
       projectId={params.projectId}
     />

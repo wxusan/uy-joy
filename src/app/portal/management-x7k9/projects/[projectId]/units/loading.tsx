@@ -1,42 +1,44 @@
 export default function UnitsLoading() {
   return (
-    <div>
-      <div className="h-8 w-48 skeleton mb-6" />
+    <div className="space-y-5">
+      <div>
+        <div className="mb-2 h-8 w-56 rounded-[6px] bg-neutral-100" />
+        <div className="h-4 w-80 rounded-[6px] bg-neutral-100" />
+      </div>
 
-      {/* Building tabs */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        {[...Array(3)].map((_, i) => (
-          <div key={i} className="p-4 rounded-xl border-2 border-slate-200 bg-white">
-            <div className="h-5 w-20 skeleton mb-2" />
-            <div className="flex gap-3">
-              <div className="h-3 w-12 bg-emerald-100 rounded" />
-              <div className="h-3 w-12 bg-yellow-100 rounded" />
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+        {[...Array(2)].map((_, index) => (
+          <div key={index} className="rounded-[8px] border border-neutral-200 bg-white p-4">
+            <div className="mb-3 h-5 w-28 rounded-[6px] bg-neutral-100" />
+            <div className="grid grid-cols-3 gap-2">
+              <div className="h-4 rounded-[6px] bg-neutral-100" />
+              <div className="h-4 rounded-[6px] bg-neutral-100" />
+              <div className="h-4 rounded-[6px] bg-neutral-100" />
             </div>
           </div>
         ))}
       </div>
 
-      {/* Filters */}
-      <div className="flex gap-3 mb-4">
-        <div className="h-10 w-28 bg-white border rounded-lg" />
-        <div className="h-10 w-28 bg-white border rounded-lg" />
+      <div className="flex gap-3">
+        <div className="h-10 w-36 rounded-[6px] border border-neutral-200 bg-white" />
+        <div className="h-10 w-36 rounded-[6px] border border-neutral-200 bg-white" />
       </div>
 
-      {/* Floor groups */}
-      {[...Array(3)].map((_, floorIdx) => (
-        <div key={floorIdx} className="bg-white rounded-xl shadow-sm border overflow-hidden mb-4">
-          <div className="bg-slate-50 px-4 py-2 border-b">
-            <div className="h-5 w-24 skeleton" />
+      {[...Array(3)].map((_, floorIndex) => (
+        <div key={floorIndex} className="overflow-hidden rounded-[8px] border border-neutral-200 bg-white shadow-sm">
+          <div className="flex items-center justify-between border-b border-neutral-200 bg-neutral-50 px-4 py-3">
+            <div className="h-5 w-28 rounded-[6px] bg-neutral-100" />
+            <div className="h-4 w-20 rounded-[6px] bg-neutral-100" />
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 p-4">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="p-3 rounded-lg border border-slate-200 bg-slate-50">
-                <div className="flex justify-between mb-2">
-                  <div className="h-5 w-12 skeleton" />
-                  <div className="h-6 w-16 bg-emerald-100 rounded-full" />
+          <div className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {[...Array(4)].map((_, index) => (
+              <div key={index} className="rounded-[7px] border border-neutral-200 bg-white p-3">
+                <div className="mb-3 flex items-center justify-between">
+                  <div className="h-5 w-16 rounded-[6px] bg-neutral-100" />
+                  <div className="h-7 w-24 rounded-[6px] bg-neutral-100" />
                 </div>
-                <div className="h-4 w-24 skeleton mb-1" />
-                <div className="h-4 w-20 skeleton" />
+                <div className="mb-2 h-4 w-28 rounded-[6px] bg-neutral-100" />
+                <div className="h-4 w-20 rounded-[6px] bg-neutral-100" />
               </div>
             ))}
           </div>

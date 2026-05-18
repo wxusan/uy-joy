@@ -388,13 +388,13 @@ export default function FloorPositionEditor({ buildingImage, floors, onSave, onC
               {selectedPosition && (
                 <div className="mt-4 rounded-[7px] border border-neutral-200 bg-neutral-50 p-3 text-[13px] text-neutral-700">
                   <div className="flex items-center justify-between gap-3">
-                    <strong className=”text-neutral-950”>{ta(“selectedFloorLabel”, { number: selectedPosition.floorNumber })}</strong>
-                    <span className=”rounded-full bg-white px-2 py-1 text-[11px] text-neutral-500 ring-1 ring-neutral-200”>
-                      {ta(“floorPoints”, { count: selectedPosition.polygon.length })}
+                    <strong className="text-neutral-950">{ta("selectedFloorLabel", { number: selectedPosition.floorNumber })}</strong>
+                    <span className="rounded-full bg-white px-2 py-1 text-[11px] text-neutral-500 ring-1 ring-neutral-200">
+                      {ta("floorPoints", { count: selectedPosition.polygon.length })}
                     </span>
                   </div>
-                  <p className=”mt-2 leading-5 text-neutral-500”>
-                    {ta(“afterDrawingHint”)}
+                  <p className="mt-2 leading-5 text-neutral-500">
+                    {ta("afterDrawingHint")}
                   </p>
                 </div>
               )}

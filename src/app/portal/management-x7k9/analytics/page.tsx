@@ -2,13 +2,14 @@
 
 import { useSession } from "next-auth/react";
 import { useTranslations } from "next-intl";
+import { roleHasPlatformPermission } from "@/lib/platform-plans";
 
 export default function AnalyticsPage() {
     const { data: session } = useSession();
     const t = useTranslations("admin");
-    const role = (session?.user as any)?.role;
+    const role = (session?.user as { role?: string } | undefined)?.role;
 
-    if (role !== "developer") {
+    if (!roleHasPlatformPermission(role, "technicalSettings")) {
         return <p className="text-slate-500">{t("accessDenied")}</p>;
     }
 

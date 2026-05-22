@@ -1,11 +1,17 @@
 import prisma from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
+import { PLATFORM_PERMISSIONS } from "@/lib/platform-plans";
+import { getPlatformSettings, platformSettingsHasFeature } from "@/lib/platform-settings";
 import ProjectsClient from "./ProjectsClient";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminProjects() {
-  await requireAdmin();
+  await requireAdmin(PLATFORM_PERMISSIONS.managePublicContent);
+  if (!platformSettingsHasFeature(getPlatformSettings(), "publicPage")) {
+    return null;
+  }
+
   const [project, heroImages] = await Promise.all([
     prisma.project.findFirst({
       select: {
@@ -41,5 +47,10 @@ export default async function AdminProjects() {
     }),
   ]);
 
-  return <ProjectsClient initialProject={project as any} initialHeroImages={heroImages} />;
+  return (
+    <ProjectsClient
+      initialProject={project as React.ComponentProps<typeof ProjectsClient>["initialProject"]}
+      initialHeroImages={heroImages}
+    />
+  );
 }

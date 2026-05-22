@@ -5,22 +5,38 @@ import { attachUnitDisplayNumber, publicUnitWithLocationSelect } from "@/lib/pub
 import { invalidateProject } from "@/lib/cache";
 import { UnitUpdateSchema } from "@/lib/schemas/unit";
 import { invalidInput } from "@/lib/schemas/common";
+import { requirePlatformApiFeature, requirePlatformFeature } from "@/lib/platform-guards";
 
-export async function GET(_req: Request, { params }: { params: { id: string } }) {
+export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const featureResponse = requirePlatformFeature("inventory");
+  if (featureResponse) return featureResponse;
+  const { id } = await params;
+
   const unit = await prisma.unit.findUnique({
-    where: { id: params.id },
+    where: { id },
     select: publicUnitWithLocationSelect,
   });
   if (!unit) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json(attachUnitDisplayNumber(unit));
 }
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const guard = await requirePlatformApiFeature("inventory", "manageInventory");
+  if (guard.response) return guard.response;
+  const { id } = await params;
+
   const body = await req.json();
   const parsed = UnitUpdateSchema.safeParse(body);
   if (!parsed.success) return invalidInput(parsed.error);
   const input = parsed.data;
   const data: Prisma.UnitUpdateInput = {};
+
+  if (input.status === "reserved" || input.status === "sold") {
+    return NextResponse.json(
+      { error: "Use the deal workflow to reserve or sell units" },
+      { status: 400 }
+    );
+  }
 
   if (input.unitNumber !== undefined) data.unitNumber = input.unitNumber;
   if (input.rooms !== undefined) data.rooms = input.rooms;
@@ -46,7 +62,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   if (input.customerNotes !== undefined) data.customerNotes = input.customerNotes;
 
   const unit = await prisma.unit.update({
-    where: { id: params.id },
+    where: { id },
     data,
     include: {
       floor: {
@@ -61,8 +77,12 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   return NextResponse.json(unit);
 }
 
-export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
-  await prisma.unit.delete({ where: { id: params.id } });
+export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const guard = await requirePlatformApiFeature("inventory", "manageInventory");
+  if (guard.response) return guard.response;
+  const { id } = await params;
+
+  await prisma.unit.delete({ where: { id } });
   invalidateProject();
   return NextResponse.json({ success: true });
 }

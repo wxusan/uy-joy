@@ -5,8 +5,12 @@ import { publicUnitSelect } from "@/lib/public-selects";
 import { invalidateProject } from "@/lib/cache";
 import { FloorUpdateSchema } from "@/lib/schemas/floor";
 import { invalidInput } from "@/lib/schemas/common";
+import { requirePlatformApiFeature, requirePlatformFeature } from "@/lib/platform-guards";
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
+  const featureResponse = requirePlatformFeature("inventory");
+  if (featureResponse) return featureResponse;
+
   const floor = await prisma.floor.findUnique({
     where: { id: params.id },
     include: {
@@ -23,6 +27,9 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
 }
 
 export async function PUT(req: Request, { params }: { params: { id: string } }) {
+  const guard = await requirePlatformApiFeature("inventory", "manageInventory");
+  if (guard.response) return guard.response;
+
   const body = await req.json();
   const parsed = FloorUpdateSchema.safeParse(body);
   if (!parsed.success) return invalidInput(parsed.error);
@@ -43,6 +50,9 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 }
 
 export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
+  const guard = await requirePlatformApiFeature("inventory", "manageInventory");
+  if (guard.response) return guard.response;
+
   await prisma.floor.delete({ where: { id: params.id } });
   invalidateProject();
   return NextResponse.json({ success: true });

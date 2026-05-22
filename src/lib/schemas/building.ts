@@ -7,12 +7,14 @@ const Percent = z.number().min(0).max(100).nullable();
 export const BuildingCreateSchema = z.object({
   name: z.string().trim().min(1).max(120),
   projectId: z.string().trim().min(1),
+  completionYear: z.number().int().min(2020).max(2060).nullable().optional(),
   sortOrder: z.number().int().nonnegative().optional(),
   polygonData: PolygonSchema.nullable().optional(),
 });
 
 export const BuildingUpdateSchema = z.object({
   name: z.string().trim().min(1).max(120).optional(),
+  completionYear: z.number().int().min(2020).max(2060).nullable().optional(),
   frontViewImage: ImageField.optional(),
   backViewImage: ImageField.optional(),
   leftViewImage: ImageField.optional(),

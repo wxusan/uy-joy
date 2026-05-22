@@ -3,6 +3,7 @@ import { v2 as cloudinary } from "cloudinary";
 import sharp, { type Metadata } from "sharp";
 import { UploadFormSchema } from "@/lib/schemas/upload";
 import { invalidInput } from "@/lib/schemas/common";
+import { requirePlatformApiAccess, requirePlatformApiFeature } from "@/lib/platform-guards";
 
 const UPLOAD_RATE_LIMIT_WINDOW_MS = 5 * 60_000;
 const UPLOAD_RATE_LIMIT_MAX = 20;
@@ -12,6 +13,18 @@ const mimeBySharpFormat: Record<string, string> = {
   png: "image/png",
   webp: "image/webp",
 };
+const DOCUMENT_MIME_TYPES = new Set([
+  "application/pdf",
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+]);
+const DOCUMENT_EXTENSIONS = new Set(["pdf", "jpg", "jpeg", "png", "webp", "doc", "docx", "xls", "xlsx"]);
+const OLE_MAGIC = Buffer.from([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]);
 
 // Configure Cloudinary
 cloudinary.config({
@@ -42,8 +55,41 @@ function isRateLimited(key: string) {
   return entry.count > UPLOAD_RATE_LIMIT_MAX;
 }
 
+function extensionFromName(name: string) {
+  const extension = name.split(".").pop()?.toLowerCase();
+  return extension && extension !== name.toLowerCase() ? extension : "";
+}
+
+function safePublicId(id: string | undefined, fallback: string) {
+  return `${String(id || fallback).replace(/[^a-zA-Z0-9_-]/g, "")}-${Date.now()}`;
+}
+
+function startsWithMagic(buffer: Buffer, magic: Buffer | string) {
+  const bytes = typeof magic === "string" ? Buffer.from(magic) : magic;
+  return buffer.subarray(0, bytes.length).equals(bytes);
+}
+
+async function validateDocumentContent(buffer: Buffer, extension: string, mimeType: string) {
+  if (extension === "pdf") return startsWithMagic(buffer, "%PDF-");
+  if (extension === "doc" || extension === "xls") return startsWithMagic(buffer, OLE_MAGIC);
+  if (extension === "docx" || extension === "xlsx") return startsWithMagic(buffer, "PK\x03\x04");
+  if (["jpg", "jpeg", "png", "webp"].includes(extension)) {
+    try {
+      const metadata = await sharp(buffer).metadata();
+      const detectedMime = metadata.format ? mimeBySharpFormat[metadata.format] : undefined;
+      return detectedMime === mimeType;
+    } catch {
+      return false;
+    }
+  }
+  return false;
+}
+
 export async function POST(req: NextRequest) {
   try {
+    const guard = await requirePlatformApiAccess();
+    if (guard.response) return guard.response;
+
     if (isRateLimited(getClientIp(req))) {
       return NextResponse.json(
         { error: "Too many uploads. Please try again shortly." },
@@ -66,6 +112,41 @@ export async function POST(req: NextRequest) {
 
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
+
+    if (type === "document") {
+      const documentGuard = await requirePlatformApiFeature("documents", "viewDeals");
+      if (documentGuard.response) return documentGuard.response;
+
+      const extension = extensionFromName(file.name);
+      if (!DOCUMENT_MIME_TYPES.has(file.type) || !DOCUMENT_EXTENSIONS.has(extension)) {
+        return NextResponse.json(
+          { error: "Invalid document type. Allowed: PDF, JPG, PNG, WebP, DOC, DOCX, XLS, XLSX" },
+          { status: 400 }
+        );
+      }
+      const contentMatchesType = await validateDocumentContent(buffer, extension, file.type);
+      if (!contentMatchesType) {
+        return NextResponse.json({ error: "Document content does not match its file type" }, { status: 400 });
+      }
+
+      const dataUri = `data:${file.type};base64,${buffer.toString("base64")}`;
+      const result = await cloudinary.uploader.upload(dataUri, {
+        folder: "uy-joy/documents",
+        public_id: safePublicId(id, "document"),
+        resource_type: "auto",
+        use_filename: true,
+        unique_filename: false,
+      });
+
+      return NextResponse.json({
+        url: result.secure_url,
+        filename: result.public_id,
+        originalFilename: file.name,
+        size: file.size,
+        mimeType: file.type,
+      });
+    }
+
     let metadata: Metadata;
     try {
       metadata = await sharp(buffer).metadata();
@@ -91,7 +172,7 @@ export async function POST(req: NextRequest) {
     // Upload to Cloudinary with automatic optimization
     const result = await cloudinary.uploader.upload(dataUri, {
       folder: `uy-joy/${type}`,
-      public_id: `${String(id || "upload").replace(/[^a-zA-Z0-9_-]/g, "")}-${Date.now()}`,
+      public_id: safePublicId(id, "upload"),
       resource_type: "image",
       flags: "strip_profile",
       transformation: [

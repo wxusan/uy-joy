@@ -4,12 +4,23 @@ import prisma from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
 import { ArrowUpRight } from "lucide-react";
 import { getLeadStatusTone } from "@/lib/lead-status";
+import { leadVisibilityWhere } from "@/lib/crm-access";
+import { roleHasPlatformPermission } from "@/lib/platform-plans";
+import { getPlatformSettings, platformSettingsHasFeature } from "@/lib/platform-settings";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminDashboard() {
-  await requireAdmin();
+  const session = await requireAdmin();
   const t = await getTranslations("admin");
+  const role = (session.user as { role?: string } | undefined)?.role;
+  const user = session.user as { id?: string; role?: string };
+  const settings = getPlatformSettings();
+  const inventoryEnabled = platformSettingsHasFeature(settings, "inventory");
+  const publicPageEnabled = platformSettingsHasFeature(settings, "publicPage");
+  const crmEnabled = platformSettingsHasFeature(settings, "crm");
+  const canViewLeads = crmEnabled && roleHasPlatformPermission(role, "viewLeads");
+  const leadWhere = leadVisibilityWhere(user, settings.allowAgentClaim);
 
   function formatRelative(dateIso: string) {
     const d = new Date(dateIso);
@@ -24,36 +35,52 @@ export default async function AdminDashboard() {
     return d.toLocaleDateString();
   }
 
-  const [total, available, reserved, sold, leadsTotal, leadsNew, recentLeads] =
-    await Promise.all([
-      prisma.unit.count(),
-      prisma.unit.count({ where: { status: "available" } }),
-      prisma.unit.count({ where: { status: "reserved" } }),
-      prisma.unit.count({ where: { status: "sold" } }),
-      prisma.lead.count(),
-      prisma.lead.count({ where: { status: "new" } }),
-      prisma.lead.findMany({
-        orderBy: { createdAt: "desc" },
-        take: 6,
-      }),
-    ]);
+  const [total, available, reserved, sold, leadsTotal, leadsNew, recentLeads] = await Promise.all([
+    inventoryEnabled ? prisma.unit.count() : Promise.resolve(0),
+    inventoryEnabled ? prisma.unit.count({ where: { status: "available" } }) : Promise.resolve(0),
+    inventoryEnabled ? prisma.unit.count({ where: { status: "reserved" } }) : Promise.resolve(0),
+    inventoryEnabled ? prisma.unit.count({ where: { status: "sold" } }) : Promise.resolve(0),
+    canViewLeads ? prisma.lead.count({ where: leadWhere }) : Promise.resolve(0),
+    canViewLeads ? prisma.lead.count({ where: { AND: [leadWhere, { status: "new" }] } }) : Promise.resolve(0),
+    canViewLeads
+      ? prisma.lead.findMany({
+          where: leadWhere,
+          orderBy: { createdAt: "desc" },
+          take: 6,
+        })
+      : Promise.resolve([]),
+  ]);
 
   const occupancyPct = total > 0 ? Math.round(((reserved + sold) / total) * 100) : 0;
 
   const stats: { label: string; value: string | number; sub?: string }[] = [
-    { label: t("totalUnits"), value: total },
-    { label: t("available"), value: available, sub: `${total > 0 ? Math.round((available / total) * 100) : 0}%` },
-    { label: t("reserved"), value: reserved },
-    { label: t("sold"), value: sold },
     { label: t("leads"), value: leadsTotal, sub: leadsNew > 0 ? t("newLeads", { count: leadsNew }) : undefined },
-    { label: t("occupancy"), value: `${occupancyPct}%` },
+    ...(inventoryEnabled
+      ? [
+          { label: t("totalUnits"), value: total },
+          {
+            label: t("available"),
+            value: available,
+            sub: `${total > 0 ? Math.round((available / total) * 100) : 0}%`,
+          },
+          { label: t("reserved"), value: reserved },
+          { label: t("sold"), value: sold },
+          { label: t("occupancy"), value: `${occupancyPct}%` },
+        ]
+      : []),
   ];
 
   const quickActions = [
-    { label: t("viewLeads"), href: "/portal/management-x7k9/leads" },
-    { label: t("manageProject"), href: "/portal/management-x7k9/projects" },
-    { label: t("editFAQ"), href: "/portal/management-x7k9/faqs" },
-  ];
+    canViewLeads
+      ? { label: t("viewLeads"), href: "/portal/management-x7k9/crm/leads" }
+      : null,
+    publicPageEnabled && roleHasPlatformPermission(role, "managePublicContent")
+      ? { label: t("manageProject"), href: "/portal/management-x7k9/projects" }
+      : null,
+    publicPageEnabled && roleHasPlatformPermission(role, "managePublicContent")
+      ? { label: t("editFAQ"), href: "/portal/management-x7k9/faqs" }
+      : null,
+  ].filter((action): action is { label: string; href: string } => Boolean(action));
 
   return (
     <div className="flex flex-col gap-8">
@@ -63,13 +90,15 @@ export default async function AdminDashboard() {
           <h1 className="a-page-title">{t("overview")}</h1>
           <p className="a-page-sub">{t("dashboard")}</p>
         </div>
-        <Link
-          href="/portal/management-x7k9/leads"
-          className="a-btn"
-        >
-          {t("viewLeads")}
-          <ArrowUpRight className="w-3.5 h-3.5" />
-        </Link>
+        {canViewLeads && (
+          <Link
+            href="/portal/management-x7k9/crm/leads"
+            className="a-btn"
+          >
+            {t("viewLeads")}
+            <ArrowUpRight className="w-3.5 h-3.5" />
+          </Link>
+        )}
       </div>
 
       {/* Stats row — quiet, no decoration */}
@@ -121,7 +150,7 @@ export default async function AdminDashboard() {
               {t("recentLeads")}
             </div>
             <Link
-              href="/portal/management-x7k9/leads"
+              href="/portal/management-x7k9/crm/leads"
               className="text-[12px]"
               style={{ color: "var(--a-text-secondary)" }}
             >
@@ -184,6 +213,7 @@ export default async function AdminDashboard() {
         {/* Right column */}
         <div className="flex flex-col gap-6">
           {/* Inventory mix */}
+          {inventoryEnabled && (
           <div className="a-card p-4">
             <div
               className="text-[13px] font-semibold mb-3"
@@ -246,6 +276,7 @@ export default async function AdminDashboard() {
               ))}
             </ul>
           </div>
+          )}
 
           {/* Quick actions — text links */}
           <div className="a-card p-4">

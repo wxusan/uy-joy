@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { invalidateProject } from "@/lib/cache";
+import { requirePlatformApiFeature } from "@/lib/platform-guards";
 
 // DELETE hero image
 export async function DELETE(
@@ -8,6 +9,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const guard = await requirePlatformApiFeature("publicPage", "managePublicContent");
+    if (guard.response) return guard.response;
+
     const { id } = await params;
     
     await prisma.heroImage.delete({

@@ -1,6 +1,6 @@
 # UyJoy V2 — Production Runbook
 
-_Last updated: 2026-05-16_
+_Last updated: 2026-05-22_
 
 ---
 
@@ -37,7 +37,11 @@ Before every production deploy:
 
 - [ ] `npm run build` passes with no TS errors
 - [ ] `npx prisma migrate deploy` applied on production DB
-- [ ] All Stage 7 verification checks passed (see `UYJOY_V2_LAUNCH_ROADMAP.pdf`)
+- [ ] `SMOKE_SITE=https://client-domain npm run smoke:client` passes
+- [ ] Optional authenticated smoke passes with `SMOKE_ADMIN_EMAIL`, `SMOKE_ADMIN_PASSWORD`, and `SMOKE_CREATE_LEAD=1`
+- [ ] `/portal/management-x7k9/settings` shows no missing required env vars
+- [ ] External scheduler uses `x-cron-secret` or `Authorization: Bearer` for cron routes
+- [ ] Client launch copy of `docs/crm-platform/06-client-launch-checklist.md` is complete
 
 ---
 
@@ -46,13 +50,41 @@ Before every production deploy:
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `DATABASE_URL` | ✅ | Neon Postgres connection string |
+| `DIRECT_URL` | ✅ | Direct Postgres URL for Prisma migrations |
 | `NEXTAUTH_SECRET` | ✅ | NextAuth session secret |
 | `NEXTAUTH_URL` | ✅ | Canonical site URL |
+| `CLIENT_SLUG` | ✅ | Client identifier included in structured logs |
+| `CLIENT_PLATFORM_PLAN` | ✅ | White-label package key |
+| `CRON_SECRET` | ✅ | Header/bearer secret for scheduled jobs |
 | `CLOUDINARY_CLOUD_NAME` | ✅ | Cloudinary cloud |
 | `CLOUDINARY_API_KEY` | ✅ | Cloudinary API key |
 | `CLOUDINARY_API_SECRET` | ✅ | Cloudinary API secret |
-| `GEMINI_API_KEY` | ✅ | Google Gemini (AI floor detection) |
+| `REPORT_DIGEST_EMAIL_FROM` | recommended | Sender address for weekly digest |
+| `REPORT_DIGEST_EMAIL_TO` | recommended | Comma-separated digest recipients |
+| `RESEND_API_KEY` | optional | Email provider API key |
+| `GEMINI_API_KEY` | optional | Google Gemini (AI floor detection) |
 | `NEXT_PUBLIC_POSTHOG_KEY` | recommended | PostHog analytics |
+
+## First admin bootstrap
+
+Run once after migrations and env setup:
+
+```bash
+ADMIN_EMAIL=owner@example.com ADMIN_PASSWORD='StrongPass12345' ADMIN_NAME='Client Owner' npm run admin:create-first
+```
+
+If users already exist, set `ALLOW_ADMIN_BOOTSTRAP=1` only after confirming a second bootstrap admin is intended.
+
+## Scheduled jobs
+
+Use a scheduler that can send headers:
+
+- `POST /api/integrations/telegram/process-outbox`
+- `POST /api/crm/deals/run-reservation-expiry-check`
+- `POST /api/crm/payments/run-overdue-check`
+- `POST /api/reports/digests/send-weekly`
+
+Each request must include `x-cron-secret: <CRON_SECRET>` or `Authorization: Bearer <CRON_SECRET>`.
 
 ---
 

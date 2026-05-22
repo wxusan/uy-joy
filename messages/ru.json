@@ -518,7 +518,9 @@
     "floorsAvailable": "Этажи",
     "selectFloor": "Выберите этаж",
     "backToFloors": "Назад к этажам",
-    "similarPlans": "Похожие доступные планировки"
+    "similarPlans": "Похожие доступные планировки",
+    "building": "Корпус",
+    "readyYear": "Год сдачи"
   },
   "contact": {
     "title": "Хотите, чтобы мы связались с вами?",

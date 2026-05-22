@@ -3,10 +3,14 @@ import { revalidateTag } from "next/cache";
 import prisma from "@/lib/prisma";
 import { FloorPositionsUpdateSchema } from "@/lib/schemas/building";
 import { invalidInput } from "@/lib/schemas/common";
+import { requirePlatformApiFeature } from "@/lib/platform-guards";
 
 // PUT - Batch update floor positions for a building
 export async function PUT(request: NextRequest) {
   try {
+    const guard = await requirePlatformApiFeature("inventory", "manageInventory");
+    if (guard.response) return guard.response;
+
     const body = await request.json();
     const parsed = FloorPositionsUpdateSchema.safeParse(body);
     if (!parsed.success) return invalidInput(parsed.error);

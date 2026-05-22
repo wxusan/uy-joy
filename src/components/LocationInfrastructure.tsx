@@ -15,6 +15,7 @@ interface Props {
   longitude: number;
   infrastructure?: NearbyPlace[];
   address: string;
+  brandName: string;
 }
 
 type PointKey = "school" | "metro" | "park" | "market";
@@ -71,11 +72,11 @@ function createPlaceMarker(label: string, minutes: number, unit: string, icon: s
   return marker;
 }
 
-function createResidenceMarker(labels: Record<string, string>) {
+function createResidenceMarker(labels: Record<string, string>, brandName: string) {
   const marker = document.createElement("div");
   marker.className = "location-residence-marker";
   marker.innerHTML = `
-    <span class="location-residence-name">UyJoy</span>
+    <span class="location-residence-name">${brandName}</span>
     <span class="location-residence-sub">${labels.residence}</span>
     <span class="location-residence-platform">
       <span class="location-residence-tower">${iconSvg.tower}</span>
@@ -86,7 +87,7 @@ function createResidenceMarker(labels: Record<string, string>) {
   return marker;
 }
 
-export default function LocationInfrastructure({ latitude, longitude, infrastructure, address }: Props) {
+export default function LocationInfrastructure({ latitude, longitude, infrastructure, address, brandName }: Props) {
   const t = useTranslations("project");
   const tl = useTranslations("location");
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -247,7 +248,7 @@ export default function LocationInfrastructure({ latitude, longitude, infrastruc
         });
 
         new maplibregl.Marker({
-          element: createResidenceMarker(labels),
+          element: createResidenceMarker(labels, brandName),
           anchor: "bottom",
           offset: [0, 18],
         })
@@ -273,7 +274,7 @@ export default function LocationInfrastructure({ latitude, longitude, infrastruc
         mapRef.current = null;
       }
     };
-  }, [address, labels, latitude, longitude]);
+  }, [address, brandName, labels, latitude, longitude]);
 
   const openMap = () => {
     window.open(mapUrl, "_blank", "noopener,noreferrer");

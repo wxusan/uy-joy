@@ -3,10 +3,14 @@ import { revalidateTag } from "next/cache";
 import prisma from "@/lib/prisma";
 import { FAQCreateSchema } from "@/lib/schemas/faq";
 import { invalidInput } from "@/lib/schemas/common";
+import { requirePlatformApiFeature, requirePlatformFeature } from "@/lib/platform-guards";
 
 // GET all FAQs
 export async function GET() {
   try {
+    const featureResponse = requirePlatformFeature("publicPage");
+    if (featureResponse) return featureResponse;
+
     const faqs = await prisma.fAQ.findMany({
       where: { isActive: true },
       orderBy: { sortOrder: "asc" },
@@ -21,6 +25,9 @@ export async function GET() {
 // POST new FAQ
 export async function POST(req: Request) {
   try {
+    const guard = await requirePlatformApiFeature("publicPage", "managePublicContent");
+    if (guard.response) return guard.response;
+
     const data = await req.json();
     const parsed = FAQCreateSchema.safeParse(data);
     if (!parsed.success) return invalidInput(parsed.error);

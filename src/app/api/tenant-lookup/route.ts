@@ -1,6 +1,7 @@
 /**
  * Internal tenant-lookup endpoint.
- * Called by middleware (Edge runtime) to resolve a custom domain → project id.
+ * Called by middleware (Edge runtime) to resolve a custom domain → project id,
+ * and optionally to fetch the project's embed allowed origins for CSP enforcement.
  * Only responds to requests that carry the internal sentinel header.
  */
 import { NextRequest, NextResponse } from "next/server";
@@ -14,23 +15,37 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const domain = request.nextUrl.searchParams.get("domain");
-  if (!domain) {
+  const { searchParams } = request.nextUrl;
+  const domain = searchParams.get("domain");
+  const includeEmbed = searchParams.get("includeEmbed") === "1";
+
+  // domain is required unless includeEmbed is set (embed-only lookup for default tenant)
+  if (!domain && !includeEmbed) {
     return NextResponse.json({ error: "Missing domain" }, { status: 400 });
   }
 
   try {
+    const where = domain ? { domain } : {};
     const project = await prisma.project.findFirst({
-      where: { domain },
-      select: { id: true },
+      where,
+      select: {
+        id: true,
+        ...(includeEmbed && {
+          publicPageConfig: { select: { embedAllowedOrigins: true } },
+        }),
+      },
+      orderBy: { createdAt: "asc" },
     });
 
-    if (!project) {
-      return NextResponse.json({ id: null }, { status: 200 });
-    }
+    const embedAllowedOrigins: string[] = includeEmbed
+      ? ((project?.publicPageConfig?.embedAllowedOrigins as string[] | null) ?? [])
+      : [];
 
-    return NextResponse.json({ id: project.id }, { status: 200 });
+    return NextResponse.json({
+      id: project?.id ?? null,
+      ...(includeEmbed && { embedAllowedOrigins }),
+    });
   } catch {
-    return NextResponse.json({ id: null }, { status: 200 });
+    return NextResponse.json({ id: null, embedAllowedOrigins: [] }, { status: 200 });
   }
 }

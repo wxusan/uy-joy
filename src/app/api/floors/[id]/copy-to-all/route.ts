@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import { invalidateProject } from "@/lib/cache";
+import { requirePlatformApiFeature } from "@/lib/platform-guards";
 
 type Point = { x: number; y: number };
 
@@ -26,6 +27,9 @@ const getPolygonCenter = (value: Prisma.JsonValue | null) => {
 };
 
 export async function POST(_req: Request, { params }: { params: { id: string } }) {
+  const guard = await requirePlatformApiFeature("inventory", "manageInventory");
+  if (guard.response) return guard.response;
+
   // Get the source floor with its units
   const sourceFloor = await prisma.floor.findUnique({
     where: { id: params.id },

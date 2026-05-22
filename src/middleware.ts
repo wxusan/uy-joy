@@ -64,6 +64,20 @@ function applyLocaleCookie(request: NextRequest, response: NextResponse) {
   return response;
 }
 
+function applyEmbedHeaders(request: NextRequest, response: NextResponse, dbOrigins: string[] = []) {
+  if (!request.nextUrl.pathname.startsWith("/embed/lead-form")) return response;
+  const envOrigins = (process.env.CLIENT_EMBED_FRAME_ANCESTORS || "")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+  // Merge env-configured origins with per-tenant DB origins (deduplicated)
+  const allOrigins = Array.from(new Set([...envOrigins, ...dbOrigins]));
+  const frameAncestors = allOrigins.length > 0 ? ["'self'", ...allOrigins].join(" ") : "'self'";
+  response.headers.set("Content-Security-Policy", `frame-ancestors ${frameAncestors};`);
+  response.headers.delete("X-Frame-Options");
+  return response;
+}
+
 function isProtectedApi(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl;
   const method = request.method;
@@ -84,45 +98,54 @@ function isProtectedApi(request: NextRequest) {
   return isMutation && contentApiPrefixes.some((prefix) => pathname.startsWith(prefix));
 }
 
+type TenantInfo = { id: string | null; embedAllowedOrigins: string[] };
+
 /**
- * Resolve the tenant id from the request host.
+ * Resolve the tenant id (and optionally embed origins) from the request host.
  *
  * Looks up the project whose `domain` column matches the host exactly.
- * Returns the project id on a match, null otherwise (caller falls back to
- * the default/first project).
+ * When `fetchEmbedOrigins` is true the lookup also returns the project's
+ * per-tenant `embedAllowedOrigins` list so middleware can enforce it in the
+ * Content-Security-Policy frame-ancestors directive.
  *
  * NOTE: We do NOT import prisma here because middleware runs in the Edge
  * runtime and Prisma's Node.js driver is not Edge-compatible.  Instead we
  * call an internal Next.js API route that runs in the Node runtime.
  */
-async function resolveTenantId(request: NextRequest): Promise<string | null> {
+async function resolveTenant(request: NextRequest, fetchEmbedOrigins = false): Promise<TenantInfo> {
   const host = request.headers.get("host") ?? "";
   // Strip port for local dev (localhost:3000 → localhost)
   const hostname = host.split(":")[0];
 
-  // Skip resolution for localhost / Vercel preview URLs — use default tenant
-  if (
+  const isLocalOrPreview =
     hostname === "localhost" ||
     hostname.endsWith(".vercel.app") ||
-    hostname.endsWith(".vercel.dev")
-  ) {
-    return null;
+    hostname.endsWith(".vercel.dev");
+
+  // For non-embed paths on local/preview URLs we can skip the DB lookup entirely.
+  if (isLocalOrPreview && !fetchEmbedOrigins) {
+    return { id: null, embedAllowedOrigins: [] };
   }
 
   try {
     // Call the internal tenant-lookup endpoint (runs in Node runtime)
     const proto = request.nextUrl.protocol; // "https:" or "http:"
-    const url = `${proto}//${host}/api/tenant-lookup?domain=${encodeURIComponent(hostname)}`;
+    const domainParam = isLocalOrPreview ? "" : encodeURIComponent(hostname);
+    const embedParam = fetchEmbedOrigins ? "&includeEmbed=1" : "";
+    const url = `${proto}//${host}/api/tenant-lookup?domain=${domainParam}${embedParam}`;
     const res = await fetch(url, {
       headers: { "x-internal-tenant-lookup": "1" },
       // Short timeout — don't slow down every request
       signal: AbortSignal.timeout(2000),
     });
-    if (!res.ok) return null;
-    const data = (await res.json()) as { id?: string };
-    return data.id ?? null;
+    if (!res.ok) return { id: null, embedAllowedOrigins: [] };
+    const data = (await res.json()) as { id?: string; embedAllowedOrigins?: string[] };
+    return {
+      id: isLocalOrPreview ? null : (data.id ?? null),
+      embedAllowedOrigins: data.embedAllowedOrigins ?? [],
+    };
   } catch {
-    return null;
+    return { id: null, embedAllowedOrigins: [] };
   }
 }
 
@@ -130,12 +153,17 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const isAdminPage = pathname.startsWith(adminPrefix) && !pathname.startsWith(adminLoginPath);
   const needsApiAuth = isProtectedApi(request);
+  const isEmbedPath = pathname.startsWith("/embed/lead-form");
 
   // ── Tenant resolution ──────────────────────────────────────────────────────
-  // Skip for the internal lookup endpoint itself (avoid infinite loop)
+  // Skip for the internal lookup endpoint itself (avoid infinite loop).
+  // For embed paths, also fetch per-tenant embedAllowedOrigins for CSP enforcement.
   let tenantId: string | null = null;
+  let embedAllowedOrigins: string[] = [];
   if (pathname !== "/api/tenant-lookup") {
-    tenantId = await resolveTenantId(request);
+    const tenant = await resolveTenant(request, isEmbedPath);
+    tenantId = tenant.id;
+    embedAllowedOrigins = tenant.embedAllowedOrigins;
   }
 
   // ── Auth guard ─────────────────────────────────────────────────────────────
@@ -153,7 +181,7 @@ export async function middleware(request: NextRequest) {
       const loginUrl = request.nextUrl.clone();
       loginUrl.pathname = adminLoginPath;
       loginUrl.searchParams.set("callbackUrl", request.nextUrl.pathname + request.nextUrl.search);
-      return applyLocaleCookie(request, NextResponse.redirect(loginUrl));
+      return applyEmbedHeaders(request, applyLocaleCookie(request, NextResponse.redirect(loginUrl)), embedAllowedOrigins);
     }
   }
 
@@ -164,7 +192,7 @@ export async function middleware(request: NextRequest) {
   }
 
   const response = NextResponse.next({ request: { headers: requestHeaders } });
-  return applyLocaleCookie(request, response);
+  return applyEmbedHeaders(request, applyLocaleCookie(request, response), embedAllowedOrigins);
 }
 
 export const config = {

@@ -3,10 +3,12 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import PolygonEditor, { Point, Polygon } from "@/components/admin/PolygonEditor";
 import Image from "next/image";
 import { SHOW_AI } from "@/lib/flags";
+import { roleHasPlatformPermission } from "@/lib/platform-plans";
 import { getStatusMeta } from "@/lib/status-style";
 
 interface Unit {
@@ -43,6 +45,8 @@ export default function FloorPlanEditorPage() {
   const params = useParams();
   const t = useTranslations("admin");
   const tc = useTranslations("common");
+  const { data: session } = useSession();
+  const role = (session?.user as { role?: string } | undefined)?.role;
   const [floor, setFloor] = useState<Floor | null>(null);
   const [polygons, setPolygons] = useState<Polygon[]>([]);
   const [selectedPolygonId, setSelectedPolygonId] = useState<string | null>(null);
@@ -76,6 +80,7 @@ export default function FloorPlanEditorPage() {
   // Load floor data
   const loadFloor = useCallback(async () => {
     const res = await fetch(`/api/floors/${params.floorId}`);
+    if (!res.ok) return;
     const data = await res.json();
     setFloor({
       ...data,
@@ -428,6 +433,14 @@ export default function FloorPlanEditorPage() {
       setUploading(false);
     }
   };
+
+  if (!roleHasPlatformPermission(role, "manageInventory")) {
+    return (
+      <p className="text-[13px]" style={{ color: "var(--a-text-tertiary)" }}>
+        {t("accessDenied")}
+      </p>
+    );
+  }
 
   if (!floor) {
     return <p className="text-slate-500">{t("loading")}</p>;

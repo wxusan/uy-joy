@@ -2,14 +2,17 @@ import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Globe2, Instagram, Phone, Send } from "lucide-react";
 import { getCurrentTenant } from "@/lib/tenant";
+import { getPlatformSettings, platformSettingsHasFeature } from "@/lib/platform-settings";
 
 export default async function Footer() {
   const t = await getTranslations("footer");
   const locale = await getLocale();
   const year = new Date().getFullYear();
   const tenant = await getCurrentTenant();
+  const platformSettings = getPlatformSettings();
+  const inventoryEnabled = platformSettingsHasFeature(platformSettings, "inventory");
 
-  const projectName = tenant?.name ?? "UyJoy";
+  const projectName = tenant?.name ?? platformSettings.publicBrandName;
   const phoneNumber = tenant?.phoneNumber ?? null;
   const telegramUrl = tenant?.telegramUrl ?? null;
   const instagramUrl = tenant?.instagramUrl ?? null;
@@ -20,13 +23,13 @@ export default async function Footer() {
       links: [
         { label: t("masterPlan"), href: "/#explore" },
         { label: t("buildings"), href: "/#explore" },
-        { label: t("apartments"), href: "/apartments" },
+        ...(inventoryEnabled ? [{ label: t("apartments"), href: "/apartments" }] : []),
       ],
     },
     {
       title: t("company"),
       links: [
-        { label: t("aboutUyjoy"), href: "/#about" },
+        { label: t("aboutUyjoy").replace(/UyJoy|Uy Joy/g, platformSettings.publicBrandName), href: "/#about" },
         { label: t("news") },
         { label: t("careers") },
       ],
@@ -48,7 +51,7 @@ export default async function Footer() {
       <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[1.15fr_0.9fr_0.9fr_0.9fr_1.1fr_0.9fr] lg:gap-0">
         <div className="lg:pr-10">
           <Link href="/" className="font-display text-[38px] font-semibold leading-none text-[#fff8ec]">
-            UyJoy
+            {platformSettings.publicBrandName}
           </Link>
           <p className="mt-7 text-[14px] font-semibold text-[#fff8ec]">
             © {year} {projectName}
@@ -56,6 +59,11 @@ export default async function Footer() {
           <p className="mt-3 text-[14px] font-medium text-[#b9aa9c]">
             {t("allRightsReserved")}
           </p>
+          {platformSettings.showPoweredByUyJoy && (
+            <p className="mt-3 text-[12px] font-medium text-[#81776d]">
+              Powered by Uy Joy
+            </p>
+          )}
         </div>
 
         {columns.map((column) => (

@@ -1,12 +1,18 @@
 import { notFound } from "next/navigation";
 import prisma from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
+import { PLATFORM_PERMISSIONS } from "@/lib/platform-plans";
+import { getPlatformSettings, platformSettingsHasFeature } from "@/lib/platform-settings";
 import FloorsClient from "./FloorsClient";
 
 export const dynamic = "force-dynamic";
 
 export default async function FloorsPage({ params }: { params: { projectId: string; buildingId: string } }) {
-  await requireAdmin();
+  await requireAdmin(PLATFORM_PERMISSIONS.manageInventory);
+  if (!platformSettingsHasFeature(getPlatformSettings(), "inventory")) {
+    notFound();
+  }
+
   const building = await prisma.building.findUnique({
     where: { id: params.buildingId },
     select: {
@@ -32,7 +38,7 @@ export default async function FloorsPage({ params }: { params: { projectId: stri
 
   return (
     <FloorsClient
-      initialBuilding={building as any}
+      initialBuilding={building as React.ComponentProps<typeof FloorsClient>["initialBuilding"]}
       buildingId={params.buildingId}
       projectId={params.projectId}
     />

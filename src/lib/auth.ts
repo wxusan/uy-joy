@@ -4,6 +4,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { redirect } from "next/navigation";
 import bcrypt from "bcryptjs";
 import prisma from "./prisma";
+import { normalizePlatformRole, platformRoleMatches, roleCanAccessAdmin } from "./platform-plans";
 
 if (process.env.NODE_ENV === "production" && !process.env.NEXTAUTH_SECRET) {
   throw new Error("NEXTAUTH_SECRET is required in production");
@@ -42,6 +43,7 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.role = (user as { role?: string }).role;
+        token.normalizedRole = normalizePlatformRole((user as { role?: string }).role);
         token.id = user.id;
       }
       return token;
@@ -49,6 +51,7 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (session.user) {
         (session.user as { role?: unknown }).role = token.role;
+        (session.user as { normalizedRole?: unknown }).normalizedRole = token.normalizedRole;
         (session.user as { id?: unknown }).id = token.id;
       }
       return session;
@@ -63,13 +66,12 @@ export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
 };
 
-const ADMIN_ROLES = ["admin", "superadmin", "developer"] as const;
-
-export async function requireAdmin(allowedRoles: readonly string[] = ADMIN_ROLES) {
+export async function requireAdmin(allowedRoles?: readonly string[]) {
   const session = await getServerSession(authOptions);
   const role = (session?.user as { role?: string } | undefined)?.role;
+  const canAccess = allowedRoles ? platformRoleMatches(role, allowedRoles) : roleCanAccessAdmin(role);
 
-  if (!session?.user || !role || !allowedRoles.includes(role)) {
+  if (!session?.user || !canAccess) {
     redirect("/portal/management-x7k9/login");
   }
 

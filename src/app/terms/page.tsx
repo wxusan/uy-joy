@@ -1,6 +1,7 @@
 import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
 import { getLocale } from "next-intl/server";
+import { getPlatformSettings } from "@/lib/platform-settings";
 
 type Locale = "uz" | "ru" | "en";
 
@@ -12,12 +13,12 @@ const content: Record<Locale, {
 }> = {
   uz: {
     title: "Foydalanish shartlari",
-    intro: "UyJoy platformasidan foydalanish orqali quyidagi shartlarga rozilik bildirasiz.",
+    intro: "{brand} platformasidan foydalanish orqali quyidagi shartlarga rozilik bildirasiz.",
     updated: "Oxirgi yangilanish: 16-may, 2026",
     sections: [
       {
         title: "Xizmat doirasi",
-        body: "UyJoy turar joy loyihalarini ko'rish, xonadon rejalari bilan tanishish va savdo jamoasiga ariza yuborish uchun raqamli platformadir.",
+        body: "{brand} turar joy loyihalarini ko'rish, xonadon rejalari bilan tanishish va savdo jamoasiga ariza yuborish uchun raqamli platformadir.",
       },
       {
         title: "Xarid kafolati yo'q",
@@ -35,12 +36,12 @@ const content: Record<Locale, {
   },
   ru: {
     title: "Условия использования",
-    intro: "Используя платформу UyJoy, вы соглашаетесь со следующими условиями.",
+    intro: "Используя платформу {brand}, вы соглашаетесь со следующими условиями.",
     updated: "Последнее обновление: 16 мая 2026",
     sections: [
       {
         title: "Объем сервиса",
-        body: "UyJoy — цифровая платформа для просмотра жилых проектов, планировок квартир и отправки заявки в отдел продаж.",
+        body: "{brand} — цифровая платформа для просмотра жилых проектов, планировок квартир и отправки заявки в отдел продаж.",
       },
       {
         title: "Нет гарантии покупки",
@@ -58,12 +59,12 @@ const content: Record<Locale, {
   },
   en: {
     title: "Terms of Service",
-    intro: "By using UyJoy, you agree to the following service terms.",
+    intro: "By using {brand}, you agree to the following service terms.",
     updated: "Last updated: May 16, 2026",
     sections: [
       {
         title: "Scope of service",
-        body: "UyJoy is a digital platform for browsing residential projects, viewing apartment plans, and sending requests to the sales team.",
+        body: "{brand} is a digital platform for browsing residential projects, viewing apartment plans, and sending requests to the sales team.",
       },
       {
         title: "No purchase guarantee",
@@ -83,7 +84,10 @@ const content: Record<Locale, {
 
 export default async function TermsPage() {
   const locale = (await getLocale()) as Locale;
+  const settings = getPlatformSettings();
   const page = content[locale] ?? content.uz;
+  const brandName = settings.publicBrandName;
+  const replaceBrand = (value: string) => value.replaceAll("{brand}", brandName);
 
   return (
     <main className="min-h-screen bg-[#f4efe7] text-[#15120f]">
@@ -91,13 +95,13 @@ export default async function TermsPage() {
       <section className="px-5 py-16 md:py-24">
         <div className="mx-auto max-w-4xl">
           <p className="font-heading text-[13px] font-semibold uppercase tracking-[0.24em] text-[#c66348]">
-            UyJoy
+            {brandName}
           </p>
           <h1 className="mt-4 font-display text-[48px] font-semibold leading-none tracking-normal text-[#15120f] md:text-[76px]">
             {page.title}
           </h1>
           <p className="mt-6 max-w-2xl text-[17px] font-medium leading-8 text-[#6f675e]">
-            {page.intro}
+            {replaceBrand(page.intro)}
           </p>
           <p className="mt-4 text-[13px] font-semibold text-[#8a7d70]">{page.updated}</p>
 
@@ -107,7 +111,7 @@ export default async function TermsPage() {
                 <h2 className="font-heading text-[22px] font-semibold leading-snug text-[#15120f]">
                   {section.title}
                 </h2>
-                <p className="text-[15px] font-medium leading-7 text-[#5f574f]">{section.body}</p>
+                <p className="text-[15px] font-medium leading-7 text-[#5f574f]">{replaceBrand(section.body)}</p>
               </section>
             ))}
           </div>

@@ -1,7 +1,9 @@
 import { getTranslations } from "next-intl/server";
+import { getPlatformSettings } from "@/lib/platform-settings";
 
 export default async function Loading() {
   const t = await getTranslations("loading");
+  const settings = getPlatformSettings();
 
   return (
     <div className="fixed inset-0 z-[9999] flex min-h-screen flex-col items-center justify-center bg-[#0f100e] text-[#f2dfc5]">
@@ -9,7 +11,7 @@ export default async function Loading() {
 
       <div className="relative flex flex-col items-center">
         <div className="font-display text-[54px] font-semibold leading-none tracking-normal md:text-[72px]">
-          UyJoy
+          {settings.publicBrandName}
         </div>
         <div className="mt-2 text-[14px] font-medium tracking-[0.18em] text-[#d8c5ad]">
           Residence

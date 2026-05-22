@@ -7,6 +7,13 @@ import { useTranslations, useLocale } from "next-intl";
 import { useTransition } from "react";
 import { locales, localeNames, Locale } from "@/lib/locales";
 import {
+  type FeatureEntitlement,
+  type PlatformFeature,
+  type PlatformPermission,
+  featureEntitlementIsEnabled,
+  roleHasPlatformPermission,
+} from "@/lib/platform-plans";
+import {
   LayoutDashboard,
   MessageSquare,
   Building2,
@@ -16,6 +23,16 @@ import {
   Users,
   Activity,
   LogOut,
+  KanbanSquare,
+  ClipboardList,
+  Contact,
+  BarChart3,
+  UserRoundCheck,
+  Handshake,
+  FileText,
+  Globe2,
+  Tags,
+  Settings,
 } from "lucide-react";
 
 type NavItem = {
@@ -23,8 +40,8 @@ type NavItem = {
   labelKey?: string;
   label?: string;
   icon: React.ReactNode;
-  superadminOnly?: boolean;
-  developerOnly?: boolean;
+  permission?: PlatformPermission;
+  feature?: PlatformFeature;
   exact?: boolean;
 };
 
@@ -42,9 +59,108 @@ const navGroups: NavGroup[] = [
         exact: true,
       },
       {
-        href: "/portal/management-x7k9/leads",
+        href: "/portal/management-x7k9/crm",
+        label: "CRM",
+        icon: <Contact className="w-[14px] h-[14px]" />,
+        permission: "viewLeads",
+        feature: "crm",
+      },
+      {
+        href: "/portal/management-x7k9/crm/leads",
         labelKey: "leads",
         icon: <MessageSquare className="w-[14px] h-[14px]" />,
+        permission: "viewLeads",
+        feature: "crm",
+      },
+      {
+        href: "/portal/management-x7k9/crm/pipeline",
+        label: "Pipeline",
+        icon: <KanbanSquare className="w-[14px] h-[14px]" />,
+        permission: "manageLeads",
+        feature: "pipeline",
+      },
+      {
+        href: "/portal/management-x7k9/crm/clients",
+        label: "Clients",
+        icon: <Users className="w-[14px] h-[14px]" />,
+        permission: "viewLeads",
+        feature: "crm",
+      },
+      {
+        href: "/portal/management-x7k9/crm/deals",
+        label: "Deals",
+        icon: <Handshake className="w-[14px] h-[14px]" />,
+        permission: "viewDeals",
+        feature: "deals",
+      },
+      {
+        href: "/portal/management-x7k9/crm/tasks",
+        label: "Tasks",
+        icon: <ClipboardList className="w-[14px] h-[14px]" />,
+        permission: "manageLeads",
+        feature: "tasks",
+      },
+      {
+        href: "/portal/management-x7k9/crm/documents",
+        label: "Documents",
+        icon: <FileText className="w-[14px] h-[14px]" />,
+        permission: "viewDeals",
+        feature: "documents",
+      },
+      {
+        href: "/portal/management-x7k9/crm/agents",
+        label: "Sales agents",
+        icon: <UserRoundCheck className="w-[14px] h-[14px]" />,
+        permission: "viewReports",
+        feature: "crm",
+      },
+      {
+        href: "/portal/management-x7k9/reports/my",
+        label: "My report",
+        icon: <BarChart3 className="w-[14px] h-[14px]" />,
+        feature: "reports",
+      },
+      {
+        href: "/portal/management-x7k9/reports",
+        label: "Executive reports",
+        icon: <BarChart3 className="w-[14px] h-[14px]" />,
+        permission: "viewReports",
+        feature: "reports",
+      },
+      {
+        href: "/portal/management-x7k9/reports/sales",
+        label: "Sales report",
+        icon: <BarChart3 className="w-[14px] h-[14px]" />,
+        permission: "viewReports",
+        feature: "reports",
+      },
+      {
+        href: "/portal/management-x7k9/reports/inventory",
+        label: "Inventory report",
+        icon: <BarChart3 className="w-[14px] h-[14px]" />,
+        permission: "viewReports",
+        feature: "inventory",
+      },
+      {
+        href: "/portal/management-x7k9/reports/marketing",
+        label: "Marketing report",
+        icon: <BarChart3 className="w-[14px] h-[14px]" />,
+        permission: "viewMarketingReports",
+        feature: "reports",
+      },
+      {
+        href: "/portal/management-x7k9/reports/finance",
+        label: "Finance report",
+        icon: <BarChart3 className="w-[14px] h-[14px]" />,
+        permission: "viewFinance",
+        feature: "financeReports",
+      },
+      {
+        href: "/portal/management-x7k9/crm/sources",
+        label: "Sources",
+        icon: <Tags className="w-[14px] h-[14px]" />,
+        permission: "managePublicContent",
+        feature: "publicPage",
       },
     ],
   },
@@ -52,14 +168,25 @@ const navGroups: NavGroup[] = [
     labelKey: "content",
     items: [
       {
+        href: "/portal/management-x7k9/public-page",
+        label: "Public page",
+        icon: <Globe2 className="w-[14px] h-[14px]" />,
+        permission: "managePublicContent",
+        feature: "publicPage",
+      },
+      {
         href: "/portal/management-x7k9/projects",
         labelKey: "projects",
         icon: <Building2 className="w-[14px] h-[14px]" />,
+        permission: "managePublicContent",
+        feature: "publicPage",
       },
       {
         href: "/portal/management-x7k9/faqs",
         labelKey: "faq",
         icon: <HelpCircle className="w-[14px] h-[14px]" />,
+        permission: "managePublicContent",
+        feature: "publicPage",
       },
     ],
   },
@@ -67,16 +194,22 @@ const navGroups: NavGroup[] = [
     labelKey: "system",
     items: [
       {
+        href: "/portal/management-x7k9/settings",
+        label: "Settings",
+        icon: <Settings className="w-[14px] h-[14px]" />,
+        permission: "manageDeploymentSettings",
+      },
+      {
         href: "/portal/management-x7k9/users",
         labelKey: "users",
         icon: <Users className="w-[14px] h-[14px]" />,
-        superadminOnly: true,
+        permission: "manageUsers",
       },
       {
         href: "/portal/management-x7k9/analytics",
         labelKey: "analytics",
         icon: <Activity className="w-[14px] h-[14px]" />,
-        developerOnly: true,
+        permission: "technicalSettings",
       },
     ],
   },
@@ -85,9 +218,11 @@ const navGroups: NavGroup[] = [
 interface Props {
   isOpen: boolean;
   onClose: () => void;
+  featureFlags: Record<PlatformFeature, FeatureEntitlement>;
+  brandName: string;
 }
 
-export default function AdminSidebar({ isOpen, onClose }: Props) {
+export default function AdminSidebar({ featureFlags, isOpen, onClose, brandName }: Props) {
   const t = useTranslations("admin");
   const tc = useTranslations("common");
   const pathname = usePathname();
@@ -103,16 +238,22 @@ export default function AdminSidebar({ isOpen, onClose }: Props) {
           href: `/portal/management-x7k9/projects/${currentProjectId}/buildings`,
           labelKey: "buildings",
           icon: <Building2 className="w-[14px] h-[14px]" />,
+          permission: "manageInventory",
+          feature: "inventory",
         },
         {
           href: `/portal/management-x7k9/projects/${currentProjectId}/images`,
           labelKey: "buildingImages",
           icon: <Images className="w-[14px] h-[14px]" />,
+          permission: "manageInventory",
+          feature: "inventory",
         },
         {
           href: `/portal/management-x7k9/projects/${currentProjectId}/units`,
           labelKey: "units",
           icon: <Home className="w-[14px] h-[14px]" />,
+          permission: "manageInventory",
+          feature: "inventory",
         },
       ]
     : [];
@@ -123,8 +264,8 @@ export default function AdminSidebar({ isOpen, onClose }: Props) {
   };
 
   const isItemVisible = (item: NavItem) => {
-    if (item.superadminOnly && role !== "superadmin" && role !== "developer") return false;
-    if (item.developerOnly && role !== "developer") return false;
+    if (item.permission && !roleHasPlatformPermission(role, item.permission)) return false;
+    if (item.feature && !featureEntitlementIsEnabled(featureFlags[item.feature])) return false;
     return true;
   };
 
@@ -158,7 +299,7 @@ export default function AdminSidebar({ isOpen, onClose }: Props) {
           className="text-[13px] font-semibold flex-1 truncate"
           style={{ color: "var(--a-text)" }}
         >
-          UyJoy
+          {brandName}
         </Link>
         <button
           onClick={onClose}

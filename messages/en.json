@@ -81,6 +81,7 @@
   "explore": {
     "selectFloor": "Select a floor to view apartments",
     "floor": "Floor",
+    "building": "Building",
     "apartments": "apartments",
     "backToBuilding": "Back to building",
     "buildingElevation": "Building Elevation",
@@ -120,6 +121,7 @@
   "unit": {
     "apartment": "Apartment",
     "floor": "Floor",
+    "building": "Building",
     "rooms": "Rooms",
     "area": "Area",
     "price": "Price",
@@ -171,6 +173,7 @@
     "buildings": "Buildings",
     "floors": "Floors",
     "floor": "Floor",
+    "building": "Building",
     "addBuilding": "Add Building",
     "addFloor": "Add Floor",
     "addMultipleFloors": "Add multiple floors at once",
@@ -511,6 +514,7 @@
     "readyChoice": "Ready choice",
     "priceOnRequest": "Price on request",
     "floor": "Floor",
+    "building": "Building",
     "layoutAvailable": "Available in this layout: {count}",
     "availableCount": "{count} available",
     "layouts": "layout types",
@@ -518,7 +522,8 @@
     "floorsAvailable": "Floors",
     "selectFloor": "Select a floor",
     "backToFloors": "Back to floors",
-    "similarPlans": "Available similar layouts"
+    "similarPlans": "Available similar layouts",
+    "readyYear": "Ready year"
   },
   "contact": {
     "title": "Want us to contact you?",

@@ -27,7 +27,7 @@ export interface GroupedUnit {
         floor: {
             number: number;
             basePricePerM2: number | null;
-            building: { name: string };
+            building: { name: string; completionYear?: number | null };
         };
     }[];
     availableCount: number;

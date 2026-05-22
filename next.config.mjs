@@ -17,6 +17,25 @@ const contentSecurityPolicy = [
   "form-action 'self'",
   "object-src 'none'",
 ].join('; ');
+const embedFrameAncestors = [
+  "'self'",
+  ...(process.env.CLIENT_EMBED_FRAME_ANCESTORS || '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean),
+].join(' ');
+const embedContentSecurityPolicy = [
+  "default-src 'self'",
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''} https://us-assets.i.posthog.com`,
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob: https://res.cloudinary.com",
+  "font-src 'self' data:",
+  `connect-src 'self'${isDev ? ' ws: http://localhost:*' : ''} https://us.i.posthog.com https://us-assets.i.posthog.com`,
+  `frame-ancestors ${embedFrameAncestors}`,
+  "base-uri 'self'",
+  "form-action 'self'",
+  "object-src 'none'",
+].join('; ');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -34,7 +53,32 @@ const nextConfig = {
   async headers() {
     return [
       {
-        source: '/:path*',
+        source: '/embed/lead-form',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: embedContentSecurityPolicy,
+          },
+          {
+            key: 'Strict-Transport-Security',
+            value: 'max-age=63072000; includeSubDomains; preload',
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+          {
+            key: 'Referrer-Policy',
+            value: 'strict-origin-when-cross-origin',
+          },
+          {
+            key: 'Permissions-Policy',
+            value: 'camera=(), microphone=(), geolocation=(), payment=(), usb=()',
+          },
+        ],
+      },
+      {
+        source: '/((?!embed/lead-form).*)',
         headers: [
           {
             key: 'Content-Security-Policy',

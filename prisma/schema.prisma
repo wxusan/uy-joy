@@ -9,12 +9,36 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  name      String
-  role      String   @default("admin")
-  createdAt DateTime @default(now())
+  id                   String              @id @default(cuid())
+  email                String              @unique
+  password             String
+  name                 String
+  role                 String              @default("admin")
+  isActive             Boolean             @default(true)
+  phone                String?
+  avatarUrl            String?
+  lastLoginAt          DateTime?
+  createdAt            DateTime            @default(now())
+  createdClients       Client[]            @relation("ClientCreatedBy")
+  assignedClients      Client[]            @relation("ClientAssignedTo")
+  assignedLeads        Lead[]              @relation("LeadAssignedTo")
+  changedStageHistory  LeadStageHistory[]  @relation("LeadStageChangedBy")
+  activitiesAuthored   Activity[]          @relation("ActivityActor")
+  activitiesAssigned   Activity[]          @relation("ActivityAssignedTo")
+  tasksCreated         Task[]              @relation("TaskCreatedBy")
+  tasksAssigned        Task[]              @relation("TaskAssignedTo")
+  dealsCreated         Deal[]              @relation("DealCreatedBy")
+  dealsAssigned        Deal[]              @relation("DealAssignedTo")
+  discountsApproved    Deal[]              @relation("DealDiscountApprovedBy")
+  paymentPlansCreated  PaymentPlan[]       @relation("PaymentPlanCreatedBy")
+  documentsUploaded    Document[]          @relation("DocumentUploadedBy")
+  documentsReviewed    Document[]          @relation("DocumentReviewedBy")
+  refundsRequested     Refund[]            @relation("RefundRequestedBy")
+  refundsApproved      Refund[]            @relation("RefundApprovedBy")
+  salesAgentProfile    SalesAgentProfile?
+  adSpends             AdSpend[]           @relation("AdSpendCreatedBy")
+  platformSettingsUpdates PlatformSettingsRecord[] @relation("PlatformSettingsUpdatedBy")
+  reportDigestPreference ReportDigestPreference?
 }
 
 model Project {
@@ -44,6 +68,9 @@ model Project {
   masterPlanImage   String?   // Fallback aerial / master-plan image
   brandLogo         String?   // Project logo image URL
   buildings   Building[]
+  deals       Deal[]
+  publicPageConfig PublicPageConfig?
+  analyticsEvents AnalyticsEvent[]
   createdAt   DateTime   @default(now())
 }
 
@@ -64,6 +91,7 @@ model Building {
   pointX         Float?   // Point (dot) position X (as % of image width)
   pointY         Float?   // Point (dot) position Y (as % of image height)
   labelScale     Float?   // Scale multiplier for the label box (default 1.0)
+  completionYear Int?                  // Expected year this building will be ready (e.g. 2027)
   sortOrder      Int      @default(0)  // For ordering buildings A, B, C...
   createdAt      DateTime @default(now())
 
@@ -108,27 +136,68 @@ model Unit {
   customerName  String?
   customerPhone String?
   customerNotes String?
+  currentDealId String?
+  currentDeal   Deal?     @relation("UnitCurrentDeal", fields: [currentDealId], references: [id], onDelete: SetNull)
+  reservedByClientId String?
+  reservedByClient   Client? @relation("UnitReservedByClient", fields: [reservedByClientId], references: [id], onDelete: SetNull)
+  soldToClientId String?
+  soldToClient   Client? @relation("UnitSoldToClient", fields: [soldToClientId], references: [id], onDelete: SetNull)
+  reservedAt DateTime?
+  soldAt DateTime?
+  reservationExpiresAt DateTime?
   statusChangedAt DateTime?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  primaryDeals Deal[] @relation("DealPrimaryUnit")
+  dealUnits   DealUnit[]
+  activities  Activity[]
+  tasks       Task[]
+  documents   Document[]
+  analyticsEvents AnalyticsEvent[]
 
   @@index([floorId])
   @@index([status])
+  @@index([currentDealId])
+  @@index([reservedByClientId])
+  @@index([soldToClientId])
+  @@index([reservationExpiresAt])
 }
 
 model Lead {
   id            String    @id @default(cuid())
   name          String
   phone         String
+  clientId      String?
+  client        Client?   @relation(fields: [clientId], references: [id], onDelete: SetNull)
   projectId     String?
   projectName   String?
   unitId        String?   // Optional: if they selected a specific unit
   unitNumber    String?
-  status        String    @default("new") // new, contacted, converted, closed
+  status        String    @default("new")
   notes         String?
   source        String?   // "kvartiralar", "vizual", "bosh-sahifa"
-  assignedTo    String?   // Name of the team member handling this lead
-  nextFollowUp  DateTime? // When to call this person back
+  sourceDetail  String?
+  campaign      String?
+  utmSource     String?
+  utmMedium     String?
+  utmCampaign   String?
+  utmContent    String?
+  utmTerm       String?
+  referrer      String?
+  landingPath   String?
+  preferredLanguage String?
+  assignedTo    String?   // Legacy text field; new CRM uses assignedToId.
+  assignedToId  String?
+  assignedToUser User?    @relation("LeadAssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
+  lostReason    String?
+  nextFollowUp  DateTime? // Legacy follow-up field; new CRM uses nextActionAt/tasks.
+  lastActivityAt DateTime?
+  lastContactedAt DateTime?
+  nextActionAt  DateTime?
+  closedAt      DateTime?
+  convertedAt   DateTime?
+  stageEnteredAt DateTime @default(now())
+  firstResponseAt DateTime?
   // Snapshot fields — captured at lead-creation time so reports still work
   // if the unit is later deleted or renamed.
   unitNumberSnapshot   String?
@@ -138,10 +207,563 @@ model Lead {
   buildingNameSnapshot String?
   floorNumberSnapshot  Int?
   createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  stageHistory  LeadStageHistory[]
+  activities    Activity[]
+  tasks         Task[]
+  deals         Deal[]
+  documents     Document[]
+  telegramNotifications TelegramNotificationLog[]
+  analyticsEvents AnalyticsEvent[]
 
+  @@index([clientId])
   @@index([projectId])
   @@index([unitId])
+  @@index([assignedToId])
   @@index([status, createdAt(sort: Desc)])
+  @@index([nextActionAt])
+  @@index([lastActivityAt])
+}
+
+model Client {
+  id                String    @id @default(cuid())
+  fullName          String
+  phone             String
+  phoneNormalized   String?
+  secondaryPhone    String?
+  email             String?
+  telegramUsername  String?
+  instagramUsername String?
+  preferredLanguage String?
+  type              String    @default("individual")
+  companyName       String?
+  source            String?
+  notes             String?
+  status            String    @default("active")
+  createdById       String?
+  createdBy         User?     @relation("ClientCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  assignedToId      String?
+  assignedTo        User?     @relation("ClientAssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
+  leads             Lead[]
+  deals             Deal[]
+  payments          Payment[]
+  refunds           Refund[]
+  documents         Document[]
+  telegramNotifications TelegramNotificationLog[]
+  analyticsEvents   AnalyticsEvent[]
+  reservedUnits     Unit[]    @relation("UnitReservedByClient")
+  soldUnits         Unit[]    @relation("UnitSoldToClient")
+  activities        Activity[]
+  tasks             Task[]
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([phoneNormalized])
+  @@index([assignedToId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model PublicPageConfig {
+  id                    String   @id @default(cuid())
+  projectId             String   @unique
+  project               Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  brandName             String?
+  logoUrl               String?
+  faviconUrl            String?
+  primaryColor          String   @default("#c66348")
+  secondaryColor        String   @default("#15120f")
+  accentColor           String   @default("#f0a383")
+  backgroundColor       String   @default("#f4efe7")
+  textColor             String   @default("#15120f")
+  fontMode              String   @default("default")
+  heroTitleJson         Json?
+  heroSubtitleJson      Json?
+  heroImageUrl          String?
+  heroVideoUrl          String?
+  primaryCtaLabelJson   Json?
+  secondaryCtaLabelJson Json?
+  formTitleJson         Json?
+  formSubtitleJson      Json?
+  thankYouTitleJson     Json?
+  thankYouMessageJson   Json?
+  enabledSections       Json?
+  designTokens          Json?
+  embedAllowedOrigins   Json?
+  redirectAfterSubmit   String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([projectId])
+}
+
+model PlatformSettingsRecord {
+  id                    String   @id
+  clientSlug            String?
+  companyLegalName      String?
+  publicBrandName       String?
+  showPoweredByUyJoy    Boolean?
+  logoUrl               String?
+  faviconUrl            String?
+  primaryColor          String?
+  secondaryColor        String?
+  accentColor           String?
+  defaultLocale         String?
+  enabledLocalesJson    Json?
+  publicPhoneNumber     String?
+  publicTelegramUrl     String?
+  publicInstagramUrl    String?
+  salesOfficeAddress    String?
+  salesHoursLabel       String?
+  plan                  String?
+  featureFlags          Json?
+  userLimit             Int?
+  projectLimit          Int?
+  storageLabel          String?
+  allowAgentClaim       Boolean?
+  updatedById           String?
+  updatedBy             User?    @relation("PlatformSettingsUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([updatedById])
+}
+
+model ReportDigestPreference {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  enabled   Boolean  @default(true)
+  email     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([enabled])
+}
+
+model LeadSource {
+  id                     String   @id @default(cuid())
+  key                    String   @unique
+  labelJson              Json?
+  isSystem               Boolean  @default(false)
+  isActive               Boolean  @default(true)
+  defaultAssignedAgentId String?
+  defaultPipelineStageKey String?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  @@index([isActive])
+}
+
+model TelegramNotificationLog {
+  id                String    @id @default(cuid())
+  leadId            String
+  lead              Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  clientId          String?
+  client            Client?   @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  chatId            String?
+  status            String    @default("pending")
+  messageText       String
+  telegramMessageId String?
+  errorMessage      String?
+  attemptCount      Int       @default(0)
+  nextAttemptAt     DateTime?
+  lastAttemptAt     DateTime?
+  sentAt            DateTime?
+  createdAt         DateTime  @default(now())
+
+  @@index([leadId])
+  @@index([clientId])
+  @@index([status, nextAttemptAt])
+  @@index([createdAt])
+}
+
+model PipelineStage {
+  id                 String   @id @default(cuid())
+  key                String   @unique
+  name               String
+  sortOrder          Int
+  color              String?
+  probabilityPercent Int?
+  isDefault          Boolean  @default(false)
+  isWon              Boolean  @default(false)
+  isLost             Boolean  @default(false)
+  isActive           Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([sortOrder])
+  @@index([isActive])
+}
+
+model LeadStageHistory {
+  id              String    @id @default(cuid())
+  leadId          String
+  lead            Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  fromStatus      String?
+  toStatus        String
+  changedById     String?
+  changedBy       User?     @relation("LeadStageChangedBy", fields: [changedById], references: [id], onDelete: SetNull)
+  enteredAt       DateTime  @default(now())
+  leftAt          DateTime?
+  durationSeconds Int?
+  createdAt       DateTime  @default(now())
+
+  @@index([leadId])
+  @@index([toStatus])
+  @@index([enteredAt])
+  @@index([leftAt])
+}
+
+model Activity {
+  id           String    @id @default(cuid())
+  type         String
+  title        String
+  body         String?
+  clientId     String?
+  client       Client?   @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  leadId       String?
+  lead         Lead?     @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  unitId       String?
+  unit         Unit?     @relation(fields: [unitId], references: [id], onDelete: SetNull)
+  dealId       String?
+  deal         Deal?     @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  taskId       String?
+  task         Task?     @relation("TaskActivities", fields: [taskId], references: [id], onDelete: SetNull)
+  actorId      String?
+  actor        User?     @relation("ActivityActor", fields: [actorId], references: [id], onDelete: SetNull)
+  assignedToId String?
+  assignedTo   User?     @relation("ActivityAssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
+  direction    String?
+  channel      String?
+  metadata     Json?
+  occurredAt   DateTime  @default(now())
+  createdAt    DateTime  @default(now())
+
+  @@index([clientId])
+  @@index([leadId])
+  @@index([unitId])
+  @@index([dealId])
+  @@index([taskId])
+  @@index([actorId])
+  @@index([type])
+  @@index([channel])
+  @@index([occurredAt])
+}
+
+model Task {
+  id           String    @id @default(cuid())
+  title        String
+  description  String?
+  type         String    @default("call")
+  status       String    @default("open")
+  priority     String    @default("normal")
+  clientId     String?
+  client       Client?   @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  leadId       String?
+  lead         Lead?     @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  dealId       String?
+  deal         Deal?     @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  unitId       String?
+  unit         Unit?     @relation(fields: [unitId], references: [id], onDelete: SetNull)
+  assignedToId String
+  assignedTo   User      @relation("TaskAssignedTo", fields: [assignedToId], references: [id], onDelete: Restrict)
+  createdById  String?
+  createdBy    User?     @relation("TaskCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  dueAt        DateTime?
+  completedAt  DateTime?
+  activities   Activity[] @relation("TaskActivities")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([clientId])
+  @@index([leadId])
+  @@index([dealId])
+  @@index([unitId])
+  @@index([assignedToId])
+  @@index([createdById])
+  @@index([status])
+  @@index([dueAt])
+}
+
+model SalesAgentProfile {
+  id                    String   @id @default(cuid())
+  userId                String   @unique
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  displayName           String
+  phone                 String?
+  telegramUsername      String?
+  avatarUrl             String?
+  isVisibleInReports    Boolean  @default(true)
+  monthlyTargetDeals    Int?
+  monthlyTargetRevenue  Float?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+model Deal {
+  id                              String        @id @default(cuid())
+  dealNumber                      String        @unique
+  clientId                        String
+  client                          Client        @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  leadId                          String?
+  lead                            Lead?         @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  projectId                       String?
+  project                         Project?      @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  primaryUnitId                   String?
+  primaryUnit                     Unit?         @relation("DealPrimaryUnit", fields: [primaryUnitId], references: [id], onDelete: SetNull)
+  assignedToId                    String?
+  assignedTo                      User?         @relation("DealAssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
+  createdById                     String?
+  createdBy                       User?         @relation("DealCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  status                          String        @default("draft")
+  source                          String?
+  currency                        String        @default("USD")
+  displayCurrency                 String        @default("USD")
+  paymentCurrency                 String        @default("UZS")
+  exchangeRateToPaymentCurrency   Float?
+  exchangeRateLockedAt            DateTime?
+  listPrice                       Float         @default(0)
+  discountAmount                  Float         @default(0)
+  discountPercent                 Float         @default(0)
+  salePrice                       Float         @default(0)
+  discountFlaggedAt               DateTime?
+  discountApprovedById            String?
+  discountApprovedBy              User?         @relation("DealDiscountApprovedBy", fields: [discountApprovedById], references: [id], onDelete: SetNull)
+  discountApprovedAt              DateTime?
+  initialPaymentAmount            Float         @default(0)
+  initialPaymentPercent           Float         @default(0)
+  remainingAmount                 Float         @default(0)
+  paymentTermMonths               Int           @default(0)
+  monthlyPaymentAmount            Float         @default(0)
+  expectedCloseAt                 DateTime?
+  reservedAt                      DateTime?
+  reservationExpiresAt            DateTime?
+  contractedAt                    DateTime?
+  soldAt                          DateTime?
+  lostAt                          DateTime?
+  lostReason                      String?
+  notes                           String?
+  createdAt                       DateTime      @default(now())
+  updatedAt                       DateTime      @updatedAt
+  currentUnits                    Unit[]        @relation("UnitCurrentDeal")
+  dealUnits                       DealUnit[]
+  paymentPlans                    PaymentPlan[]
+  payments                        Payment[]
+  refunds                         Refund[]
+  documents                       Document[]
+  activities                      Activity[]
+  tasks                           Task[]
+
+  @@index([clientId])
+  @@index([leadId])
+  @@index([projectId])
+  @@index([primaryUnitId])
+  @@index([assignedToId])
+  @@index([status])
+  @@index([reservationExpiresAt])
+  @@index([createdAt])
+}
+
+model DealUnit {
+  id          String   @id @default(cuid())
+  dealId      String
+  deal        Deal     @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  unitId      String
+  unit        Unit     @relation(fields: [unitId], references: [id], onDelete: Restrict)
+  priceAtDeal Float
+  isPrimary   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  @@unique([dealId, unitId])
+  @@index([dealId])
+  @@index([unitId])
+}
+
+model PaymentPlan {
+  id                   String    @id @default(cuid())
+  dealId               String
+  deal                 Deal      @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  name                 String
+  type                 String    @default("installment")
+  totalAmount          Float
+  initialPaymentAmount Float     @default(0)
+  remainingAmount      Float     @default(0)
+  termMonths           Int       @default(0)
+  startsAt             DateTime?
+  scheduleJson         Json?
+  status               String    @default("draft")
+  notes                String?
+  createdById          String?
+  createdBy            User?     @relation("PaymentPlanCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  payments             Payment[]
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  @@index([dealId])
+  @@index([status])
+  @@index([createdById])
+}
+
+model Payment {
+  id                            String       @id @default(cuid())
+  paymentPlanId                 String
+  paymentPlan                   PaymentPlan  @relation(fields: [paymentPlanId], references: [id], onDelete: Cascade)
+  dealId                        String
+  deal                          Deal         @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  clientId                      String
+  client                        Client       @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  sequence                      Int
+  label                         String
+  dueDate                       DateTime
+  expectedAmount                Float
+  expectedAmountPaymentCurrency Float?
+  exchangeRate                  Float?
+  paidAmount                    Float        @default(0)
+  paidAmountPaymentCurrency     Float?
+  status                        String       @default("scheduled")
+  paidAt                        DateTime?
+  method                        String?
+  receiptDocumentId             String?
+  receiptDocument               Document?    @relation("PaymentReceiptDocument", fields: [receiptDocumentId], references: [id], onDelete: SetNull)
+  notes                         String?
+  createdAt                     DateTime     @default(now())
+  updatedAt                     DateTime     @updatedAt
+  documents                     Document[]   @relation("DocumentPayment")
+  refunds                       Refund[]
+
+  @@unique([paymentPlanId, sequence])
+  @@index([paymentPlanId])
+  @@index([dealId])
+  @@index([clientId])
+  @@index([status])
+  @@index([dueDate])
+  @@index([receiptDocumentId])
+}
+
+model Refund {
+  id            String    @id @default(cuid())
+  dealId        String
+  deal          Deal      @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  paymentId     String?
+  payment       Payment?  @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  clientId      String
+  client        Client    @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  amount        Float
+  currency      String    @default("USD")
+  reason        String
+  status        String    @default("requested")
+  requestedById String?
+  requestedBy   User?     @relation("RefundRequestedBy", fields: [requestedById], references: [id], onDelete: SetNull)
+  approvedById  String?
+  approvedBy    User?     @relation("RefundApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
+  paidAt        DateTime?
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([dealId])
+  @@index([paymentId])
+  @@index([clientId])
+  @@index([status])
+}
+
+model Document {
+  id              String    @id @default(cuid())
+  clientId        String?
+  client          Client?   @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  leadId          String?
+  lead            Lead?     @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  dealId          String?
+  deal            Deal?     @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  unitId          String?
+  unit            Unit?     @relation(fields: [unitId], references: [id], onDelete: SetNull)
+  paymentId       String?
+  payment         Payment?  @relation("DocumentPayment", fields: [paymentId], references: [id], onDelete: SetNull)
+  uploadedById    String?
+  uploadedBy      User?     @relation("DocumentUploadedBy", fields: [uploadedById], references: [id], onDelete: SetNull)
+  reviewedById    String?
+  reviewedBy      User?     @relation("DocumentReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+  type            String
+  title           String
+  fileUrl         String
+  fileName        String?
+  fileSize        Int?
+  mimeType        String?
+  status          String    @default("uploaded")
+  rejectionReason String?
+  expiresAt       DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  receiptPayments Payment[] @relation("PaymentReceiptDocument")
+
+  @@index([clientId])
+  @@index([leadId])
+  @@index([dealId])
+  @@index([unitId])
+  @@index([paymentId])
+  @@index([uploadedById])
+  @@index([reviewedById])
+  @@index([type])
+  @@index([status])
+}
+
+model AdSpend {
+  id           String   @id @default(cuid())
+  source       String
+  campaign     String?
+  periodStart  DateTime
+  periodEnd    DateTime
+  amount       Float
+  currency     String   @default("USD")
+  notes        String?
+  createdById  String?
+  createdBy    User?    @relation("AdSpendCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([source])
+  @@index([campaign])
+  @@index([periodStart, periodEnd])
+  @@index([createdById])
+}
+
+model AnalyticsEvent {
+  id          String   @id @default(cuid())
+  eventName   String
+  source      String?
+  campaign    String?
+  utmSource   String?
+  utmMedium   String?
+  utmCampaign String?
+  utmContent  String?
+  utmTerm     String?
+  projectId   String?
+  project     Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  unitId      String?
+  unit        Unit?    @relation(fields: [unitId], references: [id], onDelete: SetNull)
+  leadId      String?
+  lead        Lead?    @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  clientId    String?
+  client      Client?  @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  distinctId  String?
+  sessionId   String?
+  landingPath String?
+  referrer    String?
+  locale      String?
+  properties  Json?
+  occurredAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  @@index([eventName, occurredAt])
+  @@index([source, occurredAt])
+  @@index([campaign, occurredAt])
+  @@index([utmCampaign, occurredAt])
+  @@index([projectId, occurredAt])
+  @@index([unitId, occurredAt])
+  @@index([leadId])
+  @@index([clientId])
+  @@index([sessionId, occurredAt])
 }
 
 model HeroImage {

@@ -52,6 +52,7 @@ export const publicBuildingSelect = {
   pointX: true,
   pointY: true,
   labelScale: true,
+  completionYear: true,
   sortOrder: true,
   createdAt: true,
   floors: {

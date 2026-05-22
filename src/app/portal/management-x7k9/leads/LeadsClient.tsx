@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Download, Search } from "lucide-react";
 import { getLeadStatusTone, LEAD_STATUSES } from "@/lib/lead-status";
@@ -25,6 +26,10 @@ interface Lead {
   buildingNameSnapshot: string | null;
   floorNumberSnapshot: number | null;
   createdAt: string;
+  updatedAt?: string;
+  nextActionAt?: string | null;
+  client?: { id: string; fullName: string; phone: string } | null;
+  assignedToUser?: { id: string; name: string | null; email: string | null } | null;
 }
 
 const LIMIT = 20;
@@ -33,6 +38,7 @@ interface Props {
   initialLeads: Lead[];
   initialTotal: number;
   initialPages: number;
+  emptyMessage?: string | null;
 }
 
 function escapeCsvValue(value: unknown) {
@@ -41,12 +47,20 @@ function escapeCsvValue(value: unknown) {
   return `"${formulaSafe.replace(/"/g, '""')}"`;
 }
 
-export default function LeadsClient({ initialLeads, initialTotal, initialPages }: Props) {
+export default function LeadsClient({ initialLeads, initialTotal, initialPages, emptyMessage }: Props) {
   const t = useTranslations("admin");
   const tc = useTranslations("common");
   const [leads, setLeads] = useState<Lead[]>(initialLeads);
 
   const SOURCE_LABEL: Record<string, string> = {
+    public_page: t("sourceBoshSahifa"),
+    contact_form: t("sourceBoshSahifa"),
+    apartment_page: t("sourceKvartiralar"),
+    visual_explorer: t("sourceVizual"),
+    floating_contact: "Floating contact",
+    waitlist: "Waitlist",
+    campaign: "Campaign",
+    manual: "Manual",
     kvartiralar: t("sourceKvartiralar"),
     vizual: t("sourceVizual"),
     "bosh-sahifa": t("sourceBoshSahifa"),
@@ -58,9 +72,17 @@ export default function LeadsClient({ initialLeads, initialTotal, initialPages }
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
-  const loadLeads = (p: number) => {
+  const buildLeadUrl = (p: number, nextQuery = query, nextStatus = statusFilter, limit = LIMIT) => {
+    const params = new URLSearchParams({ page: String(p), limit: String(limit) });
+    const q = nextQuery.trim();
+    if (q) params.set("q", q);
+    if (nextStatus !== "all") params.set("status", nextStatus);
+    return `/api/leads?${params.toString()}`;
+  };
+
+  const loadLeads = (p: number, nextQuery = query, nextStatus = statusFilter) => {
     setLoading(true);
-    fetch(`/api/leads?page=${p}&limit=${LIMIT}`)
+    fetch(buildLeadUrl(p, nextQuery, nextStatus))
       .then((res) => res.json())
       .then((data) => {
         setLeads(data.data);
@@ -73,6 +95,11 @@ export default function LeadsClient({ initialLeads, initialTotal, initialPages }
   const changePage = (p: number) => {
     setPage(p);
     loadLeads(p);
+  };
+
+  const applyFilters = () => {
+    setPage(1);
+    loadLeads(1);
   };
 
   const updateLead = async (leadId: string, patch: Partial<Pick<Lead, "status">>) => {
@@ -89,7 +116,7 @@ export default function LeadsClient({ initialLeads, initialTotal, initialPages }
   };
 
   const exportToCSV = async () => {
-    const res = await fetch(`/api/leads?page=1&limit=10000`);
+    const res = await fetch(buildLeadUrl(1, query, statusFilter, 10000));
     const data = await res.json();
     const allLeads: Lead[] = data.data;
     const headers = [
@@ -181,7 +208,11 @@ export default function LeadsClient({ initialLeads, initialTotal, initialPages }
         </div>
         <select
           value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
+          onChange={(e) => {
+            setStatusFilter(e.target.value);
+            setPage(1);
+            loadLeads(1, query, e.target.value);
+          }}
           className="a-input"
           style={{ height: 30, width: "auto", padding: "0 8px" }}
         >
@@ -192,6 +223,9 @@ export default function LeadsClient({ initialLeads, initialTotal, initialPages }
             </option>
           ))}
         </select>
+        <button onClick={applyFilters} className="a-btn" disabled={loading}>
+          {tc("search")}
+        </button>
       </div>
 
       {/* Table or empty */}
@@ -204,7 +238,7 @@ export default function LeadsClient({ initialLeads, initialTotal, initialPages }
           className="a-card text-center py-12 text-[13px]"
           style={{ color: "var(--a-text-tertiary)" }}
         >
-          {leads.length === 0 ? t("noLeadsYet") : t("noLeadsMatch")}
+          {leads.length === 0 ? emptyMessage || t("noLeadsYet") : t("noLeadsMatch")}
         </div>
       ) : (
         <div className="a-card overflow-x-auto">
@@ -223,7 +257,16 @@ export default function LeadsClient({ initialLeads, initialTotal, initialPages }
             <tbody>
               {filtered.map((lead) => (
                 <tr key={lead.id}>
-                  <td style={{ fontWeight: 500 }}>{lead.name}</td>
+                  <td style={{ fontWeight: 500 }}>
+                    <Link className="hover:underline" href={`/portal/management-x7k9/crm/leads/${lead.id}`}>
+                      {lead.client?.fullName || lead.name}
+                    </Link>
+                    {lead.assignedToUser ? (
+                      <div className="text-[11px]" style={{ color: "var(--a-text-tertiary)" }}>
+                        {lead.assignedToUser.name || lead.assignedToUser.email}
+                      </div>
+                    ) : null}
+                  </td>
                   <td>
                     <a
                       href={`tel:${lead.phone}`}

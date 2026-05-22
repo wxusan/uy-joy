@@ -3,11 +3,15 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { ImageInputError, readSafeImageInput } from "@/lib/secure-image-input";
 import { DetectFloorsSchema } from "@/lib/schemas/ai";
 import { invalidInput } from "@/lib/schemas/common";
+import { requirePlatformApiFeature } from "@/lib/platform-guards";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
 export async function POST(request: NextRequest) {
   try {
+    const guard = await requirePlatformApiFeature("aiAssistant", "manageInventory");
+    if (guard.response) return guard.response;
+
     const body = await request.json();
     const parsed = DetectFloorsSchema.safeParse(body);
     if (!parsed.success) return invalidInput(parsed.error);

@@ -3,6 +3,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { ImageInputError, readSafeImageInput } from "@/lib/secure-image-input";
 import { DetectApartmentsSchema } from "@/lib/schemas/ai";
 import { invalidInput } from "@/lib/schemas/common";
+import { requirePlatformApiFeature } from "@/lib/platform-guards";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
@@ -18,6 +19,9 @@ interface DetectedApartment {
 }
 
 export async function POST(req: Request) {
+  const guard = await requirePlatformApiFeature("aiAssistant", "manageInventory");
+  if (guard.response) return guard.response;
+
   const body = await req.json();
   const parsedInput = DetectApartmentsSchema.safeParse(body);
   if (!parsedInput.success) return invalidInput(parsedInput.error);

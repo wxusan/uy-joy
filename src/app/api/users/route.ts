@@ -1,16 +1,15 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
 import bcrypt from "bcryptjs";
 import prisma from "@/lib/prisma";
-import { authOptions } from "@/lib/auth";
 import { UserCreateSchema } from "@/lib/schemas/user";
 import { invalidInput } from "@/lib/schemas/common";
+import { requirePlatformApiAccess } from "@/lib/platform-guards";
+import { roleHasPlatformPermission } from "@/lib/platform-plans";
 
 export async function GET() {
-  const session = await getServerSession(authOptions);
-  if (!session || ((session.user as any).role !== "superadmin" && (session.user as any).role !== "developer")) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-  }
+  const auth = await requirePlatformApiAccess("manageUsers");
+  if (auth.response) return auth.response;
+
   const users = await prisma.user.findMany({
     where: { role: { not: "developer" } },
     select: { id: true, email: true, name: true, role: true, createdAt: true },
@@ -19,21 +18,35 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session || ((session.user as any).role !== "superadmin" && (session.user as any).role !== "developer")) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-  }
+  const auth = await requirePlatformApiAccess("manageUsers");
+  if (auth.response) return auth.response;
+
   const body = await req.json();
   const parsed = UserCreateSchema.safeParse(body);
   if (!parsed.success) return invalidInput(parsed.error);
   const input = parsed.data;
+  const role = input.role || "admin";
+
+  if (role === "developer" && !roleHasPlatformPermission(auth.user?.role, "technicalSettings")) {
+    return NextResponse.json({ error: "Developer accounts are managed by Uy Joy support" }, { status: 403 });
+  }
+
   const hashedPassword = await bcrypt.hash(input.password, 10);
   const user = await prisma.user.create({
     data: {
       email: input.email,
       password: hashedPassword,
       name: input.name,
-      role: input.role || "admin",
+      role,
+      ...(role === "sales_agent" || role === "sales_director"
+        ? {
+            salesAgentProfile: {
+              create: {
+                displayName: input.name,
+              },
+            },
+          }
+        : {}),
     },
     select: { id: true, email: true, name: true, role: true },
   });
@@ -41,17 +54,21 @@ export async function POST(req: Request) {
 }
 
 export async function DELETE(req: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session || ((session.user as any).role !== "superadmin" && (session.user as any).role !== "developer")) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-  }
+  const auth = await requirePlatformApiAccess("manageUsers");
+  if (auth.response) return auth.response;
+
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
 
   // Prevent self-deletion
-  if (id === (session.user as any).id) {
+  if (id === auth.user?.id) {
     return NextResponse.json({ error: "Cannot delete yourself" }, { status: 400 });
+  }
+
+  const target = await prisma.user.findUnique({ where: { id }, select: { role: true } });
+  if (target?.role === "developer" && !roleHasPlatformPermission(auth.user?.role, "technicalSettings")) {
+    return NextResponse.json({ error: "Developer accounts are managed by Uy Joy support" }, { status: 403 });
   }
 
   await prisma.user.delete({ where: { id } });

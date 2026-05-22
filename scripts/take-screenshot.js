@@ -1,6 +1,6 @@
-const puppeteer = require('puppeteer');
+const puppeteer = require('puppeteer-core');
 (async () => {
-  const browser = await puppeteer.launch({ headless: 'new' });
+  const browser = await puppeteer.launch({ channel: 'chrome', headless: true });
   const page = await browser.newPage();
   await page.setViewport({ width: 1440, height: 900 });
   

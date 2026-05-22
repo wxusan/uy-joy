@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
+import { roleHasPlatformPermission } from "@/lib/platform-plans";
 
 interface FAQ {
   id: string;
@@ -27,6 +29,8 @@ const emptyFAQ = {
 export default function FAQsPage() {
   const t = useTranslations("admin");
   const tc = useTranslations("common");
+  const { data: session } = useSession();
+  const role = (session?.user as { role?: string } | undefined)?.role;
   const [faqs, setFaqs] = useState<FAQ[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState(emptyFAQ);
@@ -35,8 +39,12 @@ export default function FAQsPage() {
 
   const loadFAQs = async () => {
     const res = await fetch("/api/faqs");
+    if (!res.ok) {
+      setFaqs([]);
+      return;
+    }
     const data = await res.json();
-    setFaqs(data);
+    setFaqs(Array.isArray(data) ? data : []);
   };
 
   useEffect(() => {
@@ -113,6 +121,14 @@ export default function FAQsPage() {
     setIsAdding(false);
     setFormData(emptyFAQ);
   };
+
+  if (!roleHasPlatformPermission(role, "managePublicContent")) {
+    return (
+      <p className="text-[13px]" style={{ color: "var(--a-text-tertiary)" }}>
+        {t("accessDenied")}
+      </p>
+    );
+  }
 
   return (
     <div>

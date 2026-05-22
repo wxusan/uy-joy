@@ -16,6 +16,24 @@ interface Unit {
   customerName: string | null;
   customerPhone: string | null;
   customerNotes: string | null;
+  reservedAt: string | Date | null;
+  soldAt: string | Date | null;
+  reservationExpiresAt: string | Date | null;
+  currentDeal: {
+    id: string;
+    dealNumber: string;
+    status: string;
+    salePrice: number;
+    currency: string;
+    client: { fullName: string; phone: string };
+    assignedTo: { name: string | null; email: string | null } | null;
+    paymentPlans: {
+      id: string;
+      status: string;
+      payments: { id: string; status: string; dueDate: string | Date; expectedAmount: number; paidAmount: number }[];
+    }[];
+    documents: { id: string; status: string }[];
+  } | null;
   floor: {
     id: string;
     number: number;
@@ -95,6 +113,69 @@ export default function UnitsClient({ initialUnits, initialBuildings, projectId 
     } else {
       updateUnit(unit.id, { status: newStatus, customerName: null, customerPhone: null, customerNotes: null });
     }
+  };
+
+  const createDealForUnit = async (unit: Unit, data: Record<string, unknown>) => {
+    const customerName = String(data.customerName || "").trim();
+    const customerPhone = String(data.customerPhone || "").trim();
+    if (!customerName || !customerPhone) {
+      alert("Client name and phone are required for deal-backed reservations.");
+      return;
+    }
+
+    const clientRes = await fetch("/api/crm/clients", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        fullName: customerName,
+        phone: customerPhone,
+        source: "unit_admin",
+        notes: data.customerNotes || null,
+      }),
+    });
+    const clientPayload = await clientRes.json();
+    const clientId = clientRes.status === 409 ? clientPayload.clientId : clientPayload.id;
+    if (!clientRes.ok && clientRes.status !== 409) throw new Error(clientPayload.error || "Failed to create client");
+
+    const pricePerM2 = unit.pricePerM2 || unit.floor.basePricePerM2 || 0;
+    const listPrice = unit.totalPrice || pricePerM2 * unit.area;
+    const dealRes = await fetch("/api/crm/deals", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        clientId,
+        projectId,
+        primaryUnitId: unit.id,
+        listPrice,
+        paymentTermMonths: 0,
+        notes: data.customerNotes || null,
+      }),
+    });
+    if (!dealRes.ok) {
+      const payload = await dealRes.json().catch(() => null);
+      throw new Error(payload?.error || "Failed to create deal");
+    }
+    const deal = await dealRes.json();
+
+    const reserveRes = await fetch(`/api/crm/deals/${deal.id}/reserve`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ notes: data.customerNotes || null }),
+    });
+    if (!reserveRes.ok) {
+      const payload = await reserveRes.json().catch(() => null);
+      throw new Error(payload?.error || "Failed to reserve unit");
+    }
+
+    if (data.status === "sold") {
+      const soldRes = await fetch(`/api/crm/deals/${deal.id}/mark-sold`, { method: "POST" });
+      if (!soldRes.ok) {
+        const payload = await soldRes.json().catch(() => null);
+        throw new Error(payload?.error || "Failed to mark sold");
+      }
+    }
+
+    loadUnits(filterStatus, filterRooms);
   };
 
   const roomOptions = useMemo(() => {
@@ -255,6 +336,28 @@ export default function UnitsClient({ initialUnits, initialBuildings, projectId 
                           {unit.customerNotes && <p className="truncate text-neutral-400">{unit.customerNotes}</p>}
                         </div>
                       )}
+                      {unit.currentDeal && (
+                        <div className="mt-3 border-t border-neutral-200 pt-2 text-xs">
+                          <a
+                            href={`/portal/management-x7k9/crm/deals/${unit.currentDeal.id}`}
+                            className="font-medium text-neutral-900 underline-offset-2 hover:underline"
+                          >
+                            {unit.currentDeal.dealNumber} · {unit.currentDeal.status}
+                          </a>
+                          <p className="text-neutral-500">{unit.currentDeal.client.fullName}</p>
+                          <p className="text-neutral-500">
+                            {unit.currentDeal.salePrice.toLocaleString()} {unit.currentDeal.currency}
+                          </p>
+                          {unit.reservationExpiresAt && unit.status === "reserved" ? (
+                            <p className="text-neutral-500">
+                              Expires {new Date(unit.reservationExpiresAt).toLocaleString()}
+                            </p>
+                          ) : null}
+                          <p className="text-neutral-400">
+                            Docs {unit.currentDeal.documents.length} · Payments {unit.currentDeal.paymentPlans[0]?.payments.length || 0}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -269,7 +372,11 @@ export default function UnitsClient({ initialUnits, initialBuildings, projectId 
           unit={reservationModal}
           onClose={() => setReservationModal(null)}
           onSave={async (data) => {
-            await updateUnit(reservationModal.id, data);
+            try {
+              await createDealForUnit(reservationModal, data);
+            } catch (error) {
+              alert(error instanceof Error ? error.message : t("failedToSubmit"));
+            }
             setReservationModal(null);
           }}
           translations={{
@@ -305,8 +412,6 @@ export default function UnitsClient({ initialUnits, initialBuildings, projectId 
               >
                 <option value="">{t("changeStatus")}</option>
                 <option value="available">{t("availableOption")}</option>
-                <option value="reserved">{t("reservedOption")}</option>
-                <option value="sold">{t("soldOption")}</option>
               </select>
               <input
                 type="number"
@@ -400,12 +505,12 @@ function ReservationModal({
         <h2 className="mb-5 text-xl font-semibold tracking-[-0.02em]">{isReserved ? tr.reserve : tr.sell} — №{unit.displayNumber}</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="mb-1 block text-sm font-medium text-neutral-700">{tr.customerName} {isReserved ? "" : "*"}</label>
+            <label className="mb-1 block text-sm font-medium text-neutral-700">{tr.customerName} *</label>
             <input
               type="text"
               value={customerName}
               onChange={(e) => setCustomerName(e.target.value)}
-              required={!isReserved}
+              required
               className="h-10 w-full rounded-[6px] border border-neutral-200 px-3 text-sm outline-none focus:border-neutral-500"
               placeholder={tr.customerNamePlaceholder}
             />
@@ -417,6 +522,7 @@ function ReservationModal({
               inputMode="tel"
               value={customerPhone}
               onChange={(e) => setCustomerPhone(e.target.value)}
+              required
               className="h-10 w-full rounded-[6px] border border-neutral-200 px-3 text-sm outline-none focus:border-neutral-500"
               placeholder="+998 XX XXX XX XX"
             />

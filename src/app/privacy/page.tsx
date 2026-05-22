@@ -1,6 +1,7 @@
 import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
 import { getLocale } from "next-intl/server";
+import { getPlatformSettings } from "@/lib/platform-settings";
 
 type Locale = "uz" | "ru" | "en";
 
@@ -12,7 +13,7 @@ const content: Record<Locale, {
 }> = {
   uz: {
     title: "Maxfiylik siyosati",
-    intro: "UyJoy orqali yuborilgan arizalar ko'chmas mulk savdo jamoasi bilan bog'lanish uchun qayta ishlanadi.",
+    intro: "{brand} orqali yuborilgan arizalar ko'chmas mulk savdo jamoasi bilan bog'lanish uchun qayta ishlanadi.",
     updated: "Oxirgi yangilanish: 16-may, 2026",
     sections: [
       {
@@ -33,13 +34,13 @@ const content: Record<Locale, {
       },
       {
         title: "O'chirishni so'rash",
-        body: "Ma'lumotlaringizni ko'rish yoki o'chirishni so'rash uchun sales@uy-joy.com manziliga ismingiz va telefon raqamingiz bilan yozing.",
+        body: "+998 77 041 12 22",
       },
     ],
   },
   ru: {
     title: "Политика конфиденциальности",
-    intro: "Заявки, отправленные через UyJoy, обрабатываются для связи с отделом продаж недвижимости.",
+    intro: "Заявки, отправленные через {brand}, обрабатываются для связи с отделом продаж недвижимости.",
     updated: "Последнее обновление: 16 мая 2026",
     sections: [
       {
@@ -60,13 +61,13 @@ const content: Record<Locale, {
       },
       {
         title: "Как запросить удаление",
-        body: "Чтобы запросить доступ к данным или их удаление, напишите на sales@uy-joy.com, указав имя и номер телефона.",
+        body: "+998 77 041 12 22",
       },
     ],
   },
   en: {
     title: "Privacy Policy",
-    intro: "Leads submitted through UyJoy are processed so the real-estate sales team can contact you.",
+    intro: "Leads submitted through {brand} are processed so the real-estate sales team can contact you.",
     updated: "Last updated: May 16, 2026",
     sections: [
       {
@@ -87,7 +88,7 @@ const content: Record<Locale, {
       },
       {
         title: "How to request deletion",
-        body: "To request access or deletion, email sales@uy-joy.com with your name and phone number.",
+        body: "+998 77 041 12 22",
       },
     ],
   },
@@ -95,7 +96,10 @@ const content: Record<Locale, {
 
 export default async function PrivacyPage() {
   const locale = (await getLocale()) as Locale;
+  const settings = getPlatformSettings();
   const page = content[locale] ?? content.uz;
+  const brandName = settings.publicBrandName;
+  const replaceBrand = (value: string) => value.replaceAll("{brand}", brandName);
 
   return (
     <main className="min-h-screen bg-[#f4efe7] text-[#15120f]">
@@ -103,13 +107,13 @@ export default async function PrivacyPage() {
       <section className="px-5 py-16 md:py-24">
         <div className="mx-auto max-w-4xl">
           <p className="font-heading text-[13px] font-semibold uppercase tracking-[0.24em] text-[#c66348]">
-            UyJoy
+            {brandName}
           </p>
           <h1 className="mt-4 font-display text-[48px] font-semibold leading-none tracking-normal text-[#15120f] md:text-[76px]">
             {page.title}
           </h1>
           <p className="mt-6 max-w-2xl text-[17px] font-medium leading-8 text-[#6f675e]">
-            {page.intro}
+            {replaceBrand(page.intro)}
           </p>
           <p className="mt-4 text-[13px] font-semibold text-[#8a7d70]">{page.updated}</p>
 
@@ -119,7 +123,16 @@ export default async function PrivacyPage() {
                 <h2 className="font-heading text-[22px] font-semibold leading-snug text-[#15120f]">
                   {section.title}
                 </h2>
-                <p className="text-[15px] font-medium leading-7 text-[#5f574f]">{section.body}</p>
+                {section.body.startsWith("+") ? (
+                  <a
+                    href={`tel:${section.body.replace(/\s/g, "")}`}
+                    className="text-[22px] font-semibold tracking-wide text-[#15120f] hover:text-[#c66348] transition-colors"
+                  >
+                    {section.body}
+                  </a>
+                ) : (
+                  <p className="text-[15px] font-medium leading-7 text-[#5f574f]">{replaceBrand(section.body)}</p>
+                )}
               </section>
             ))}
           </div>

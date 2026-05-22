@@ -6,8 +6,15 @@ import { useEffect, useState } from "react";
 import { Menu } from "lucide-react";
 import { useTranslations } from "next-intl";
 import AdminSidebar from "@/components/AdminSidebar";
+import { type FeatureEntitlement, type PlatformFeature } from "@/lib/platform-plans";
 
-function AdminGuard({ children }: { children: React.ReactNode }) {
+type AdminLayoutClientProps = {
+  children: React.ReactNode;
+  featureFlags: Record<PlatformFeature, FeatureEntitlement>;
+  brandName: string;
+};
+
+function AdminGuard({ children, featureFlags, brandName }: AdminLayoutClientProps) {
   const { data: session, status } = useSession();
   const router = useRouter();
   const pathname = usePathname();
@@ -58,7 +65,7 @@ function AdminGuard({ children }: { children: React.ReactNode }) {
           <Menu className="w-4 h-4" style={{ color: "var(--a-text)" }} />
         </button>
         <span className="text-[13px] font-semibold" style={{ color: "var(--a-text)" }}>
-          UyJoy
+          {brandName}
         </span>
       </header>
 
@@ -69,7 +76,7 @@ function AdminGuard({ children }: { children: React.ReactNode }) {
         />
       )}
 
-      <AdminSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <AdminSidebar brandName={brandName} featureFlags={featureFlags} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <main
         className="flex-1 overflow-auto mt-12 md:mt-0 md:ml-[232px]"
@@ -83,10 +90,10 @@ function AdminGuard({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default function AdminLayoutClient({ children }: { children: React.ReactNode }) {
+export default function AdminLayoutClient({ children, featureFlags, brandName }: AdminLayoutClientProps) {
   return (
     <SessionProvider>
-      <AdminGuard>{children}</AdminGuard>
+      <AdminGuard brandName={brandName} featureFlags={featureFlags}>{children}</AdminGuard>
     </SessionProvider>
   );
 }

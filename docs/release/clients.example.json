@@ -1,0 +1,13 @@
+{
+  "targets": [
+    {
+      "slug": "mirabad-demo",
+      "site": "https://demo.example.com",
+      "promote": false,
+      "vercelProjectId": "prj_replace_with_project_id",
+      "vercelTeamId": "team_replace_when_applicable",
+      "smokeAdminEmail": "owner@mirabad-demo.uz",
+      "smokeAdminPasswordEnv": "MIRABAD_DEMO_SMOKE_PASSWORD"
+    }
+  ]
+}

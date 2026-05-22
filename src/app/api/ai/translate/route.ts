@@ -2,11 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { TranslateSchema } from "@/lib/schemas/ai";
 import { invalidInput } from "@/lib/schemas/common";
+import { requirePlatformApiFeature } from "@/lib/platform-guards";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
 export async function POST(request: NextRequest) {
   try {
+    const guard = await requirePlatformApiFeature("aiAssistant", "managePublicContent");
+    if (guard.response) return guard.response;
+
     const body = await request.json();
     const parsed = TranslateSchema.safeParse(body);
     if (!parsed.success) return invalidInput(parsed.error);
@@ -70,9 +74,10 @@ Return ONLY a valid JSON object with translations, no other text:
           return NextResponse.json({ error: "Gemini REST error", detail: json?.error?.message || JSON.stringify(json) }, { status: 500 });
         }
         content = json?.candidates?.[0]?.content?.parts?.[0]?.text || null;
-      } catch (e: any) {
+      } catch (e: unknown) {
         console.error("Gemini REST fetch failed:", e);
-        return NextResponse.json({ error: "Failed to call Gemini REST", detail: e?.message || String(e) }, { status: 500 });
+        const detail = e instanceof Error ? e.message : String(e);
+        return NextResponse.json({ error: "Failed to call Gemini REST", detail }, { status: 500 });
       }
     }
 
@@ -105,9 +110,9 @@ Return ONLY a valid JSON object with translations, no other text:
     };
 
     return NextResponse.json({ translations: validatedTranslations });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error translating:", error);
-    const detail = typeof error?.message === "string" ? error.message : String(error);
+    const detail = error instanceof Error ? error.message : String(error);
     return NextResponse.json(
       { error: "Failed to translate", detail },
       { status: 500 }

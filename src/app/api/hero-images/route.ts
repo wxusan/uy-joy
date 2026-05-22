@@ -3,10 +3,14 @@ import prisma from "@/lib/prisma";
 import { invalidateProject } from "@/lib/cache";
 import { HeroImageCreateSchema } from "@/lib/schemas/hero-image";
 import { invalidInput } from "@/lib/schemas/common";
+import { requirePlatformApiFeature, requirePlatformFeature } from "@/lib/platform-guards";
 
 // GET all hero images
 export async function GET() {
   try {
+    const featureResponse = requirePlatformFeature("publicPage");
+    if (featureResponse) return featureResponse;
+
     const images = await prisma.heroImage.findMany({
       orderBy: { sortOrder: "asc" },
     });
@@ -20,6 +24,9 @@ export async function GET() {
 // POST new hero image (max 3)
 export async function POST(req: Request) {
   try {
+    const guard = await requirePlatformApiFeature("publicPage", "managePublicContent");
+    if (guard.response) return guard.response;
+
     const body = await req.json();
     const parsed = HeroImageCreateSchema.safeParse(body);
     if (!parsed.success) return invalidInput(parsed.error);

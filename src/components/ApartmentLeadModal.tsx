@@ -2,11 +2,12 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import posthog from "posthog-js";
 import { Building2, CircleCheck, Layers, MessageCircle, Ruler, Send, X } from "lucide-react";
 import { getFullImageUrl, getThumbnailUrl } from "@/lib/cloudinary";
+import { capturePublicEvent, collectLeadTracking } from "@/lib/public-lead-client";
 import SimilarUnits from "@/components/SimilarUnits";
 
 export interface LeadModalUnit {
@@ -49,6 +50,8 @@ export default function ApartmentLeadModal({ unit, allUnits = [], telegramUrl, s
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
   const resolvedTelegramUrl = resolveTelegramUrl(telegramUrl);
+  // Track whether the user has started typing (for lead_form_start event)
+  const hasStartedRef = useRef(false);
 
   const statusLabel = (status: string) => {
     if (status === "reserved") return tu("reserved");
@@ -66,15 +69,28 @@ export default function ApartmentLeadModal({ unit, allUnits = [], telegramUrl, s
     setFormData({ name: "", phone: "" });
     setSubmitted(false);
     setError("");
-  }, [unit]);
+    hasStartedRef.current = false;
+    capturePublicEvent("lead_form_view", { source, unitId: unit.id });
+  }, [unit, source]);
 
-  const photos = useMemo(
+  const [activePhotoIdx, setActivePhotoIdx] = useState(0);
+
+  const photos = useMemo(() => {
+    const imgs = [activeUnit.sketchImage, activeUnit.sketchImage2, activeUnit.sketchImage3, activeUnit.sketchImage4].filter(Boolean) as string[];
+    setActivePhotoIdx(0); // reset photo when unit changes
+    return imgs;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeUnit.id]);
+
+  // Units with the same layout (rooms + area) — used for floor picker
+  const sameLayoutUnits = useMemo(
     () =>
-      [activeUnit.sketchImage, activeUnit.sketchImage2, activeUnit.sketchImage3, activeUnit.sketchImage4].filter(
-        Boolean
-      ) as string[],
-    [activeUnit.sketchImage, activeUnit.sketchImage2, activeUnit.sketchImage3, activeUnit.sketchImage4]
+      allUnits
+        .filter((u) => u.rooms === activeUnit.rooms && u.area === activeUnit.area)
+        .sort((a, b) => a.floorNumber - b.floorNumber),
+    [allUnits, activeUnit.rooms, activeUnit.area]
   );
+
   const displayNumber = activeUnit.displayNumber;
   const pricePerM2 = activeUnit.pricePerM2 ?? activeUnit.basePricePerM2 ?? null;
   const totalPrice = activeUnit.totalPrice ?? (pricePerM2 ? Math.round(pricePerM2 * activeUnit.area) : null);
@@ -91,9 +107,18 @@ export default function ApartmentLeadModal({ unit, allUnits = [], telegramUrl, s
     });
   }, [activeUnit.area, activeUnit.buildingName, activeUnit.floorNumber, activeUnit.rooms, displayNumber, source]);
 
+  function handleFormInputChange(field: "name" | "phone", value: string) {
+    if (!hasStartedRef.current) {
+      hasStartedRef.current = true;
+      capturePublicEvent("lead_form_start", { source, unitId: activeUnit.id });
+    }
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  }
+
   const submitLead = async (leadSource: "kvartiralar" | "interactive-floor" | "waitlist") => {
     setSubmitting(true);
     setError("");
+    capturePublicEvent("lead_form_submit", { source: leadSource, unitId: activeUnit.id });
 
     try {
       const response = await fetch("/api/leads", {
@@ -104,19 +129,22 @@ export default function ApartmentLeadModal({ unit, allUnits = [], telegramUrl, s
           phone: formData.phone,
           unitId: activeUnit.id,
           unitNumber: displayNumber,
-          projectName: `${activeUnit.buildingName || "UyJoy"} - ${activeUnit.floorNumber}`,
-          source: leadSource,
+          projectName: `${activeUnit.buildingName || "Residence"} - ${activeUnit.floorNumber}`,
+          ...collectLeadTracking(leadSource),
         }),
       });
 
       if (!response.ok) {
+        capturePublicEvent("lead_form_error", { source: leadSource, unitId: activeUnit.id });
         setError(t("error"));
         return false;
       }
 
       setSubmitted(true);
+      capturePublicEvent("lead_form_success", { source: leadSource, unitId: activeUnit.id });
       return true;
     } catch {
+      capturePublicEvent("lead_form_error", { source: leadSource, unitId: activeUnit.id });
       setError(t("error"));
       return false;
     } finally {
@@ -167,11 +195,12 @@ export default function ApartmentLeadModal({ unit, allUnits = [], telegramUrl, s
         className="grid max-h-[92vh] w-full max-w-[900px] overflow-y-auto rounded-[8px] border border-[#f0d7be]/12 bg-[#111414] text-[#f4eadc] shadow-[0_30px_90px_rgba(0,0,0,0.48)] md:grid-cols-[minmax(0,1fr)_360px] md:overflow-hidden"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="min-w-0 border-b border-[#f0d7be]/10 p-4 md:border-b-0 md:border-r md:p-5">
+        <div className="flex min-w-0 flex-col gap-3 border-b border-[#f0d7be]/10 p-4 md:border-b-0 md:border-r md:p-5">
+          {/* Main image */}
           <div className="relative aspect-[4/3] overflow-hidden rounded-[6px] bg-[#efeae0]">
-            {photos[0] ? (
+            {photos[activePhotoIdx] ? (
               <Image
-                src={getFullImageUrl(photos[0])}
+                src={getFullImageUrl(photos[activePhotoIdx])}
                 alt={`Apartment ${displayNumber}`}
                 fill
                 className="object-contain p-3"
@@ -184,19 +213,65 @@ export default function ApartmentLeadModal({ unit, allUnits = [], telegramUrl, s
             )}
           </div>
 
+          {/* Photo thumbnails — clickable strip */}
           {photos.length > 1 && (
-            <div className="mt-3 grid grid-cols-3 gap-2">
-              {photos.slice(1, 4).map((photo, index) => (
-                <span key={photo} className="relative aspect-[4/3] overflow-hidden rounded-[5px] bg-[#efeae0]">
+            <div className="flex gap-2">
+              {photos.map((photo, idx) => (
+                <button
+                  key={photo}
+                  type="button"
+                  onClick={() => setActivePhotoIdx(idx)}
+                  className={`relative h-14 w-14 shrink-0 overflow-hidden rounded-[5px] border-2 transition ${
+                    idx === activePhotoIdx
+                      ? "border-[#c66348]"
+                      : "border-transparent opacity-60 hover:opacity-90"
+                  }`}
+                >
                   <Image
-                    src={getThumbnailUrl(photo, 160)}
-                    alt={`Apartment ${displayNumber} ${index + 2}`}
+                    src={getThumbnailUrl(photo, 80)}
+                    alt={`Photo ${idx + 1}`}
                     fill
-                    className="object-contain p-1.5"
-                    sizes="150px"
+                    className="object-contain bg-[#efeae0] p-1"
+                    sizes="56px"
                   />
-                </span>
+                </button>
               ))}
+            </div>
+          )}
+
+          {/* Floor picker */}
+          {sameLayoutUnits.length > 1 && (
+            <div className="mt-auto pt-1">
+              <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-[#8f8172]">
+                {tu("floor")}
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {sameLayoutUnits.map((u) => {
+                  const isActive = u.id === activeUnit.id;
+                  const isUnavailable = u.status !== "available";
+                  return (
+                    <button
+                      key={u.id}
+                      type="button"
+                      onClick={() => {
+                        setActiveUnit(u);
+                        setFormData({ name: "", phone: "" });
+                        setSubmitted(false);
+                        setError("");
+                      }}
+                      className={`h-8 min-w-8 rounded-[5px] px-2.5 text-[13px] font-semibold transition ${
+                        isActive
+                          ? "bg-[#c66348] text-white"
+                          : isUnavailable
+                          ? "border border-[#f0d7be]/10 text-[#5a504a] line-through"
+                          : "border border-[#f0d7be]/15 text-[#d7c8b7] hover:border-[#c66348] hover:text-white"
+                      }`}
+                    >
+                      {u.floorNumber}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>
@@ -289,7 +364,7 @@ export default function ApartmentLeadModal({ unit, allUnits = [], telegramUrl, s
                   type="text"
                   required
                   value={formData.name}
-                  onChange={(event) => setFormData({ ...formData, name: event.target.value })}
+                  onChange={(event) => handleFormInputChange("name", event.target.value)}
                   className="h-12 w-full rounded-[6px] border border-[#f0d7be]/12 bg-[#0c0f10] px-4 text-[14px] font-medium text-[#fff4e8] outline-none transition placeholder:text-[#7b7065] focus:border-[#d58a69]"
                   placeholder={t("namePlaceholder")}
                   autoComplete="name"
@@ -299,7 +374,7 @@ export default function ApartmentLeadModal({ unit, allUnits = [], telegramUrl, s
                   inputMode="tel"
                   required
                   value={formData.phone}
-                  onChange={(event) => setFormData({ ...formData, phone: event.target.value })}
+                  onChange={(event) => handleFormInputChange("phone", event.target.value)}
                   className="h-12 w-full rounded-[6px] border border-[#f0d7be]/12 bg-[#0c0f10] px-4 text-[14px] font-medium text-[#fff4e8] outline-none transition placeholder:text-[#7b7065] focus:border-[#d58a69]"
                   placeholder="+998 XX XXX XX XX"
                   autoComplete="tel"
@@ -336,7 +411,7 @@ export default function ApartmentLeadModal({ unit, allUnits = [], telegramUrl, s
                       type="text"
                       required
                       value={formData.name}
-                      onChange={(event) => setFormData({ ...formData, name: event.target.value })}
+                      onChange={(event) => handleFormInputChange("name", event.target.value)}
                       className="h-11 w-full rounded-[6px] border border-[#f0d7be]/12 bg-[#0c0f10] px-4 text-[14px] font-medium text-[#fff4e8] outline-none transition placeholder:text-[#7b7065] focus:border-[#d58a69]"
                       placeholder={t("namePlaceholder")}
                       autoComplete="name"
@@ -346,7 +421,7 @@ export default function ApartmentLeadModal({ unit, allUnits = [], telegramUrl, s
                       inputMode="tel"
                       required
                       value={formData.phone}
-                      onChange={(event) => setFormData({ ...formData, phone: event.target.value })}
+                      onChange={(event) => handleFormInputChange("phone", event.target.value)}
                       className="h-11 w-full rounded-[6px] border border-[#f0d7be]/12 bg-[#0c0f10] px-4 text-[14px] font-medium text-[#fff4e8] outline-none transition placeholder:text-[#7b7065] focus:border-[#d58a69]"
                       placeholder="+998 XX XXX XX XX"
                       autoComplete="tel"

@@ -4,8 +4,12 @@ import { publicProjectSelect } from "@/lib/public-selects";
 import { invalidateProject } from "@/lib/cache";
 import { ProjectUpdateSchema } from "@/lib/schemas/project";
 import { invalidInput } from "@/lib/schemas/common";
+import { requirePlatformApiFeature, requirePlatformFeature } from "@/lib/platform-guards";
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
+  const featureResponse = requirePlatformFeature("publicPage");
+  if (featureResponse) return featureResponse;
+
   const project = await prisma.project.findUnique({
     where: { id: params.id },
     select: publicProjectSelect,
@@ -15,6 +19,9 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
 }
 
 export async function PUT(req: Request, { params }: { params: { id: string } }) {
+  const guard = await requirePlatformApiFeature("publicPage", "managePublicContent");
+  if (guard.response) return guard.response;
+
   const body = await req.json();
   const parsed = ProjectUpdateSchema.safeParse(body);
   if (!parsed.success) return invalidInput(parsed.error);

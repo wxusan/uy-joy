@@ -18,7 +18,7 @@ interface Unit {
   floor: {
     number: number;
     basePricePerM2: number | null;
-    building: { name: string };
+    building: { name: string; completionYear?: number | null };
   };
 }
 

@@ -3,6 +3,7 @@ import { revalidateTag } from "next/cache";
 import prisma from "@/lib/prisma";
 import { FAQUpdateSchema } from "@/lib/schemas/faq";
 import { invalidInput } from "@/lib/schemas/common";
+import { requirePlatformApiFeature } from "@/lib/platform-guards";
 
 // PUT update FAQ
 export async function PUT(
@@ -10,6 +11,9 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const guard = await requirePlatformApiFeature("publicPage", "managePublicContent");
+    if (guard.response) return guard.response;
+
     const { id } = await params;
     const data = await req.json();
     const parsed = FAQUpdateSchema.safeParse(data);
@@ -37,6 +41,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const guard = await requirePlatformApiFeature("publicPage", "managePublicContent");
+    if (guard.response) return guard.response;
+
     const { id } = await params;
 
     await prisma.fAQ.delete({

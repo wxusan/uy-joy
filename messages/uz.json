@@ -509,7 +509,9 @@
     "floorsAvailable": "Qavatlar",
     "selectFloor": "Qavatni tanlang",
     "backToFloors": "Qavatlarga qaytish",
-    "similarPlans": "Mavjud o'xshash rejalar"
+    "similarPlans": "Mavjud o'xshash rejalar",
+    "building": "Bino",
+    "readyYear": "Topshirish yili"
   },
   "contact": {
     "title": "Siz bilan bog'lanishimizni xohlaysizmi?",

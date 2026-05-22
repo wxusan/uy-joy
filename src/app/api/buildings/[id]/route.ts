@@ -5,8 +5,12 @@ import { publicBuildingSelect } from "@/lib/public-selects";
 import { invalidateProject } from "@/lib/cache";
 import { BuildingUpdateSchema } from "@/lib/schemas/building";
 import { invalidInput } from "@/lib/schemas/common";
+import { requirePlatformApiFeature, requirePlatformFeature } from "@/lib/platform-guards";
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
+  const featureResponse = requirePlatformFeature("inventory");
+  if (featureResponse) return featureResponse;
+
   const building = await prisma.building.findUnique({
     where: { id: params.id },
     select: publicBuildingSelect,
@@ -16,6 +20,9 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
 }
 
 export async function PUT(req: Request, { params }: { params: { id: string } }) {
+  const guard = await requirePlatformApiFeature("inventory", "manageInventory");
+  if (guard.response) return guard.response;
+
   const body = await req.json();
   const parsed = BuildingUpdateSchema.safeParse(body);
   if (!parsed.success) return invalidInput(parsed.error);
@@ -24,6 +31,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   const data: Prisma.BuildingUpdateInput = {};
 
   if (input.name !== undefined) data.name = input.name;
+  if (input.completionYear !== undefined) data.completionYear = input.completionYear;
   if (input.frontViewImage !== undefined) data.frontViewImage = input.frontViewImage;
   if (input.backViewImage !== undefined) data.backViewImage = input.backViewImage;
   if (input.leftViewImage !== undefined) data.leftViewImage = input.leftViewImage;
@@ -45,6 +53,9 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 }
 
 export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
+  const guard = await requirePlatformApiFeature("inventory", "manageInventory");
+  if (guard.response) return guard.response;
+
   await prisma.building.delete({ where: { id: params.id } });
   invalidateProject();
   return NextResponse.json({ success: true });

@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import Image from "next/image";
 import Navbar from "@/components/Navbar";
@@ -7,11 +8,16 @@ import ApartmentsClient from "./ApartmentsClient";
 import type { Locale } from "@/lib/translations";
 import { getCachedProjectWithPolygonUnits } from "@/lib/cached-queries";
 import { getHeroImageUrl } from "@/lib/cloudinary";
+import { getPlatformSettings, platformSettingsHasFeature } from "@/lib/platform-settings";
 
 // ISR: Revalidate every 60 seconds for faster loading
 export const revalidate = 60;
 
 export default async function ApartmentsPage() {
+  if (!platformSettingsHasFeature(getPlatformSettings(), "inventory")) {
+    notFound();
+  }
+
   const t = await getTranslations();
   const cookieStore = await cookies();
   const locale = (cookieStore.get("locale")?.value || "uz") as Locale;
@@ -53,6 +59,7 @@ export default async function ApartmentsPage() {
           basePricePerM2: floor.basePricePerM2,
           building: {
             name: building.name,
+            completionYear: building.completionYear ?? null,
           },
         },
       }))
@@ -80,6 +87,20 @@ export default async function ApartmentsPage() {
     min: areas.length ? Math.floor(Math.min(...areas)) : 0,
     max: areas.length ? Math.ceil(Math.max(...areas)) : 200,
   };
+
+  const floors = units.map((u) => u.floor.number);
+  const floorRange = {
+    min: floors.length ? Math.min(...floors) : 1,
+    max: floors.length ? Math.max(...floors) : 30,
+  };
+
+  const buildingsSet = new Set(units.map((u) => u.floor.building.name));
+  const buildings = Array.from(buildingsSet).sort();
+
+  const yearsSet = new Set(
+    units.map((u) => u.floor.building.completionYear).filter((y) => y != null) as number[]
+  );
+  const completionYears = Array.from(yearsSet).sort();
 
   return (
     <>
@@ -135,6 +156,9 @@ export default async function ApartmentsPage() {
           filterOptions={{
             rooms,
             areaRange,
+            floorRange,
+            buildings,
+            completionYears,
           }}
           projectName={projectName}
           expectedYear={expectedYear}

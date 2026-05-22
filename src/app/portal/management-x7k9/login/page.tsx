@@ -8,6 +8,7 @@ import { useTranslations } from "next-intl";
 export default function LoginPage() {
   const t = useTranslations("login");
   const router = useRouter();
+  const brandName = process.env.NEXT_PUBLIC_CLIENT_BRAND_NAME || "Uy Joy";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -48,7 +49,7 @@ export default function LoginPage() {
             U
           </div>
           <span className="text-[14px] font-semibold" style={{ color: "var(--a-text)" }}>
-            UyJoy
+            {brandName}
           </span>
         </div>
 

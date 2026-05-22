@@ -1,24 +1,23 @@
-# UyJoy — Interactive Apartment Platform
+# UyJoy — White-Label Real-Estate Sales Platform
 
-A modern, production-ready Next.js application for visualizing and managing apartment residency. Built with an interactive SVG floor plan viewer, real-time status updates, and a complete admin panel.
+A Next.js platform for client-branded apartment sales: public lead pages, CRM, inventory, deals, payments, documents, reports, Telegram delivery, and white-label deployment controls.
 
-"Uy Joy" means "home" in Uzbek 🇺🇿
+"Uy Joy" means "home" in Uzbek.
 
 ## Features
 
-- 🏢 **Interactive Floor Plans** — SVG-based floor plans with color-coded unit status
-- 🎯 **Building Visualization** — Building elevation view with clickable floors
-- 💰 **Dynamic Pricing** — Per-floor base prices with unit-specific overrides
-- 🔐 **Admin Panel** — Secure dashboard for managing projects, units, and users
-- 📱 **Responsive Design** — Mobile-first approach with Tailwind CSS
-- 🗃️ **SQLite Database** — Zero-config local database with Prisma ORM
+- **White-label settings** — client env/status, feature plan, integrations, users, password operations
+- **Public sales page** — branded content, apartments, lead capture, Telegram outbox
+- **CRM** — leads, clients, tasks, pipeline, role-scoped visibility
+- **Real estate layer** — inventory, deals, reservations, payment plans, documents, refunds
+- **Reports** — executive, sales, inventory, finance, marketing, agent, weekly digest
 
 ## Tech Stack
 
 - **Framework:** Next.js 14 (App Router)
 - **Language:** TypeScript
 - **Styling:** Tailwind CSS
-- **Database:** SQLite + Prisma ORM
+- **Database:** PostgreSQL + Prisma ORM
 - **Auth:** NextAuth.js (Credentials provider)
 
 ## Quick Start
@@ -32,29 +31,23 @@ npm install
 ### 2. Set up environment variables
 
 ```bash
-cp .env.example .env
+cp .env.example .env.local
 ```
 
-Edit `.env` if needed (defaults work for local development).
+Fill required values, especially `DATABASE_URL`, `DIRECT_URL`, `NEXTAUTH_SECRET`, `CLIENT_SLUG`, `CLIENT_PLATFORM_PLAN`, `CRON_SECRET`, and Cloudinary credentials.
 
 ### 3. Initialize the database
 
 ```bash
 npx prisma generate
-npx prisma db push
+npx prisma migrate dev
 ```
 
-### 4. Seed demo data
+### 4. Create first admin
 
 ```bash
-npx prisma db seed
+ADMIN_EMAIL=owner@example.com ADMIN_PASSWORD='StrongPass12345' npm run admin:create-first
 ```
-
-This creates:
-- 1 project: "Navruz Residence"
-- 1 building: "Block A" with 9 floors
-- 54 apartments with varied sizes and statuses
-- 1 superadmin user
 
 ### 5. Run the development server
 
@@ -64,12 +57,27 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## Demo Credentials
+## Deployment
 
-**Admin Panel:** [http://localhost:3000/admin](http://localhost:3000/admin)
+Use the launch docs before every paid white-label deployment:
 
-- **Email:** admin@navruz.uz
-- **Password:** admin123
+- `docs/crm-platform/06-client-launch-checklist.md`
+- `docs/runbook.md`
+- `LAUNCH_CHECKLIST.md`
+
+Smoke test:
+
+```bash
+SMOKE_SITE=https://client-domain npm run smoke:client
+```
+
+Demo reset for the sales instance:
+
+```bash
+DEMO_DATABASE_CONFIRM=demo npm run demo:reset
+```
+
+Use `.env.demo.example` only with a dedicated demo database.
 
 ## Project Structure
 
@@ -77,54 +85,34 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 uy-joy/
 ├── prisma/
 │   ├── schema.prisma      # Database schema
-│   ├── seed.ts            # Demo data seeder
-│   └── dev.db             # SQLite database file
+│   ├── migrations/        # PostgreSQL migrations
+│   └── seed.ts            # Demo data seeder
 ├── src/
 │   ├── app/
-│   │   ├── page.tsx                    # Landing page
-│   │   ├── projects/[projectId]/
-│   │   │   ├── page.tsx                # Project detail page
-│   │   │   └── explore/page.tsx        # Interactive floor plan viewer
-│   │   ├── admin/
-│   │   │   ├── page.tsx                # Dashboard
-│   │   │   ├── projects/               # Project management
-│   │   │   └── users/                  # User management (superadmin)
+│   │   ├── page.tsx                    # Public white-label page
+│   │   ├── apartments/                 # Public apartment inventory
+│   │   ├── portal/management-x7k9/     # Admin CRM
 │   │   └── api/                        # API routes
 │   ├── components/
-│   │   ├── FloorPlanSVG.tsx            # Interactive SVG floor plan
-│   │   ├── FloorSelector.tsx           # Floor list with availability
-│   │   ├── UnitDetailModal.tsx         # Unit information popup
+│   │   ├── AdminSidebar.tsx            # Role/feature gated admin nav
+│   │   ├── BuildingViewer.tsx          # Interactive public inventory
+│   │   ├── ApartmentLeadModal.tsx      # Public lead capture
 │   │   └── ...                         # Other UI components
 │   └── lib/
 │       ├── prisma.ts                   # Prisma client singleton
 │       ├── auth.ts                     # NextAuth configuration
+│       ├── platform-plans.ts           # Plan/feature/role source of truth
+│       ├── platform-settings.ts        # Env-backed client settings
 │       └── utils.ts                    # Helper functions
 └── ...
 ```
-
-## Unit Status Colors
-
-- 🟢 **Available** — Green (#22c55e)
-- 🟡 **Reserved** — Yellow (#eab308)
-- 🔴 **Sold** — Red (#ef4444)
-
-## Price Tiers (Demo Data)
-
-| Floors | Price per m² |
-|--------|-------------|
-| 1-3    | 8,000,000 UZS |
-| 4-6    | 10,000,000 UZS |
-| 7-9    | 12,000,000 UZS |
-
-Corner units (positions 0 and 5) have a 15% premium.
 
 ## Development
 
 ### Reset Database
 
 ```bash
-npx prisma db push --force-reset
-npx prisma db seed
+npx prisma migrate reset
 ```
 
 ### View Database

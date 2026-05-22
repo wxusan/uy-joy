@@ -26,6 +26,8 @@ type NavItem = {
 type NavbarClientProps = {
   currentLocale: string;
   phoneNumber?: string | null;
+  brandName: string;
+  showApartments: boolean;
   labels: NavbarLabels;
 };
 
@@ -37,7 +39,7 @@ const localeShortNames: Record<Locale, string> = {
 
 const homeSectionIds = ["explore", "about", "location", "contact"] as const;
 
-export default function NavbarClient({ currentLocale, phoneNumber, labels }: NavbarClientProps) {
+export default function NavbarClient({ currentLocale, phoneNumber, brandName, showApartments, labels }: NavbarClientProps) {
   const router = useRouter();
   const pathname = usePathname() || "/";
   const tc = useTranslations("common");
@@ -53,7 +55,7 @@ export default function NavbarClient({ currentLocale, phoneNumber, labels }: Nav
 
   const navItems: NavItem[] = [
     { label: labels.residence, href: "/", matchPath: "/" },
-    { label: labels.apartments, href: "/apartments", matchPath: "/apartments" },
+    ...(showApartments ? [{ label: labels.apartments, href: "/apartments", matchPath: "/apartments" }] : []),
     { label: labels.location, href: "/#location", hash: "location" },
     { label: labels.aboutUyjoy, href: "/#about", hash: "about" },
     { label: labels.contacts, href: "/#contact", hash: "contact" },
@@ -197,11 +199,11 @@ export default function NavbarClient({ currentLocale, phoneNumber, labels }: Nav
         <Link
           href="/"
           className="group relative top-[4px] flex shrink-0 flex-col leading-none lg:top-[7px]"
-          aria-label="UyJoy Residence"
+          aria-label={`${brandName} ${labels.residence}`}
           onClick={() => setMenuOpen(false)}
         >
           <span className="font-display text-[34px] font-semibold leading-[0.82] tracking-normal text-[#f2dfc5] transition-colors group-hover:text-white lg:text-[39px]">
-            UyJoy
+            {brandName}
           </span>
           <span className="mt-1 pl-[15px] text-[13px] font-medium leading-none tracking-normal text-[#d8c5ad] lg:text-[13px]">
             {labels.residence}

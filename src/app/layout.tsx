@@ -35,7 +35,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "UyJoy — Interactive Apartment Platform",
+  title: `${process.env.NEXT_PUBLIC_CLIENT_BRAND_NAME || process.env.CLIENT_PUBLIC_BRAND_NAME || "Uy Joy"} — Apartments`,
   description: "Find and explore apartments in residential complexes",
 };
 

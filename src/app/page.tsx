@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { cookies } from "next/headers";
+import { notFound } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import dynamic from "next/dynamic";
@@ -11,10 +12,13 @@ import HomeStats from "@/components/HomeStats";
 import FeaturedApartments from "@/components/FeaturedApartments";
 import ScrollReveal from "@/components/ScrollReveal";
 import ExploreClient from "@/components/ExploreClient";
+import PublicPageAnalytics from "@/components/PublicPageAnalytics";
 import { getCachedProject, getCachedHeroImages, getCachedFAQs } from "@/lib/cached-queries";
 import type { Locale } from "@/lib/translations";
 import { getHeroImageUrl, getCardImageUrl } from "@/lib/cloudinary";
 import { computeDisplayNumber } from "@/lib/unit-display";
+import { getPlatformSettings, platformSettingsHasFeature } from "@/lib/platform-settings";
+import { DEFAULT_PUBLIC_PAGE_COLORS, getPublicPageConfig, sectionEnabled, translatePublicText } from "@/lib/public-page";
 import Image from "next/image";
 import { ArrowRight, Building2, KeyRound, ShieldCheck, Trees } from "lucide-react";
 
@@ -22,9 +26,15 @@ import { ArrowRight, Building2, KeyRound, ShieldCheck, Trees } from "lucide-reac
 export const revalidate = 60;
 
 export default async function Home() {
+  if (!platformSettingsHasFeature(getPlatformSettings(), "publicPage")) {
+    notFound();
+  }
+
   const t = await getTranslations();
   const cookieStore = await cookies();
   const locale = (cookieStore.get("locale")?.value || "uz") as Locale;
+  const platformSettings = getPlatformSettings();
+  const inventoryEnabled = platformSettingsHasFeature(platformSettings, "inventory");
 
   // Get cached data for faster loading
   const [heroImages, faqs, project] = await Promise.all([
@@ -59,6 +69,15 @@ export default async function Home() {
   const projectName = getTranslated(project.nameTranslations, project.name);
   const projectDescription = getTranslated(project.descriptionTranslations, project.description ?? "");
   const projectAddress = getTranslated(project.addressTranslations, project.address ?? "");
+  const publicPage = await getPublicPageConfig(project.id);
+  const publicConfig = publicPage?.config ?? null;
+  const brandName = publicConfig?.brandName || projectName;
+  const heroTitle = translatePublicText(publicConfig?.heroTitleJson, locale, brandName);
+  const heroSubtitle = translatePublicText(publicConfig?.heroSubtitleJson, locale, projectDescription);
+  const formTitle = translatePublicText(publicConfig?.formTitleJson, locale, "");
+  const formSubtitle = translatePublicText(publicConfig?.formSubtitleJson, locale, "");
+  const thankYouTitle = translatePublicText(publicConfig?.thankYouTitleJson, locale, "");
+  const thankYouMessage = translatePublicText(publicConfig?.thankYouMessageJson, locale, "");
   const expectedYear = project.expectedYear ?? new Date().getFullYear() + 2;
 
   const publicProject = {
@@ -146,13 +165,27 @@ export default async function Home() {
   return (
     <>
       <Navbar />
-      <main className="flex-1">
+      <PublicPageAnalytics projectId={project.id} locale={locale} />
+      <main
+        className="flex-1"
+        style={
+          {
+            "--public-primary": publicConfig?.primaryColor || DEFAULT_PUBLIC_PAGE_COLORS.primaryColor,
+            "--public-secondary": publicConfig?.secondaryColor || DEFAULT_PUBLIC_PAGE_COLORS.secondaryColor,
+            "--public-accent": publicConfig?.accentColor || DEFAULT_PUBLIC_PAGE_COLORS.accentColor,
+            "--public-bg": publicConfig?.backgroundColor || DEFAULT_PUBLIC_PAGE_COLORS.backgroundColor,
+            "--public-text": publicConfig?.textColor || DEFAULT_PUBLIC_PAGE_COLORS.textColor,
+            backgroundColor: publicConfig?.backgroundColor || undefined,
+            color: publicConfig?.textColor || undefined,
+          } as React.CSSProperties
+        }
+      >
         {/* Interactive Master Plan Hero */}
         <section id="explore" className="bg-[#11100f] lg:-mt-[93px]">
           <ExploreClient
             project={JSON.parse(JSON.stringify(publicProject))}
-            heroTitle={projectName}
-            heroSubtitle={projectDescription}
+            heroTitle={heroTitle}
+            heroSubtitle={heroSubtitle}
             heroMinPricePerM2={minPricePerM2}
             heroAvailableCount={available}
             heroTotalCount={allUnits.length}
@@ -161,20 +194,23 @@ export default async function Home() {
         </section>
 
         {/* Quick Stats with Animated Counters + Progress Bars */}
-        <HomeStats
-          total={allUnits.length}
-          available={available}
-          reserved={reserved}
-          sold={sold}
-          labels={{
-            total: t("project.totalUnits"),
-            available: t("project.available"),
-            reserved: t("project.reserved"),
-            sold: t("project.sold"),
-          }}
-        />
+        {inventoryEnabled && sectionEnabled(publicConfig, "apartment_highlights") && (
+          <HomeStats
+            total={allUnits.length}
+            available={available}
+            reserved={reserved}
+            sold={sold}
+            labels={{
+              total: t("project.totalUnits"),
+              available: t("project.available"),
+              reserved: t("project.reserved"),
+              sold: t("project.sold"),
+            }}
+          />
+        )}
 
         {/* About */}
+        {sectionEnabled(publicConfig, "project_overview") && (
         <section id="about" className="bg-[#f4efe7] px-5 py-16 text-[#15120f] md:py-24">
           <div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-[minmax(0,0.95fr)_minmax(420px,1.05fr)] lg:gap-20">
             <ScrollReveal direction="left">
@@ -253,24 +289,30 @@ export default async function Home() {
             </ScrollReveal>
           </div>
         </section>
+        )}
 
         {/* Featured Apartments */}
-        <FeaturedApartments
-          units={featuredUnitsData}
-          projectName={projectName}
-          expectedYear={expectedYear}
-          telegramUrl={project.telegramUrl}
-        />
+        {inventoryEnabled && sectionEnabled(publicConfig, "apartment_highlights") && (
+          <FeaturedApartments
+            units={featuredUnitsData}
+            projectName={projectName}
+            expectedYear={expectedYear}
+            telegramUrl={project.telegramUrl}
+          />
+        )}
 
         {/* Location & Infrastructure */}
-        {project.latitude && project.longitude ? (
+        {sectionEnabled(publicConfig, "location") && project.latitude && project.longitude ? (
           <LocationInfrastructure
             latitude={project.latitude}
             longitude={project.longitude}
-            infrastructure={project.infrastructure as any ?? undefined}
+            infrastructure={
+              project.infrastructure as unknown as React.ComponentProps<typeof LocationInfrastructure>["infrastructure"]
+            }
             address={projectAddress}
+            brandName={platformSettings.publicBrandName}
           />
-        ) : (
+        ) : sectionEnabled(publicConfig, "location") ? (
           <section className="bg-slate-800 text-white py-16">
             <div className="max-w-6xl mx-auto px-4">
               <h2 className="text-2xl font-bold mb-6">{t("project.location")}</h2>
@@ -291,27 +333,36 @@ export default async function Home() {
               </div>
             </div>
           </section>
-        )}
+        ) : null}
 
         {/* FAQ & Contact Form */}
+        {sectionEnabled(publicConfig, "contact_form") && (
         <section id="contact" className="relative overflow-hidden border-y border-[#ded2c6] bg-[#f4efe7] px-5 py-16 md:py-24">
           <div className="relative mx-auto max-w-7xl">
             <div className="grid gap-12 lg:grid-cols-[minmax(0,1.05fr)_minmax(420px,0.95fr)] lg:gap-20">
+              {sectionEnabled(publicConfig, "faq") && (
               <ScrollReveal>
                 <FAQ items={faqs} locale={locale} />
               </ScrollReveal>
+              )}
               <ScrollReveal delay={90}>
                 <ContactForm
                   projectId={project.id}
-                  projectName={projectName}
+                  projectName={brandName}
                   phoneNumber={project.phoneNumber}
                   telegramUrl={project.telegramUrl}
                   salesOfficeAddress={project.salesOfficeAddress}
+                  source="contact_form"
+                  formTitle={formTitle}
+                  formSubtitle={formSubtitle}
+                  thankYouTitle={thankYouTitle}
+                  thankYouMessage={thankYouMessage}
                 />
               </ScrollReveal>
             </div>
           </div>
         </section>
+        )}
 
         {/* Find Best Option CTA */}
         <section className="relative overflow-hidden border-t border-[#2f2b25] bg-[#151716] px-5 py-16 text-[#fff8ec] md:py-20">

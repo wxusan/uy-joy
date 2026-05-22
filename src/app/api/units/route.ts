@@ -1,14 +1,16 @@
 import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
-import { getServerSession } from "next-auth";
 import prisma from "@/lib/prisma";
-import { authOptions } from "@/lib/auth";
 import { attachUnitDisplayNumber, publicUnitWithLocationSelect } from "@/lib/public-selects";
 import { invalidateProject } from "@/lib/cache";
 import { UnitBulkUpdateSchema, UnitCreateSchema } from "@/lib/schemas/unit";
 import { invalidInput } from "@/lib/schemas/common";
+import { requirePlatformApiAccess, requirePlatformApiFeature, requirePlatformFeature } from "@/lib/platform-guards";
 
 export async function GET(req: Request) {
+  const featureResponse = requirePlatformFeature("inventory");
+  if (featureResponse) return featureResponse;
+
   const { searchParams } = new URL(req.url);
   const floorId = searchParams.get("floorId");
   const status = searchParams.get("status");
@@ -35,10 +37,8 @@ export async function GET(req: Request) {
     // The unbounded inventory dump is admin-only — it's the full price /
     // availability list of every unit in one response, which is a prime
     // scraping target for competitors.
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
-    }
+    const guard = await requirePlatformApiAccess("manageInventory");
+    if (guard.response) return guard.response;
 
     const units = await prisma.unit.findMany({
       where,
@@ -68,10 +68,16 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  const guard = await requirePlatformApiFeature("inventory", "manageInventory");
+  if (guard.response) return guard.response;
+
   const body = await req.json();
   const parsed = UnitCreateSchema.safeParse(body);
   if (!parsed.success) return invalidInput(parsed.error);
   const input = parsed.data;
+  if (input.status === "reserved" || input.status === "sold") {
+    return NextResponse.json({ error: "Create units as available, then use the deal workflow to reserve or sell" }, { status: 400 });
+  }
 
   const unit = await prisma.unit.create({
     data: {
@@ -97,10 +103,16 @@ export async function POST(req: Request) {
 // Bulk update units
 export async function PATCH(req: Request) {
   try {
+    const guard = await requirePlatformApiFeature("inventory", "manageInventory");
+    if (guard.response) return guard.response;
+
     const body = await req.json();
     const parsed = UnitBulkUpdateSchema.safeParse(body);
     if (!parsed.success) return invalidInput(parsed.error);
     const { unitIds, data } = parsed.data;
+    if (data.status === "reserved" || data.status === "sold") {
+      return NextResponse.json({ error: "Use the deal workflow to reserve or sell units" }, { status: 400 });
+    }
 
     const updateData: Prisma.UnitUpdateManyMutationInput = {};
     if (data.status !== undefined) {

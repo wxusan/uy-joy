@@ -7,6 +7,7 @@ import { ArrowRight, BedDouble, Building2, CircleCheck, Layers, MessageCircle, R
 import ImageCoordinateStage from "@/components/ImageCoordinateStage";
 import ApartmentLeadModal from "@/components/ApartmentLeadModal";
 import { getFullImageUrl, getThumbnailUrl } from "@/lib/cloudinary";
+import { collectLeadTracking } from "@/lib/public-lead-client";
 import { getStatusMeta } from "@/lib/status-style";
 
 type Point = { x: number; y: number };
@@ -219,7 +220,7 @@ export default function FloorPlanView({
           unitId: selectedUnit.id,
           unitNumber: selectedUnit.displayNumber,
           projectName: `${building.name} - ${activeFloor.number}-qavat`,
-          source: selectedUnit.status === "available" ? "interactive-floor" : "waitlist",
+          ...collectLeadTracking(selectedUnit.status === "available" ? "interactive-floor" : "waitlist"),
         }),
       });
 

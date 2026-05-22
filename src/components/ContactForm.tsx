@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { ArrowRight, CircleCheck, Clock3, MapPin, Phone, Send } from "lucide-react";
+import { capturePublicEvent, collectLeadTracking } from "@/lib/public-lead-client";
 
 interface Props {
   projectId: string;
@@ -11,6 +12,11 @@ interface Props {
   phoneNumber?: string | null;
   telegramUrl?: string | null;
   salesOfficeAddress?: string | null;
+  source?: string;
+  formTitle?: string;
+  formSubtitle?: string;
+  thankYouTitle?: string;
+  thankYouMessage?: string;
 }
 
 const resolveTelegramUrl = (url?: string | null): string | null => {
@@ -24,6 +30,11 @@ export default function ContactForm({
   phoneNumber,
   telegramUrl,
   salesOfficeAddress,
+  source = "contact_form",
+  formTitle,
+  formSubtitle,
+  thankYouTitle,
+  thankYouMessage,
 }: Props) {
   const t = useTranslations("contact");
   const [name, setName] = useState("");
@@ -31,12 +42,23 @@ export default function ContactForm({
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
+  const startedRef = useRef(false);
 
   const resolvedTelegramUrl = resolveTelegramUrl(telegramUrl);
 
   const telegramHandle = resolvedTelegramUrl
     ? "@" + resolvedTelegramUrl.replace(/^https?:\/\/t\.me\//, "").split("?")[0]
     : null;
+
+  useEffect(() => {
+    capturePublicEvent("lead_form_view", { source, projectId });
+  }, [projectId, source]);
+
+  const markStarted = () => {
+    if (startedRef.current) return;
+    startedRef.current = true;
+    capturePublicEvent("lead_form_start", { source, projectId });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,6 +68,7 @@ export default function ContactForm({
     setError("");
 
     try {
+      capturePublicEvent("lead_form_submit", { source, projectId });
       const res = await fetch("/api/leads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -54,18 +77,21 @@ export default function ContactForm({
           phone,
           projectId,
           projectName,
-          source: "bosh-sahifa",
+          ...collectLeadTracking(source),
         }),
       });
 
       if (res.ok) {
+        capturePublicEvent("lead_form_success", { source, projectId });
         setSuccess(true);
         setName("");
         setPhone("");
       } else {
+        capturePublicEvent("lead_form_error", { source, projectId });
         setError(t("error"));
       }
     } catch {
+      capturePublicEvent("lead_form_error", { source, projectId });
       setError(t("error"));
     } finally {
       setLoading(false);
@@ -76,7 +102,8 @@ export default function ContactForm({
     return (
       <div className="border border-[#d8cabc] bg-[#fbf7ef]/80 p-8 text-center shadow-[0_20px_55px_rgba(41,31,21,0.08)]">
         <CircleCheck className="mx-auto mb-4 h-11 w-11 text-[#2f9d72]" strokeWidth={1.6} />
-        <p className="font-heading text-[18px] font-semibold text-[#15120f]">{t("success")}</p>
+        <p className="font-heading text-[18px] font-semibold text-[#15120f]">{thankYouTitle || t("success")}</p>
+        {thankYouMessage ? <p className="mt-2 text-[13px] font-medium text-[#6f675e]">{thankYouMessage}</p> : null}
         {resolvedTelegramUrl && (
           <a
             href={resolvedTelegramUrl}
@@ -96,10 +123,10 @@ export default function ContactForm({
     <div className="border border-[#d8cabc] bg-[#f8f1e8]/70 shadow-[0_24px_70px_rgba(41,31,21,0.1)] backdrop-blur-sm">
       <div className="p-6 md:p-8">
         <h3 className="font-display text-[30px] font-semibold leading-none tracking-normal text-[#15120f]">
-          {t("salesTitle")}
+          {formTitle || t("salesTitle")}
         </h3>
         <p className="mt-3 text-[14px] font-medium leading-6 text-[#6f675e]">
-          {t("salesSubtitle")}
+          {formSubtitle || t("salesSubtitle")}
         </p>
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
@@ -107,7 +134,10 @@ export default function ContactForm({
             <input
               type="text"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => {
+                markStarted();
+                setName(e.target.value);
+              }}
               placeholder={t("name")}
               className="h-12 w-full border border-[#d2c4b6] bg-transparent px-4 text-[14px] font-medium text-[#15120f] outline-none transition placeholder:text-[#8a7d70] focus:border-[#b75f43]"
               required
@@ -117,7 +147,10 @@ export default function ContactForm({
               type="tel"
               inputMode="numeric"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={(e) => {
+                markStarted();
+                setPhone(e.target.value);
+              }}
               placeholder={t("phone")}
               className="h-12 w-full border border-[#d2c4b6] bg-transparent px-4 text-[14px] font-medium text-[#15120f] outline-none transition placeholder:text-[#8a7d70] focus:border-[#b75f43]"
               required

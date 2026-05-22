@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { BadgeHelp, BedDouble, CheckCircle2, ChevronLeft, Clock, LifeBuoy, Phone, Send, Sparkles, X } from "lucide-react";
 import posthog from "posthog-js";
 import { isWithinSalesHours } from "@/lib/sales-hours";
+import { capturePublicEvent, collectLeadTracking } from "@/lib/public-lead-client";
 
 const roomOptions = ["1", "2", "3", "4+"] as const;
 
@@ -70,7 +71,8 @@ export default function FloatingContact({ phoneNumber, telegramUrl }: FloatingCo
           phone,
           projectId: "N/A",
           projectName: `Matchmaker: ${rooms}`,
-          source: "floating_matchmaker",
+          ...collectLeadTracking("floating_contact"),
+          sourceDetail: `rooms:${rooms}`,
         }),
       });
 
@@ -79,6 +81,7 @@ export default function FloatingContact({ phoneNumber, telegramUrl }: FloatingCo
         return;
       }
 
+      capturePublicEvent("lead_form_success", { source: "floating_contact", rooms });
       posthog.capture("Help Chooser Completed", { rooms });
       setStep("success");
     } catch {

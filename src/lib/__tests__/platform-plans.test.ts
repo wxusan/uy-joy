@@ -79,6 +79,15 @@ test("platform settings loader memoizes until reset", () => {
   resetPlatformSettingsCache();
 });
 
+test("missing platform plan falls back to full sales platform for demo-ready deployments", () => {
+  withEnv({ CLIENT_PLATFORM_PLAN: undefined, PLATFORM_PLAN: undefined }, () => {
+    const settings = createPlatformSettings();
+    assert.equal(settings.plan, "full_sales_platform");
+    assert.equal(platformSettingsHasFeature(settings, "crm"), true);
+    assert.equal(platformSettingsHasFeature(settings, "deals"), true);
+  });
+});
+
 test("legacy and optional platform roles normalize to v1 roles", () => {
   assert.equal(normalizePlatformRole("admin"), "owner");
   assert.equal(normalizePlatformRole("superadmin"), "owner");

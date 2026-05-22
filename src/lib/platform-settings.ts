@@ -67,7 +67,7 @@ export type PlatformSettingsInput = Partial<
   limits?: Partial<PlatformLimits>;
 };
 
-const DEFAULT_PLATFORM_PLAN: PlatformPlanKey = "lead_page_bot";
+const DEFAULT_PLATFORM_PLAN: PlatformPlanKey = "full_sales_platform";
 const DEFAULT_CLIENT_SLUG = "uy-joy";
 const DEFAULT_BRAND_NAME = "Uy Joy";
 const DEFAULT_COLORS: PlatformColorSettings = {

@@ -276,6 +276,23 @@
     "occupancy": "Occupancy",
     "newLeads": "{count} new",
     "when": "When",
+    "crm": "CRM",
+    "pipeline": "Pipeline",
+    "clients": "Clients",
+    "deals": "Deals",
+    "tasksNav": "Tasks",
+    "documentsNav": "Documents",
+    "salesAgents": "Sales agents",
+    "myReport": "My report",
+    "executiveReports": "Executive reports",
+    "salesReport": "Sales report",
+    "inventoryReport": "Inventory report",
+    "marketingReport": "Marketing report",
+    "financeReport": "Finance report",
+    "sourcesNav": "Sources",
+    "publicPageNav": "Public page",
+    "settingsNav": "Settings",
+    "closeMenu": "Close menu",
     "source": "Source",
     "allStatuses": "All statuses",
     "searchLeadPlaceholder": "Search name, phone, project...",
@@ -596,5 +613,16 @@
     "a3": "Yes, we offer flexible payment plans. You can discuss installment options with our sales team.",
     "q4": "Where is your sales office located?",
     "a4": "Our sales office is located at the construction site. You can visit us any day from 9:00 to 18:00."
+  },
+  "embed": {
+    "leadForm": {
+      "title": "Contact sales",
+      "namePlaceholder": "Name",
+      "phonePlaceholder": "+998 90 123 45 67",
+      "errorRetry": "Could not send. Please try again.",
+      "sending": "Sending...",
+      "send": "Send",
+      "thankYouFallback": "Our manager will contact you shortly."
+    }
   }
 }

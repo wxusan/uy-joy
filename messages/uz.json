@@ -81,6 +81,7 @@
   "explore": {
     "selectFloor": "Kvartiralarni ko'rish uchun qavatni tanlang",
     "floor": "Qavat",
+    "building": "Bino",
     "apartments": "ta kvartira",
     "backToBuilding": "Binoga qaytish",
     "buildingElevation": "Bino ko'rinishi",
@@ -130,6 +131,7 @@
     "projects": "Loyihalar",
     "users": "Foydalanuvchilar",
     "analytics": "Analitika",
+    "building": "Bino",
     "units": "Kvartiralar",
     "totalUnits": "Jami kvartiralar",
     "manageUnits": "Kvartiralarni boshqarish",
@@ -250,6 +252,23 @@
     "occupancy": "Bandlik",
     "newLeads": "{count} ta yangi",
     "when": "Qachon",
+    "crm": "CRM",
+    "pipeline": "Sotuv quvuri",
+    "clients": "Mijozlar",
+    "deals": "Bitimlar",
+    "tasksNav": "Vazifalar",
+    "documentsNav": "Hujjatlar",
+    "salesAgents": "Sotuv menejerlari",
+    "myReport": "Mening hisobotim",
+    "executiveReports": "Rahbar hisobotlari",
+    "salesReport": "Sotuv hisoboti",
+    "inventoryReport": "Inventar hisoboti",
+    "marketingReport": "Marketing hisoboti",
+    "financeReport": "Moliyaviy hisobot",
+    "sourcesNav": "Manbalar",
+    "publicPageNav": "Ommaviy sahifa",
+    "settingsNav": "Sozlamalar",
+    "closeMenu": "Menyuni yopish",
     "source": "Manba",
     "allStatuses": "Barcha holatlar",
     "searchLeadPlaceholder": "Ism, telefon, loyiha bo‘yicha qidirish...",
@@ -574,6 +593,7 @@
   "unit": {
     "apartment": "Kvartira",
     "floor": "Qavat",
+    "building": "Bino",
     "rooms": "Xonalar",
     "area": "Maydon",
     "price": "Narx",
@@ -593,5 +613,16 @@
     "apartmentNumber": "Kvartira raqami",
     "expectedYear": "Topshirish yili",
     "project": "Loyiha"
+  },
+  "embed": {
+    "leadForm": {
+      "title": "Savdo bo'limiga murojaat",
+      "namePlaceholder": "Ism",
+      "phonePlaceholder": "+998 90 123 45 67",
+      "errorRetry": "Yuborib bo'lmadi. Iltimos, qaytadan urinib ko'ring.",
+      "sending": "Yuborilmoqda...",
+      "send": "Yuborish",
+      "thankYouFallback": "Menejerimiz tez orada siz bilan bog'lanadi."
+    }
   }
 }

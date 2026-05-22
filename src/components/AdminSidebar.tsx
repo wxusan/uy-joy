@@ -60,7 +60,7 @@ const navGroups: NavGroup[] = [
       },
       {
         href: "/portal/management-x7k9/crm",
-        label: "CRM",
+        labelKey: "crm",
         icon: <Contact className="w-[14px] h-[14px]" />,
         permission: "viewLeads",
         feature: "crm",
@@ -74,90 +74,90 @@ const navGroups: NavGroup[] = [
       },
       {
         href: "/portal/management-x7k9/crm/pipeline",
-        label: "Pipeline",
+        labelKey: "pipeline",
         icon: <KanbanSquare className="w-[14px] h-[14px]" />,
         permission: "manageLeads",
         feature: "pipeline",
       },
       {
         href: "/portal/management-x7k9/crm/clients",
-        label: "Clients",
+        labelKey: "clients",
         icon: <Users className="w-[14px] h-[14px]" />,
         permission: "viewLeads",
         feature: "crm",
       },
       {
         href: "/portal/management-x7k9/crm/deals",
-        label: "Deals",
+        labelKey: "deals",
         icon: <Handshake className="w-[14px] h-[14px]" />,
         permission: "viewDeals",
         feature: "deals",
       },
       {
         href: "/portal/management-x7k9/crm/tasks",
-        label: "Tasks",
+        labelKey: "tasksNav",
         icon: <ClipboardList className="w-[14px] h-[14px]" />,
         permission: "manageLeads",
         feature: "tasks",
       },
       {
         href: "/portal/management-x7k9/crm/documents",
-        label: "Documents",
+        labelKey: "documentsNav",
         icon: <FileText className="w-[14px] h-[14px]" />,
         permission: "viewDeals",
         feature: "documents",
       },
       {
         href: "/portal/management-x7k9/crm/agents",
-        label: "Sales agents",
+        labelKey: "salesAgents",
         icon: <UserRoundCheck className="w-[14px] h-[14px]" />,
         permission: "viewReports",
         feature: "crm",
       },
       {
         href: "/portal/management-x7k9/reports/my",
-        label: "My report",
+        labelKey: "myReport",
         icon: <BarChart3 className="w-[14px] h-[14px]" />,
         feature: "reports",
       },
       {
         href: "/portal/management-x7k9/reports",
-        label: "Executive reports",
+        labelKey: "executiveReports",
         icon: <BarChart3 className="w-[14px] h-[14px]" />,
         permission: "viewReports",
         feature: "reports",
       },
       {
         href: "/portal/management-x7k9/reports/sales",
-        label: "Sales report",
+        labelKey: "salesReport",
         icon: <BarChart3 className="w-[14px] h-[14px]" />,
         permission: "viewReports",
         feature: "reports",
       },
       {
         href: "/portal/management-x7k9/reports/inventory",
-        label: "Inventory report",
+        labelKey: "inventoryReport",
         icon: <BarChart3 className="w-[14px] h-[14px]" />,
         permission: "viewReports",
         feature: "inventory",
       },
       {
         href: "/portal/management-x7k9/reports/marketing",
-        label: "Marketing report",
+        labelKey: "marketingReport",
         icon: <BarChart3 className="w-[14px] h-[14px]" />,
         permission: "viewMarketingReports",
         feature: "reports",
       },
       {
         href: "/portal/management-x7k9/reports/finance",
-        label: "Finance report",
+        labelKey: "financeReport",
         icon: <BarChart3 className="w-[14px] h-[14px]" />,
         permission: "viewFinance",
         feature: "financeReports",
       },
       {
         href: "/portal/management-x7k9/crm/sources",
-        label: "Sources",
+        labelKey: "sourcesNav",
         icon: <Tags className="w-[14px] h-[14px]" />,
         permission: "managePublicContent",
         feature: "publicPage",
@@ -169,7 +169,7 @@ const navGroups: NavGroup[] = [
     items: [
       {
         href: "/portal/management-x7k9/public-page",
-        label: "Public page",
+        labelKey: "publicPageNav",
         icon: <Globe2 className="w-[14px] h-[14px]" />,
         permission: "managePublicContent",
         feature: "publicPage",
@@ -195,7 +195,7 @@ const navGroups: NavGroup[] = [
     items: [
       {
         href: "/portal/management-x7k9/settings",
-        label: "Settings",
+        labelKey: "settingsNav",
         icon: <Settings className="w-[14px] h-[14px]" />,
         permission: "manageDeploymentSettings",
       },
@@ -305,7 +305,7 @@ export default function AdminSidebar({ featureFlags, isOpen, onClose, brandName 
           onClick={onClose}
           className="md:hidden text-[16px] leading-none px-1"
           style={{ color: "var(--a-text-secondary)" }}
-          aria-label="Close menu"
+          aria-label={t("closeMenu")}
         >
           ✕
         </button>

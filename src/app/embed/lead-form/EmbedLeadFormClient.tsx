@@ -4,16 +4,27 @@ import { useEffect, useRef, useState } from "react";
 import { CheckCircle2 } from "lucide-react";
 import { capturePublicEvent, collectLeadTracking } from "@/lib/public-lead-client";
 
+export type EmbedLeadFormStrings = {
+  title: string;
+  namePlaceholder: string;
+  phonePlaceholder: string;
+  errorRetry: string;
+  sending: string;
+  send: string;
+};
+
 export default function EmbedLeadFormClient({
   projectId,
   projectName,
   source,
   thankYouMessage,
+  strings,
 }: {
   projectId: string;
   projectName: string;
   source: string;
   thankYouMessage: string;
+  strings: EmbedLeadFormStrings;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [name, setName] = useState("");
@@ -80,12 +91,12 @@ export default function EmbedLeadFormClient({
         </div>
       ) : (
         <form onSubmit={submit} className="grid gap-3">
-          <h1 className="text-[20px] font-semibold">Contact sales</h1>
-          <input className="h-11 border border-[#d8cabc] bg-white px-3 text-[14px]" value={name} onChange={(e) => handleInput("name", e.target.value)} placeholder="Name" required />
-          <input className="h-11 border border-[#d8cabc] bg-white px-3 text-[14px]" value={phone} onChange={(e) => handleInput("phone", e.target.value)} placeholder="+998 90 123 45 67" required />
-          {status === "error" ? <p className="text-[13px] text-red-700">Could not send. Please try again.</p> : null}
+          <h1 className="text-[20px] font-semibold">{strings.title}</h1>
+          <input className="h-11 border border-[#d8cabc] bg-white px-3 text-[14px]" value={name} onChange={(e) => handleInput("name", e.target.value)} placeholder={strings.namePlaceholder} required />
+          <input className="h-11 border border-[#d8cabc] bg-white px-3 text-[14px]" value={phone} onChange={(e) => handleInput("phone", e.target.value)} placeholder={strings.phonePlaceholder} required />
+          {status === "error" ? <p className="text-[13px] text-red-700">{strings.errorRetry}</p> : null}
           <button className="h-11 bg-[#c66348] px-4 text-[14px] font-semibold text-white" disabled={status === "loading"}>
-            {status === "loading" ? "Sending..." : "Send"}
+            {status === "loading" ? strings.sending : strings.send}
           </button>
         </form>
       )}

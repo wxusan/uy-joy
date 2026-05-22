@@ -25,7 +25,7 @@ const DEFAULT_DAYS = 30;
 const MAX_RANGE_DAYS = 370;
 const ACTIVE_LEAD_CLOSED_STATUSES = ["sold", "lost", "closed"];
 const OPEN_DEAL_STATUSES = ["draft", "reserved", "contract_preparation", "contract_signed", "payment_active"];
-const MANAGER_ROLES = ["developer", "owner", "admin", "sales_director", "superadmin"];
+const MANAGER_ROLES = ["developer", "owner", "sales_director"];
 
 function firstValue(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
@@ -206,7 +206,7 @@ export async function getReportFilterOptions() {
       orderBy: [{ projectId: "asc" }, { sortOrder: "asc" }, { name: "asc" }],
     }),
     prisma.user.findMany({
-      where: { role: { in: ["sales_agent", "sales_director"] }, isActive: true },
+      where: { role: { in: ["sales_agent", "external_agent", "sales_director"] }, isActive: true },
       select: { id: true, name: true, email: true, role: true, salesAgentProfile: { select: { displayName: true } } },
       orderBy: { name: "asc" },
     }),
@@ -428,7 +428,7 @@ export async function getAgentReport(filters: ReportFilters, user: ReportUser | 
   const agentFilter = personal && user?.id ? user.id : filters.agentId;
   const agents = await prisma.user.findMany({
     where: {
-      role: { in: ["sales_agent", "sales_director"] },
+      role: { in: ["sales_agent", "external_agent", "sales_director"] },
       ...(agentFilter ? { id: agentFilter } : {}),
     },
     select: {
@@ -941,7 +941,8 @@ export function canViewExecutiveReports(user: ReportUser | null | undefined) {
 }
 
 export function isSalesAgentOnly(user: ReportUser | null | undefined) {
-  return normalizePlatformRole(user?.role) === "sales_agent";
+  const role = normalizePlatformRole(user?.role);
+  return role === "sales_agent" || role === "external_agent";
 }
 
 export function canViewAgentReports(user: ReportUser | null | undefined) {

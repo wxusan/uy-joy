@@ -7,7 +7,7 @@ export type CrmUser = {
 };
 
 export function canViewAllLeads(user: CrmUser | null | undefined) {
-  return roleHasPlatformPermission(user?.role, "manageUsers") || user?.role === "sales_director";
+  return roleHasPlatformPermission(user?.role, "manageUsers") || normalizePlatformRole(user?.role) === "sales_director";
 }
 
 export function canViewReadOnlyCrm(user: CrmUser | null | undefined) {
@@ -16,12 +16,16 @@ export function canViewReadOnlyCrm(user: CrmUser | null | undefined) {
 
 function isSpecialistReadOnlyRole(user: CrmUser | null | undefined) {
   const role = normalizePlatformRole(user?.role);
-  return role === "back_office" || role === "marketing";
+  return role === "marketing";
 }
 
 function isLinkedCrmReadOnlyRole(user: CrmUser | null | undefined) {
-  const role = user?.role;
-  return role === "back_office" || role === "finance" || role === "legal";
+  return normalizePlatformRole(user?.role) === "finance";
+}
+
+function isSellingAgentRole(user: CrmUser | null | undefined) {
+  const role = normalizePlatformRole(user?.role);
+  return role === "sales_agent" || role === "external_agent";
 }
 
 function linkedLeadWhere(): Prisma.LeadWhereInput {
@@ -63,13 +67,13 @@ function linkedClientWhere(): Prisma.ClientWhereInput {
 export function canEditLead(user: CrmUser | null | undefined, lead: { assignedToId?: string | null }) {
   if (!user) return false;
   if (canViewAllLeads(user)) return true;
-  return user.role === "sales_agent" && Boolean(user.id) && lead.assignedToId === user.id;
+  return isSellingAgentRole(user) && Boolean(user.id) && lead.assignedToId === user.id;
 }
 
 export function leadVisibilityWhere(user: CrmUser | null | undefined, allowAgentClaim: boolean): Prisma.LeadWhereInput {
   if (!user) return { id: "__none__" };
   if (canViewAllLeads(user) || roleHasPlatformPermission(user.role, "viewReports")) return {};
-  if (user.role === "sales_agent" && user.id) {
+  if (isSellingAgentRole(user) && user.id) {
     return {
       OR: [{ assignedToId: user.id }, ...(allowAgentClaim ? [{ assignedToId: null }] : [])],
     };
@@ -84,7 +88,7 @@ export function leadVisibilityWhere(user: CrmUser | null | undefined, allowAgent
 export function clientVisibilityWhere(user: CrmUser | null | undefined, allowAgentClaim: boolean): Prisma.ClientWhereInput {
   if (!user) return { id: "__none__" };
   if (canViewAllLeads(user) || roleHasPlatformPermission(user.role, "viewReports")) return {};
-  if (user.role === "sales_agent" && user.id) {
+  if (isSellingAgentRole(user) && user.id) {
     return {
       OR: [{ assignedToId: user.id }, { leads: { some: leadVisibilityWhere(user, allowAgentClaim) } }],
     };
@@ -99,7 +103,7 @@ export function clientVisibilityWhere(user: CrmUser | null | undefined, allowAge
 export function taskVisibilityWhere(user: CrmUser | null | undefined, allowAgentClaim: boolean): Prisma.TaskWhereInput {
   if (!user) return { id: "__none__" };
   if (canViewAllLeads(user) || roleHasPlatformPermission(user.role, "viewReports")) return {};
-  if (user.role === "sales_agent" && user.id) {
+  if (isSellingAgentRole(user) && user.id) {
     return {
       OR: [
         { assignedToId: user.id },
@@ -121,7 +125,7 @@ export function taskVisibilityWhere(user: CrmUser | null | undefined, allowAgent
 export function activityVisibilityWhere(user: CrmUser | null | undefined, allowAgentClaim: boolean): Prisma.ActivityWhereInput {
   if (!user) return { id: "__none__" };
   if (canViewAllLeads(user) || roleHasPlatformPermission(user.role, "viewReports")) return {};
-  if (user.role === "sales_agent" && user.id) {
+  if (isSellingAgentRole(user) && user.id) {
     return {
       OR: [
         { actorId: user.id },

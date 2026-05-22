@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import { KeyRound, Plus, Trash2 } from "lucide-react";
-import { PLATFORM_ROLE_LABELS, V1_PLATFORM_ROLES, roleHasPlatformPermission } from "@/lib/platform-plans";
+import { PLATFORM_ROLE_LABELS, PLATFORM_ROLES, V1_PLATFORM_ROLES, roleHasPlatformPermission } from "@/lib/platform-plans";
 
 type AdminUser = {
   id: string;
@@ -21,12 +21,12 @@ export default function AdminUsers() {
   const currentRole = sessionUser?.role;
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ name: "", email: "", password: "", role: "admin" });
+  const [form, setForm] = useState({ name: "", email: "", password: "", role: "sales_agent" });
   const [resetTarget, setResetTarget] = useState<AdminUser | null>(null);
   const [resetPassword, setResetPassword] = useState("");
   const [resetStatus, setResetStatus] = useState<string | null>(null);
   const canManageTechnicalSettings = roleHasPlatformPermission(currentRole, "technicalSettings");
-  const creatableRoles = V1_PLATFORM_ROLES.filter((role) => canManageTechnicalSettings || role !== "developer");
+  const creatableRoles = canManageTechnicalSettings ? PLATFORM_ROLES : V1_PLATFORM_ROLES;
 
   const loadUsers = () => {
     fetch("/api/users")
@@ -47,7 +47,7 @@ export default function AdminUsers() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
     });
-    setForm({ name: "", email: "", password: "", role: "admin" });
+    setForm({ name: "", email: "", password: "", role: "sales_agent" });
     setShowForm(false);
     loadUsers();
   };
@@ -221,7 +221,7 @@ export default function AdminUsers() {
                       className="a-dot"
                       style={{
                         color:
-                          user.role === "owner" || user.role === "superadmin" || user.role === "developer"
+                          user.role === "owner" || user.role === "developer"
                             ? "var(--a-accent)"
                             : "var(--a-text-tertiary)",
                       }}

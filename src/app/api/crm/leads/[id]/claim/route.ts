@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import { createActivity } from "@/lib/crm";
 import { requirePlatformApiFeature } from "@/lib/platform-guards";
 import { getPlatformSettings } from "@/lib/platform-settings";
+import { normalizePlatformRole } from "@/lib/platform-plans";
 
 export async function POST(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requirePlatformApiFeature("crm", "manageLeads");
@@ -11,7 +12,10 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
   const settings = getPlatformSettings();
   if (!settings.allowAgentClaim) return NextResponse.json({ error: "Lead claiming is disabled" }, { status: 403 });
   if (!auth.user?.id) return NextResponse.json({ error: "Authentication required" }, { status: 401 });
-  if (auth.user.role !== "sales_agent") return NextResponse.json({ error: "Only sales agents can claim leads" }, { status: 403 });
+  const role = normalizePlatformRole(auth.user.role);
+  if (role !== "sales_agent" && role !== "external_agent") {
+    return NextResponse.json({ error: "Only sales agents can claim leads" }, { status: 403 });
+  }
 
   const { id } = await params;
   const result = await prisma.lead.updateMany({

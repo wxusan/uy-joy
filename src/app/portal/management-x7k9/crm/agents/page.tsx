@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
 import { PLATFORM_PERMISSIONS } from "@/lib/platform-plans";
 import { getPlatformSettings, platformSettingsHasFeature } from "@/lib/platform-settings";
+import { getTranslations } from "next-intl/server";
 
 export const dynamic = "force-dynamic";
 
@@ -10,9 +11,10 @@ export default async function SalesAgentsPage() {
   await requireAdmin(PLATFORM_PERMISSIONS.viewReports);
   const settings = getPlatformSettings();
   if (!platformSettingsHasFeature(settings, "crm")) return null;
+  const t = await getTranslations("admin");
 
   const agents = await prisma.user.findMany({
-    where: { role: { in: ["sales_agent", "sales_director"] } },
+    where: { role: { in: ["sales_agent", "external_agent", "sales_director"] } },
     include: {
       salesAgentProfile: true,
       _count: { select: { assignedLeads: true, tasksAssigned: true, activitiesAssigned: true } },
@@ -23,13 +25,13 @@ export default async function SalesAgentsPage() {
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <h1 className="a-page-title">Sales agents</h1>
-        <p className="a-page-sub">Team ownership, targets, and activity snapshots.</p>
+        <h1 className="a-page-title">{t("salesAgents")}</h1>
+        <p className="a-page-sub">{t("agentsSubtitle")}</p>
       </div>
       <div className="a-card overflow-x-auto">
         <table className="a-table min-w-[760px]">
           <thead>
-            <tr><th>Agent</th><th>Role</th><th>Assigned leads</th><th>Open tasks</th><th>Assigned activity</th><th>Target deals</th></tr>
+            <tr><th>{t("agent")}</th><th>{t("role")}</th><th>{t("assignedLeads")}</th><th>{t("openTasksCol")}</th><th>{t("assignedActivity")}</th><th>{t("targetDeals")}</th></tr>
           </thead>
           <tbody>
             {agents.map((agent) => (

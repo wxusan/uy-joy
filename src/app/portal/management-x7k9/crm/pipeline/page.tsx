@@ -3,8 +3,10 @@ import { requireAdmin } from "@/lib/auth";
 import { ensureDefaultPipelineStages } from "@/lib/crm";
 import { leadVisibilityWhere } from "@/lib/crm-access";
 import { PLATFORM_PERMISSIONS } from "@/lib/platform-plans";
+import { normalizePlatformRole } from "@/lib/platform-plans";
 import { getPlatformSettings, platformSettingsHasFeature } from "@/lib/platform-settings";
 import PipelineBoard from "./PipelineBoard";
+import { getTranslations } from "next-intl/server";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +14,7 @@ export default async function PipelinePage() {
   const session = await requireAdmin(PLATFORM_PERMISSIONS.manageLeads);
   const settings = getPlatformSettings();
   if (!platformSettingsHasFeature(settings, "crm")) return null;
+  const t = await getTranslations("admin");
 
   await ensureDefaultPipelineStages();
   const user = session.user as { id?: string; role?: string };
@@ -52,10 +55,14 @@ export default async function PipelinePage() {
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <h1 className="a-page-title">Pipeline</h1>
-        <p className="a-page-sub">Drag leads between stages or claim unassigned leads.</p>
+        <h1 className="a-page-title">{t("pipeline")}</h1>
+        <p className="a-page-sub">{t("pipelineSubtitle")}</p>
       </div>
-      <PipelineBoard initialStages={stages} initialLeads={serializedLeads} canClaim={user.role === "sales_agent"} />
+      <PipelineBoard
+        initialStages={stages}
+        initialLeads={serializedLeads}
+        canClaim={["sales_agent", "external_agent"].includes(normalizePlatformRole(user.role) || "")}
+      />
     </div>
   );
 }

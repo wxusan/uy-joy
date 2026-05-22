@@ -80,20 +80,26 @@ test("platform settings loader memoizes until reset", () => {
 });
 
 test("legacy and optional platform roles normalize to v1 roles", () => {
+  assert.equal(normalizePlatformRole("admin"), "owner");
   assert.equal(normalizePlatformRole("superadmin"), "owner");
-  assert.equal(normalizePlatformRole("finance"), "back_office");
-  assert.equal(normalizePlatformRole("legal"), "back_office");
+  assert.equal(normalizePlatformRole("back_office"), "finance");
+  assert.equal(normalizePlatformRole("legal"), "finance");
+  assert.equal(normalizePlatformRole("finance"), "finance");
   assert.equal(normalizePlatformRole("sales_agent"), "sales_agent");
+  assert.equal(normalizePlatformRole("external_agent"), "external_agent");
   assert.equal(normalizePlatformRole("unknown"), null);
 });
 
 test("permission checks honor normalized roles", () => {
   assert.equal(roleHasPlatformPermission("superadmin", "manageUsers"), true);
   assert.equal(roleHasPlatformPermission("finance", "viewFinance"), true);
+  assert.equal(roleHasPlatformPermission("legal", "viewFinance"), true);
+  assert.equal(roleHasPlatformPermission("admin", "manageUsers"), true);
   assert.equal(roleHasPlatformPermission("marketing", "viewMarketingReports"), true);
   assert.equal(roleHasPlatformPermission("marketing", "viewReports"), false);
   assert.equal(roleHasPlatformPermission("sales_agent", "manageInventory"), false);
-  assert.equal(ADMIN_ACCESS_ROLES.includes("superadmin"), true);
+  assert.equal(roleHasPlatformPermission("external_agent", "manageLeads"), true);
+  assert.equal(ADMIN_ACCESS_ROLES.includes("owner"), true);
 });
 
 test("client platform plan env wins over legacy platform plan env", () => {

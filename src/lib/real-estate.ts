@@ -179,26 +179,26 @@ export async function nextDealNumber(db: Db = prisma) {
 export function dealVisibilityWhere(user: RealEstateUser | null | undefined): Prisma.DealWhereInput {
   if (!user) return { id: "__none__" };
   const role = normalizePlatformRole(user.role);
-  if (role === "owner" || role === "admin" || role === "developer" || role === "sales_director") return {};
-  if (role === "sales_agent" && user.id) return { assignedToId: user.id };
-  if (role === "back_office") return {};
+  if (role === "owner" || role === "developer" || role === "sales_director" || role === "finance") return {};
+  if ((role === "sales_agent" || role === "external_agent") && user.id) return { assignedToId: user.id };
   return { id: "__none__" };
 }
 
 export function canReserveDeal(user: RealEstateUser | null | undefined, deal: { assignedToId?: string | null }) {
   if (!user) return false;
   if (roleHasPlatformPermission(user.role, "manageInventory")) return true;
-  return normalizePlatformRole(user.role) === "sales_agent" && Boolean(user.id) && deal.assignedToId === user.id;
+  const role = normalizePlatformRole(user.role);
+  return (role === "sales_agent" || role === "external_agent") && Boolean(user.id) && deal.assignedToId === user.id;
 }
 
 export function canMarkDealSold(user: RealEstateUser | null | undefined) {
   const role = normalizePlatformRole(user?.role);
-  return role === "owner" || role === "admin" || role === "developer" || role === "sales_director";
+  return role === "owner" || role === "developer" || role === "sales_director";
 }
 
 export function canOverrideReservedDealSold(user: RealEstateUser | null | undefined) {
   const role = normalizePlatformRole(user?.role);
-  return role === "owner" || role === "admin" || role === "developer";
+  return role === "owner" || role === "developer";
 }
 
 export function discountReviewPatch(input: {

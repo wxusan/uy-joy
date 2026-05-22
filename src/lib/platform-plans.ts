@@ -204,47 +204,39 @@ export const PLATFORM_PLAN_OPTIONS = PLATFORM_PLAN_KEYS.map((key) => PLATFORM_PL
 export const PLATFORM_ROLES = [
   "developer",
   "owner",
-  "admin",
   "sales_director",
   "sales_agent",
-  "back_office",
+  "external_agent",
   "marketing",
   "finance",
-  "legal",
-  "superadmin",
 ] as const;
 
 export type PlatformRole = (typeof PLATFORM_ROLES)[number];
 
 export const V1_PLATFORM_ROLES = [
-  "developer",
   "owner",
-  "admin",
   "sales_director",
   "sales_agent",
-  "back_office",
+  "external_agent",
+  "marketing",
+  "finance",
 ] as const satisfies readonly PlatformRole[];
 
-export const OPTIONAL_PLATFORM_ROLE_ALIASES: Partial<Record<PlatformRole, PlatformRole>> = {
-  finance: "back_office",
-  legal: "back_office",
-};
-
-export const LEGACY_ROLE_ALIASES: Partial<Record<PlatformRole, PlatformRole>> = {
+export const LEGACY_ROLE_ALIASES: Record<string, PlatformRole> = {
+  admin: "owner",
   superadmin: "owner",
+  back_office: "finance",
+  legal: "finance",
 };
 
 export const ADMIN_ACCESS_ROLES = [
   "developer",
   "owner",
-  "admin",
   "sales_director",
   "sales_agent",
-  "back_office",
+  "external_agent",
   "marketing",
   "finance",
-  "legal",
-  "superadmin",
 ] as const satisfies readonly PlatformRole[];
 
 export const REQUIRED_CLIENT_ENV_VARS = [
@@ -331,8 +323,9 @@ export function isPlatformRole(value: string): value is PlatformRole {
 }
 
 export function normalizePlatformRole(role: string | null | undefined): PlatformRole | null {
-  if (!role || !isPlatformRole(role)) return null;
-  return LEGACY_ROLE_ALIASES[role] ?? OPTIONAL_PLATFORM_ROLE_ALIASES[role] ?? role;
+  if (!role) return null;
+  if (isPlatformRole(role)) return role;
+  return LEGACY_ROLE_ALIASES[role] ?? null;
 }
 
 export function platformRoleMatches(role: string | null | undefined, allowedRoles: readonly string[]) {
@@ -348,42 +341,36 @@ export function roleCanAccessAdmin(role: string | null | undefined) {
 export const PLATFORM_ROLE_LABELS: Record<PlatformRole, string> = {
   developer: "Developer",
   owner: "Owner",
-  admin: "Admin",
   sales_director: "Sales director",
   sales_agent: "Sales agent",
-  back_office: "Back office",
+  external_agent: "External agent",
   marketing: "Marketing",
   finance: "Finance",
-  legal: "Legal",
-  superadmin: "Owner",
 };
 
 export const PLATFORM_PERMISSIONS = {
-  technicalSettings: ["developer", "admin"],
-  manageUsers: ["developer", "owner", "admin", "superadmin"],
-  manageDeploymentSettings: ["developer", "owner", "admin", "superadmin"],
-  managePublicContent: ["developer", "owner", "admin", "marketing", "superadmin"],
-  manageInventory: ["developer", "owner", "admin", "sales_director", "superadmin"],
+  technicalSettings: ["developer"],
+  manageUsers: ["developer", "owner"],
+  manageDeploymentSettings: ["developer", "owner"],
+  managePublicContent: ["developer", "owner", "marketing"],
+  manageInventory: ["developer", "owner", "sales_director"],
   viewLeads: [
     "developer",
     "owner",
-    "admin",
     "sales_director",
     "sales_agent",
-    "back_office",
+    "external_agent",
     "marketing",
     "finance",
-    "legal",
-    "superadmin",
   ],
-  manageLeads: ["developer", "owner", "admin", "sales_director", "sales_agent", "superadmin"],
-  viewDeals: ["developer", "owner", "admin", "sales_director", "sales_agent", "back_office", "finance", "legal", "superadmin"],
-  manageDeals: ["developer", "owner", "admin", "sales_director", "sales_agent", "superadmin"],
-  managePayments: ["developer", "owner", "admin", "back_office", "finance", "superadmin"],
-  manageDocuments: ["developer", "owner", "admin", "back_office", "legal", "finance", "superadmin"],
-  viewReports: ["developer", "owner", "admin", "sales_director", "superadmin"],
-  viewMarketingReports: ["developer", "owner", "admin", "sales_director", "marketing", "superadmin"],
-  viewFinance: ["developer", "owner", "admin", "back_office", "finance", "superadmin"],
+  manageLeads: ["developer", "owner", "sales_director", "sales_agent", "external_agent"],
+  viewDeals: ["developer", "owner", "sales_director", "sales_agent", "external_agent", "finance"],
+  manageDeals: ["developer", "owner", "sales_director", "sales_agent", "external_agent"],
+  managePayments: ["developer", "owner", "finance"],
+  manageDocuments: ["developer", "owner", "finance"],
+  viewReports: ["developer", "owner", "sales_director"],
+  viewMarketingReports: ["developer", "owner", "sales_director", "marketing"],
+  viewFinance: ["developer", "owner", "finance"],
 } as const satisfies Record<string, readonly PlatformRole[]>;
 
 export type PlatformPermission = keyof typeof PLATFORM_PERMISSIONS;

@@ -9,9 +9,10 @@ import { roleHasPlatformPermission } from "@/lib/platform-plans";
 export async function GET() {
   const auth = await requirePlatformApiAccess("manageUsers");
   if (auth.response) return auth.response;
+  const canSeeDeveloperAccounts = roleHasPlatformPermission(auth.user?.role, "technicalSettings");
 
   const users = await prisma.user.findMany({
-    where: { role: { not: "developer" } },
+    where: canSeeDeveloperAccounts ? undefined : { role: { not: "developer" } },
     select: { id: true, email: true, name: true, role: true, createdAt: true },
   });
   return NextResponse.json(users);
@@ -25,7 +26,7 @@ export async function POST(req: Request) {
   const parsed = UserCreateSchema.safeParse(body);
   if (!parsed.success) return invalidInput(parsed.error);
   const input = parsed.data;
-  const role = input.role || "admin";
+  const role = input.role || "owner";
 
   if (role === "developer" && !roleHasPlatformPermission(auth.user?.role, "technicalSettings")) {
     return NextResponse.json({ error: "Developer accounts are managed by Uy Joy support" }, { status: 403 });
@@ -38,7 +39,7 @@ export async function POST(req: Request) {
       password: hashedPassword,
       name: input.name,
       role,
-      ...(role === "sales_agent" || role === "sales_director"
+      ...(role === "sales_agent" || role === "external_agent" || role === "sales_director"
         ? {
             salesAgentProfile: {
               create: {

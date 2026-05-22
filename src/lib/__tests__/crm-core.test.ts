@@ -60,7 +60,10 @@ test("CRM visibility scopes team, agent, and specialist read-only roles", () => 
   assert.deepEqual(leadVisibilityWhere({ id: "agent-1", role: "sales_agent" }, false), {
     OR: [{ assignedToId: "agent-1" }],
   });
-  assert.deepEqual(leadVisibilityWhere({ id: "bo-1", role: "back_office" }, true), {
+  assert.deepEqual(leadVisibilityWhere({ id: "external-1", role: "external_agent" }, true), {
+    OR: [{ assignedToId: "external-1" }, { assignedToId: null }],
+  });
+  assert.deepEqual(leadVisibilityWhere({ id: "finance-1", role: "finance" }, true), {
     OR: [
       { deals: { some: {} } },
       { documents: { some: {} } },
@@ -138,6 +141,7 @@ test("payment schedule supports generated and custom rows", () => {
 test("deal visibility allows managers and finance while scoping agents and excluding marketing", () => {
   assert.deepEqual(dealVisibilityWhere({ id: "owner-1", role: "owner" }), {});
   assert.deepEqual(dealVisibilityWhere({ id: "agent-1", role: "sales_agent" }), { assignedToId: "agent-1" });
+  assert.deepEqual(dealVisibilityWhere({ id: "external-1", role: "external_agent" }), { assignedToId: "external-1" });
   assert.deepEqual(dealVisibilityWhere({ id: "finance-1", role: "finance" }), {});
   assert.deepEqual(dealVisibilityWhere({ id: "marketing-1", role: "marketing" }), { id: "__none__" });
 });
@@ -172,9 +176,10 @@ test("discount review patch flags high discounts and clears stale approvals when
   );
 });
 
-test("reserved to sold override is owner/admin only", () => {
+test("reserved to sold override is owner/developer only", () => {
   assert.equal(canOverrideReservedDealSold({ id: "owner-1", role: "owner" }), true);
-  assert.equal(canOverrideReservedDealSold({ id: "admin-1", role: "admin" }), true);
+  assert.equal(canOverrideReservedDealSold({ id: "developer-1", role: "developer" }), true);
+  assert.equal(canOverrideReservedDealSold({ id: "finance-1", role: "finance" }), false);
   assert.equal(canOverrideReservedDealSold({ id: "director-1", role: "sales_director" }), false);
   assert.equal(canOverrideReservedDealSold({ id: "agent-1", role: "sales_agent" }), false);
 });

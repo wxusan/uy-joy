@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { V1_PLATFORM_ROLES } from "@/lib/platform-plans";
+import { PLATFORM_ROLES } from "@/lib/platform-plans";
 
-const UserRoleSchema = z.enum(V1_PLATFORM_ROLES);
+const UserRoleSchema = z.enum(PLATFORM_ROLES);
 
 export const UserCreateSchema = z.object({
   email: z.string().trim().email(),

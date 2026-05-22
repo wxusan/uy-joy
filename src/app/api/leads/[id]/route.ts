@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { createActivity, statusTimestampPatch, transitionLeadStage } from "@/lib/crm";
-import { canEditLead, canViewAllLeads, leadVisibilityWhere } from "@/lib/crm-access";
+import { canEditLead, leadVisibilityWhere } from "@/lib/crm-access";
 import { normalizeLeadStatus } from "@/lib/lead-status";
 import { LeadUpdateSchema } from "@/lib/schemas/lead";
 import { requirePlatformApiAccess, requirePlatformFeature } from "@/lib/platform-guards";
 import { getPlatformSettings } from "@/lib/platform-settings";
+import { normalizePlatformRole } from "@/lib/platform-plans";
 
 function includeLead() {
   return {
@@ -42,8 +43,6 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     const featureResponse = requirePlatformFeature("crm");
     if (featureResponse) return featureResponse;
-    if (!canViewAllLeads(auth.user)) return NextResponse.json({ error: "Only directors/admins can delete leads" }, { status: 403 });
-
     const { id } = await params;
     const body = await request.json();
     const parsed = LeadUpdateSchema.safeParse(body);
@@ -58,7 +57,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const input = parsed.data;
     const nextStatus = input.status ? normalizeLeadStatus(input.status) : null;
     if (
-      auth.user?.role === "sales_agent" &&
+      ["sales_agent", "external_agent"].includes(normalizePlatformRole(auth.user?.role) || "") &&
       input.assignedToId !== undefined &&
       input.assignedToId !== auth.user.id
     ) {

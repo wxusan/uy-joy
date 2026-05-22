@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { GripVertical, UserPlus } from "lucide-react";
 import { getLeadStatusTone } from "@/lib/lead-status";
+import { useTranslations } from "next-intl";
 
 type Stage = { id: string; key: string; name: string; color: string | null };
 type Lead = {
@@ -28,6 +29,7 @@ export default function PipelineBoard({
   initialLeads: Lead[];
   canClaim: boolean;
 }) {
+  const t = useTranslations("admin");
   const [leads, setLeads] = useState(initialLeads);
   const [movingId, setMovingId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
@@ -87,7 +89,7 @@ export default function PipelineBoard({
           className="a-input max-w-[360px]"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search pipeline"
+          placeholder={t("searchPipeline")}
         />
       </div>
       <div className="overflow-x-auto pb-2">
@@ -129,14 +131,14 @@ export default function PipelineBoard({
                     {lead.client?.phone || lead.phone}
                   </div>
                   <div className="text-[12px]" style={{ color: "var(--a-text-tertiary)" }}>
-                    {[lead.projectName, lead.unitNumber].filter(Boolean).join(" · ") || "No unit selected"}
+                    {[lead.projectName, lead.unitNumber].filter(Boolean).join(" · ") || t("noUnitSelected")}
                   </div>
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-[11px]" style={{ color: "var(--a-text-tertiary)" }}>
-                      {lead.assignedToUser?.name || "Unassigned"}
+                      {lead.assignedToUser?.name || t("unassigned")}
                     </span>
                     {canClaim && !lead.assignedToUser ? (
-                      <button className="a-btn !h-7 !px-2" title="Claim lead" onClick={() => void claimLead(lead.id)}>
+                      <button className="a-btn !h-7 !px-2" title={t("claimLead")} onClick={() => void claimLead(lead.id)}>
                         <UserPlus className="w-3.5 h-3.5" />
                       </button>
                     ) : null}

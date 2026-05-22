@@ -208,9 +208,26 @@ async function createUsers() {
       })
     )
   );
-  const backOffice = await prisma.user.create({ data: { email: "backoffice@mirabad-demo.uz", password, name: "Kamola Finance", role: "back_office" } });
+  const externalAgent = await prisma.user.create({
+    data: {
+      email: "broker@mirabad-demo.uz",
+      password,
+      name: "Oybek Broker",
+      role: "external_agent",
+      salesAgentProfile: {
+        create: {
+          displayName: "Oybek Broker",
+          phone: "+998 90 700 10 05",
+          telegramUsername: "demo_broker_1",
+          monthlyTargetDeals: 2,
+          monthlyTargetRevenue: 1800000000,
+        },
+      },
+    },
+  });
+  const finance = await prisma.user.create({ data: { email: "finance@mirabad-demo.uz", password, name: "Kamola Finance", role: "finance" } });
   const marketing = await prisma.user.create({ data: { email: "marketing@mirabad-demo.uz", password, name: "Sabrina Marketing", role: "marketing" } });
-  return { owner, director, agents, backOffice, marketing };
+  return { owner, director, agents, externalAgent, finance, marketing };
 }
 
 async function createProject() {
@@ -729,7 +746,7 @@ async function main() {
         lead: leadBundle.lead,
         agent: leadBundle.agent,
         director: users.director,
-        backOffice: users.backOffice,
+        backOffice: users.finance,
       })
     );
   }
@@ -763,13 +780,14 @@ async function main() {
   console.log("Demo reset complete.");
   console.log(`Brand: ${DEMO_BRAND} / ${DEMO_BRAND_CYRILLIC}`);
   console.log(`Project: ${project.name}`);
-  console.log(`Users: owner, director, 3 agents, back_office, marketing`);
+  console.log(`Users: owner, director, 3 internal agents, external agent, finance, marketing`);
   console.log(`Leads: ${created.length}; deals: ${dealRecords.length}; units: ${units.length}`);
   console.log("Demo login credentials:");
   console.log(`  owner@mirabad-demo.uz / ${DEMO_PASSWORD}`);
   console.log(`  director@mirabad-demo.uz / ${DEMO_PASSWORD}`);
   console.log(`  jasur@mirabad-demo.uz / ${DEMO_PASSWORD}`);
-  console.log(`  backoffice@mirabad-demo.uz / ${DEMO_PASSWORD}`);
+  console.log(`  broker@mirabad-demo.uz / ${DEMO_PASSWORD}`);
+  console.log(`  finance@mirabad-demo.uz / ${DEMO_PASSWORD}`);
   if (process.env.DEMO_SEND_TELEGRAM !== "true") {
     console.log("Telegram sending skipped. Set DEMO_SEND_TELEGRAM=true only for a muted/private demo channel.");
   }

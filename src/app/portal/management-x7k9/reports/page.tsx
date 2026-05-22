@@ -5,6 +5,7 @@ import { getPlatformSettings, platformSettingsHasFeature } from "@/lib/platform-
 import { getOverviewReport, getReportFilterOptions, parseReportFilters, reportQueryString } from "@/lib/reports";
 import { MetricGrid, ReportControls, ReportSection, ReportTabs, money } from "@/components/reports/ReportUi";
 import { ReportBarChart, ReportLineChart, ReportPieChart } from "@/components/reports/ReportCharts";
+import { getTranslations } from "next-intl/server";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +19,7 @@ export default async function ReportsOverviewPage({
   const settings = getPlatformSettings();
   if (!platformSettingsHasFeature(settings, "reports")) return null;
 
+  const t = await getTranslations("admin");
   const filters = parseReportFilters(searchParams);
   const [options, report] = await Promise.all([getReportFilterOptions(), getOverviewReport(filters, user)]);
   const query = reportQueryString(filters);
@@ -27,42 +29,42 @@ export default async function ReportsOverviewPage({
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <h1 className="a-page-title">Executive reports</h1>
-        <p className="a-page-sub">Leads, conversion, pipeline, inventory movement, and period comparison.</p>
+        <h1 className="a-page-title">{t("executiveReports")}</h1>
+        <p className="a-page-sub">{t("reportsSubtitle")}</p>
       </div>
       <div>
-        <Link href="/portal/management-x7k9/reports/digest" className="a-btn subtle">Weekly digest preview</Link>
+        <Link href="/portal/management-x7k9/reports/digest" className="a-btn subtle">{t("weeklyDigestPreview")}</Link>
       </div>
       <ReportTabs active="overview" financeEnabled={financeEnabled} marketingEnabled={marketingEnabled} />
       <ReportControls filters={filters} options={options} exportHref={`/api/reports/leads.csv?${query}`} />
       <MetricGrid
         metrics={[
-          { label: "Leads in period", value: report.summary.totalLeads, sub: `${report.comparison.totalLeads.delta >= 0 ? "+" : ""}${report.comparison.totalLeads.delta} vs previous`, href: report.drilldowns.totalLeads },
-          { label: "New today", value: report.summary.newToday },
-          { label: "Active leads", value: report.summary.activeLeads },
-          { label: "Overdue follow-ups", value: report.summary.overdueFollowups, href: report.drilldowns.overdueFollowups },
-          { label: "Reservations", value: report.summary.reservations },
-          { label: "Sold deals", value: report.summary.soldDeals, sub: `${report.comparison.soldDeals.delta >= 0 ? "+" : ""}${report.comparison.soldDeals.delta} vs previous`, href: report.drilldowns.soldDeals },
-          { label: "Deal-backed pipeline", value: money(report.summary.pipelineValue), sub: "Open deal sale value" },
-          { label: "Estimated pipeline", value: money(report.summary.estimatedPipelineValue), sub: "Lead unit snapshots" },
+          { label: t("leadsInPeriod"), value: report.summary.totalLeads, sub: `${report.comparison.totalLeads.delta >= 0 ? "+" : ""}${report.comparison.totalLeads.delta} ${t("vsPrevious")}`, href: report.drilldowns.totalLeads },
+          { label: t("newToday"), value: report.summary.newToday },
+          { label: t("activeLeads"), value: report.summary.activeLeads },
+          { label: t("overdueFollowups"), value: report.summary.overdueFollowups, href: report.drilldowns.overdueFollowups },
+          { label: t("reservations"), value: report.summary.reservations },
+          { label: t("soldDeals"), value: report.summary.soldDeals, sub: `${report.comparison.soldDeals.delta >= 0 ? "+" : ""}${report.comparison.soldDeals.delta} ${t("vsPrevious")}`, href: report.drilldowns.soldDeals },
+          { label: t("dealBackedPipeline"), value: money(report.summary.pipelineValue), sub: t("openDealSaleValue") },
+          { label: t("estimatedPipeline"), value: money(report.summary.estimatedPipelineValue), sub: t("leadUnitSnapshots") },
         ]}
       />
       <div className="grid gap-4 xl:grid-cols-2">
-        <ReportSection title="Lead trend">
+        <ReportSection title={t("leadTrend")}>
           <ReportLineChart data={report.series.leadsByDay} xKey="date" yKey="leads" />
         </ReportSection>
-        <ReportSection title="Lead funnel">
+        <ReportSection title={t("leadFunnel")}>
           <ReportBarChart data={report.series.funnel} xKey="status" yKey="count" />
         </ReportSection>
-        <ReportSection title="Inventory mix">
+        <ReportSection title={t("inventoryMix")}>
           <ReportPieChart data={report.series.inventoryMix} nameKey="status" valueKey="count" />
         </ReportSection>
-        <ReportSection title="Period comparison">
+        <ReportSection title={t("periodComparison")}>
           <div className="grid gap-3 sm:grid-cols-3">
             {[
-              ["Leads", report.comparison.totalLeads],
-              ["Sold deals", report.comparison.soldDeals],
-              ["Pipeline", report.comparison.pipelineValue],
+              [t("leadsLabel"), report.comparison.totalLeads],
+              [t("soldDealsLabel"), report.comparison.soldDeals],
+              [t("pipelineLabel"), report.comparison.pipelineValue],
             ].map(([label, row]) => {
               const comparison = row as { current: number; previous: number; deltaPercent: number };
               return (
@@ -70,7 +72,7 @@ export default async function ReportsOverviewPage({
                   <div className="text-[12px]" style={{ color: "var(--a-text-tertiary)" }}>{String(label)}</div>
                   <div className="mt-1 text-[20px] font-semibold">{comparison.current.toLocaleString()}</div>
                   <div className="text-[12px]" style={{ color: comparison.deltaPercent >= 0 ? "var(--a-success)" : "var(--a-danger)" }}>
-                    {comparison.deltaPercent >= 0 ? "+" : ""}{comparison.deltaPercent}% vs previous
+                    {comparison.deltaPercent >= 0 ? "+" : ""}{comparison.deltaPercent}% {t("vsPrevious")}
                   </div>
                 </div>
               );
@@ -79,9 +81,9 @@ export default async function ReportsOverviewPage({
         </ReportSection>
       </div>
       <div className="grid gap-4 xl:grid-cols-2">
-        <ReportSection title="Top agents">
+        <ReportSection title={t("topAgents")}>
           <table className="a-table">
-            <thead><tr><th>Agent</th><th style={{ textAlign: "right" }}>Leads</th></tr></thead>
+            <thead><tr><th>{t("agent")}</th><th style={{ textAlign: "right" }}>{t("leads")}</th></tr></thead>
             <tbody>
               {report.tables.topAgents.map((row) => (
                 <tr key={row.agentId}>
@@ -92,9 +94,9 @@ export default async function ReportsOverviewPage({
             </tbody>
           </table>
         </ReportSection>
-        <ReportSection title="Top sources">
+        <ReportSection title={t("topSources")}>
           <table className="a-table">
-            <thead><tr><th>Source</th><th style={{ textAlign: "right" }}>Leads</th></tr></thead>
+            <thead><tr><th>{t("source")}</th><th style={{ textAlign: "right" }}>{t("leads")}</th></tr></thead>
             <tbody>
               {report.tables.topSources.map((row) => (
                 <tr key={row.source}>

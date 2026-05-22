@@ -28,7 +28,7 @@ export default async function TasksPage() {
     take: 100,
     }),
     prisma.user.findMany({
-      where: { isActive: true, role: { in: ["developer", "owner", "admin", "sales_director", "sales_agent", "superadmin"] } },
+      where: { isActive: true, role: { in: ["developer", "owner", "sales_director", "sales_agent", "external_agent", "finance"] } },
       select: { id: true, name: true, email: true, role: true },
       orderBy: { name: "asc" },
     }),

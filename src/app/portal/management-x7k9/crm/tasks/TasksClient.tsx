@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Check, Plus } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 type Task = {
   id: string;
@@ -19,6 +20,7 @@ type Task = {
 type User = { id: string; name: string | null; email: string; role: string };
 
 export default function TasksClient({ initialTasks, users, currentUserId }: { initialTasks: Task[]; users: User[]; currentUserId?: string }) {
+  const t = useTranslations("admin");
   const [tasks, setTasks] = useState(initialTasks);
   const [view, setView] = useState<"my" | "overdue" | "today" | "week" | "all">("my");
   const [showForm, setShowForm] = useState(false);
@@ -86,17 +88,17 @@ export default function TasksClient({ initialTasks, users, currentUserId }: { in
     <div className="flex flex-col gap-5">
       <div className="flex items-end justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="a-page-title">Tasks</h1>
-          <p className="a-page-sub">Open follow-ups, meetings, and sales actions.</p>
+          <h1 className="a-page-title">{t("tasksTitle")}</h1>
+          <p className="a-page-sub">{t("tasksSubtitle")}</p>
         </div>
         <button className={showForm ? "a-btn" : "a-btn a-btn-primary"} onClick={() => setShowForm((value) => !value)}>
-          {showForm ? "Cancel" : <><Plus className="w-3.5 h-3.5" /> New task</>}
+          {showForm ? t("cancel") : <><Plus className="w-3.5 h-3.5" /> {t("newTask")}</>}
         </button>
       </div>
 
       {showForm ? (
         <form className="a-card p-4 grid gap-3 md:grid-cols-[1fr_180px_140px_160px_auto]" onSubmit={createTask}>
-          <input className="a-input" value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} placeholder="Task title" required />
+          <input className="a-input" value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} placeholder={t("taskTitle")} required />
           <select className="a-input" value={form.assignedToId} onChange={(event) => setForm({ ...form, assignedToId: event.target.value })}>
             {users.map((user) => <option key={user.id} value={user.id}>{user.name || user.email}</option>)}
           </select>
@@ -104,14 +106,14 @@ export default function TasksClient({ initialTasks, users, currentUserId }: { in
             {["low", "normal", "high", "urgent"].map((priority) => <option key={priority} value={priority}>{priority}</option>)}
           </select>
           <input className="a-input" type="datetime-local" value={form.dueAt} onChange={(event) => setForm({ ...form, dueAt: event.target.value })} />
-          <button className="a-btn a-btn-primary" type="submit">Create</button>
+          <button className="a-btn a-btn-primary" type="submit">{t("create")}</button>
         </form>
       ) : null}
 
       <div className="flex gap-2 flex-wrap">
         {(["my", "overdue", "today", "week", "all"] as const).map((item) => (
           <button key={item} className={`a-btn ${view === item ? "a-btn-primary" : ""}`} onClick={() => setView(item)}>
-            {item === "my" ? "My tasks" : item}
+            {item === "my" ? t("myTasks") : item === "overdue" ? t("overdue") : item === "today" ? t("today") : item === "week" ? t("week") : t("allTasks")}
           </button>
         ))}
       </div>
@@ -119,7 +121,7 @@ export default function TasksClient({ initialTasks, users, currentUserId }: { in
       <div className="a-card overflow-x-auto">
         <table className="a-table min-w-[860px]">
           <thead>
-            <tr><th>Task</th><th>Client</th><th>Lead</th><th>Assigned</th><th>Priority</th><th>Status</th><th style={{ textAlign: "right" }}>Due</th><th /></tr>
+            <tr><th>{t("task")}</th><th>{t("client")}</th><th>{t("leadCol")}</th><th>{t("assigned")}</th><th>{t("priority")}</th><th>{t("status")}</th><th style={{ textAlign: "right" }}>{t("due")}</th><th /></tr>
           </thead>
           <tbody>
             {filtered.map((task) => (

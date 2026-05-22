@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/auth";
 import { activityVisibilityWhere, clientVisibilityWhere, leadVisibilityWhere, taskVisibilityWhere } from "@/lib/crm-access";
 import { PLATFORM_PERMISSIONS, roleHasPlatformPermission } from "@/lib/platform-plans";
 import { getPlatformSettings, platformSettingsHasFeature } from "@/lib/platform-settings";
+import { getTranslations } from "next-intl/server";
 
 export const dynamic = "force-dynamic";
 
@@ -11,6 +12,7 @@ export default async function CrmDashboardPage() {
   const session = await requireAdmin(PLATFORM_PERMISSIONS.viewLeads);
   const settings = getPlatformSettings();
   if (!platformSettingsHasFeature(settings, "crm")) return null;
+  const t = await getTranslations("admin");
 
   const user = session.user as { id?: string; role?: string };
   const canManageLeads = roleHasPlatformPermission(user.role, "manageLeads");
@@ -50,23 +52,23 @@ export default async function CrmDashboardPage() {
     <div className="flex flex-col gap-5">
       <div className="flex items-end justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="a-page-title">CRM</h1>
-          <p className="a-page-sub">Clients, pipeline, tasks, and sales activity.</p>
+          <h1 className="a-page-title">{t("crm")}</h1>
+          <p className="a-page-sub">{t("crmSubtitle")}</p>
         </div>
         {canManageLeads ? (
           <div className="flex gap-2">
-            <Link href="/portal/management-x7k9/crm/pipeline" className="a-btn">Pipeline</Link>
-            <Link href="/portal/management-x7k9/crm/tasks" className="a-btn">Tasks</Link>
+            <Link href="/portal/management-x7k9/crm/pipeline" className="a-btn">{t("pipeline")}</Link>
+            <Link href="/portal/management-x7k9/crm/tasks" className="a-btn">{t("tasksNav")}</Link>
           </div>
         ) : null}
       </div>
 
       <div className="grid gap-3 md:grid-cols-4">
         {[
-          ["Leads", leadCount],
-          ["Clients", clientCount],
-          ["Open tasks", openTasks],
-          ["Overdue", overdueTasks],
+          [t("leads"), leadCount],
+          [t("clients"), clientCount],
+          [t("openTasks"), openTasks],
+          [t("overdue"), overdueTasks],
         ].map(([label, value]) => (
           <div key={label} className="a-card p-4">
             <div className="text-[12px]" style={{ color: "var(--a-text-tertiary)" }}>{label}</div>
@@ -78,16 +80,16 @@ export default async function CrmDashboardPage() {
       <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
         <div className="a-card overflow-x-auto">
           <div className="p-4 border-b" style={{ borderColor: "var(--a-border)" }}>
-            <h2 className="text-[15px] font-semibold">Recent leads</h2>
+            <h2 className="text-[15px] font-semibold">{t("recentLeads")}</h2>
           </div>
           <table className="a-table min-w-[720px]">
             <thead>
               <tr>
-                <th>Name</th>
-                <th>Phone</th>
-                <th>Status</th>
-                <th>Assigned</th>
-                <th style={{ textAlign: "right" }}>Created</th>
+                <th>{t("name")}</th>
+                <th>{t("phone")}</th>
+                <th>{t("status")}</th>
+                <th>{t("assigned")}</th>
+                <th style={{ textAlign: "right" }}>{t("created")}</th>
               </tr>
             </thead>
             <tbody>
@@ -100,7 +102,7 @@ export default async function CrmDashboardPage() {
                   </td>
                   <td>{lead.client?.phone || lead.phone}</td>
                   <td>{lead.status}</td>
-                  <td>{lead.assignedToUser?.name || "Unassigned"}</td>
+                  <td>{lead.assignedToUser?.name || t("unassigned")}</td>
                   <td style={{ textAlign: "right" }}>{lead.createdAt.toLocaleDateString()}</td>
                 </tr>
               ))}
@@ -110,7 +112,7 @@ export default async function CrmDashboardPage() {
 
         <div className="flex flex-col gap-4">
           <div className="a-card p-4">
-            <h2 className="text-[15px] font-semibold mb-3">Last 7 days by stage</h2>
+            <h2 className="text-[15px] font-semibold mb-3">{t("last7DaysByStage")}</h2>
             <div className="flex flex-col gap-2">
               {byStatus.map((row) => (
                 <div key={row.status} className="flex items-center justify-between text-[13px]">
@@ -118,18 +120,18 @@ export default async function CrmDashboardPage() {
                   <span className="font-semibold">{row._count._all}</span>
                 </div>
               ))}
-              {byStatus.length === 0 ? <p className="text-[13px]" style={{ color: "var(--a-text-tertiary)" }}>No recent movement.</p> : null}
+              {byStatus.length === 0 ? <p className="text-[13px]" style={{ color: "var(--a-text-tertiary)" }}>{t("noRecentMovement")}</p> : null}
             </div>
           </div>
 
           <div className="a-card p-4">
-            <h2 className="text-[15px] font-semibold mb-3">Activity</h2>
+            <h2 className="text-[15px] font-semibold mb-3">{t("activity")}</h2>
             <div className="flex flex-col gap-3">
               {recentActivities.map((activity) => (
                 <div key={activity.id} className="text-[13px]">
                   <div className="font-medium">{activity.title}</div>
                   <div style={{ color: "var(--a-text-tertiary)" }}>
-                    {activity.client?.fullName || activity.lead?.name || "CRM"} · {activity.occurredAt.toLocaleString()}
+                    {activity.client?.fullName || activity.lead?.name || t("crm")} · {activity.occurredAt.toLocaleString()}
                   </div>
                 </div>
               ))}

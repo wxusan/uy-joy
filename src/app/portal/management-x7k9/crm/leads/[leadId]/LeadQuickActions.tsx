@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { CalendarPlus, Handshake, MessageSquarePlus, NotebookPen, PhoneCall } from "lucide-react";
+import { CalendarPlus, Handshake, MessageSquarePlus, NotebookPen, PhoneCall, Send, Smartphone } from "lucide-react";
 
 export default function LeadQuickActions({
   leadId,
@@ -26,7 +26,12 @@ export default function LeadQuickActions({
   const [taskTitle, setTaskTitle] = useState("");
   const [taskDueAt, setTaskDueAt] = useState("");
 
-  async function logActivity(type: "note" | "communication" | "meeting" | "visit", title: string, body?: string) {
+  async function logActivity(
+    type: "note" | "communication" | "meeting" | "visit",
+    title: string,
+    body?: string,
+    channel: "phone" | "sms" | "telegram" | "manual" = type === "communication" ? "phone" : "manual"
+  ) {
     const res = await fetch("/api/crm/activities", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -36,7 +41,7 @@ export default function LeadQuickActions({
         body: body || null,
         leadId,
         clientId,
-        channel: type === "communication" ? "phone" : "manual",
+        channel,
         direction: type === "communication" ? "outbound" : "internal",
       }),
     });
@@ -103,6 +108,32 @@ export default function LeadQuickActions({
       <div className="flex gap-2 flex-wrap">
         <button className="a-btn" onClick={() => void logActivity("communication", "Outbound call logged")}>
           <PhoneCall className="w-3.5 h-3.5" /> Call
+        </button>
+        <button
+          className="a-btn"
+          onClick={() =>
+            void logActivity(
+              "communication",
+              "SMS draft sent",
+              "Demo SMS: Assalomu alaykum, siz tanlagan xonadon bo'yicha savdo bo'limi bog'lanmoqda.",
+              "sms"
+            )
+          }
+        >
+          <Smartphone className="w-3.5 h-3.5" /> SMS
+        </button>
+        <button
+          className="a-btn"
+          onClick={() =>
+            void logActivity(
+              "communication",
+              "Telegram follow-up sent",
+              "Demo Telegram follow-up logged. Real Telegram/SMS delivery can be connected later through provider APIs.",
+              "telegram"
+            )
+          }
+        >
+          <Send className="w-3.5 h-3.5" /> Telegram
         </button>
         <button className="a-btn" onClick={() => void logActivity("meeting", "Meeting logged")}>
           <CalendarPlus className="w-3.5 h-3.5" /> Meeting

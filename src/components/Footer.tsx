@@ -61,7 +61,7 @@ export default async function Footer() {
           </p>
           {platformSettings.showPoweredByUyJoy && (
             <p className="mt-3 text-[12px] font-medium text-[#81776d]">
-              Powered by Uy Joy
+              {t("poweredBy")}
             </p>
           )}
         </div>

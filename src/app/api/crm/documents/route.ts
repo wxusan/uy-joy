@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
 
   await createActivity({
     type: "document",
-    title: "Document uploaded",
+    title: "Hujjat yuklandi",
     clientId: document.clientId,
     leadId: document.leadId,
     dealId: document.dealId,

@@ -1,12 +1,22 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import prisma from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
+import {
+  dealStatusLabel,
+  documentStatusLabel,
+  documentTypeLabel,
+  paymentPlanStatusLabel,
+  paymentStatusLabel,
+  unitStatusLabel,
+} from "@/lib/crm-labels";
 import { dealVisibilityWhere } from "@/lib/real-estate";
 import { PLATFORM_PERMISSIONS } from "@/lib/platform-plans";
 import { getPlatformSettings, platformSettingsHasFeature } from "@/lib/platform-settings";
 import DealActions from "./DealActions";
 import DealFinanceActions from "./DealFinanceActions";
+import ReservationCountdown from "@/components/crm/ReservationCountdown";
 
 export const dynamic = "force-dynamic";
 
@@ -31,44 +41,50 @@ export default async function DealProfilePage({ params }: { params: Promise<{ de
     },
   });
   if (!deal) notFound();
+  const t = await getTranslations("admin");
   const paidTotal = deal.paymentPlans.flatMap((plan) => plan.payments).reduce((sum, payment) => sum + payment.paidAmount, 0);
   const overdueTotal = deal.paymentPlans
     .flatMap((plan) => plan.payments)
     .filter((payment) => payment.status === "overdue")
     .reduce((sum, payment) => sum + Math.max(0, payment.expectedAmount - payment.paidAmount), 0);
-
   return (
     <div className="flex flex-col gap-5">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="a-page-title">{deal.dealNumber}</h1>
-          <p className="a-page-sub">{deal.client.fullName} · {deal.status} · {deal.salePrice.toLocaleString()} {deal.currency}</p>
+          <p className="a-page-sub">{deal.client.fullName} · {dealStatusLabel(t, deal.status)} · {deal.salePrice.toLocaleString()} {deal.currency}</p>
         </div>
-        <Link href="/portal/management-x7k9/crm/deals" className="a-btn">Back to deals</Link>
+        <Link href="/portal/management-x7k9/crm/deals" className="a-btn">{t("backToDeals")}</Link>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-4 lg:grid-cols-4">
         <div className="a-card p-4">
-          <h2 className="text-[15px] font-semibold mb-3">Client</h2>
+          <h2 className="text-[15px] font-semibold mb-3">{t("client")}</h2>
           <p className="font-medium">{deal.client.fullName}</p>
           <p className="text-[13px]" style={{ color: "var(--a-text-secondary)" }}>{deal.client.phone}</p>
-          <Link className="text-[13px] hover:underline" href={`/portal/management-x7k9/crm/clients/${deal.clientId}`}>Open client</Link>
+          <Link className="text-[13px] hover:underline" href={`/portal/management-x7k9/crm/clients/${deal.clientId}`}>{t("openClient")}</Link>
         </div>
         <div className="a-card p-4">
-          <h2 className="text-[15px] font-semibold mb-3">Unit</h2>
+          <h2 className="text-[15px] font-semibold mb-3">{t("unit")}</h2>
           {deal.primaryUnit ? (
             <>
               <p className="font-medium">{deal.primaryUnit.floor.building.name} / {deal.primaryUnit.unitNumber}</p>
-              <p className="text-[13px]" style={{ color: "var(--a-text-secondary)" }}>{deal.primaryUnit.area} m2 · {deal.primaryUnit.rooms} rooms · {deal.primaryUnit.status}</p>
+              <p className="text-[13px]" style={{ color: "var(--a-text-secondary)" }}>{deal.primaryUnit.area} m² · {deal.primaryUnit.rooms} {t("rooms")} · {unitStatusLabel(t, deal.primaryUnit.status)}</p>
             </>
-          ) : <p className="text-[13px]" style={{ color: "var(--a-text-tertiary)" }}>Draft deal without unit.</p>}
+          ) : <p className="text-[13px]" style={{ color: "var(--a-text-tertiary)" }}>{t("draftDealNoUnit")}</p>}
         </div>
         <div className="a-card p-4">
-          <h2 className="text-[15px] font-semibold mb-3">Finance</h2>
-          <p className="text-[13px]">Paid: {paidTotal.toLocaleString()} {deal.currency}</p>
-          <p className="text-[13px]">Remaining: {(deal.salePrice - paidTotal).toLocaleString()} {deal.currency}</p>
-          <p className="text-[13px]">Overdue: {overdueTotal.toLocaleString()} {deal.currency}</p>
+          <h2 className="text-[15px] font-semibold mb-3">{t("finance")}</h2>
+          <p className="text-[13px]">{t("paid")} {paidTotal.toLocaleString()} {deal.currency}</p>
+          <p className="text-[13px]">{t("remaining")} {(deal.salePrice - paidTotal).toLocaleString()} {deal.currency}</p>
+          <p className="text-[13px]">{t("overdue")} {overdueTotal.toLocaleString()} {deal.currency}</p>
         </div>
+        {deal.status === "reserved" && deal.reservationExpiresAt ? (
+          <div className="a-card p-4">
+            <h2 className="text-[15px] font-semibold mb-3">{t("reservationExpiry")}</h2>
+            <ReservationCountdown status={deal.status} expiresAt={deal.reservationExpiresAt.toISOString()} />
+          </div>
+        ) : null}
       </div>
 
       <DealActions deal={deal} />
@@ -94,10 +110,10 @@ export default async function DealProfilePage({ params }: { params: Promise<{ de
 
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="a-card overflow-x-auto">
-          <div className="p-4 border-b" style={{ borderColor: "var(--a-border)" }}><h2 className="text-[15px] font-semibold">Payment plans</h2></div>
+          <div className="p-4 border-b" style={{ borderColor: "var(--a-border)" }}><h2 className="text-[15px] font-semibold">{t("paymentPlans")}</h2></div>
           {deal.paymentPlans.map((plan) => (
             <div key={plan.id} className="p-4 border-b" style={{ borderColor: "var(--a-border)" }}>
-              <div className="flex justify-between gap-3 text-[13px]"><strong>{plan.name}</strong><span>{plan.status}</span></div>
+              <div className="flex justify-between gap-3 text-[13px]"><strong>{plan.name}</strong><span>{paymentPlanStatusLabel(t, plan.status)}</span></div>
               <table className="a-table mt-3 min-w-[560px]">
                 <tbody>
                   {plan.payments.map((payment) => (
@@ -105,7 +121,7 @@ export default async function DealProfilePage({ params }: { params: Promise<{ de
                       <td>{payment.sequence}. {payment.label}</td>
                       <td>{payment.expectedAmount.toLocaleString()}</td>
                       <td>{payment.paidAmount.toLocaleString()}</td>
-                      <td>{payment.status}</td>
+                      <td>{paymentStatusLabel(t, payment.status)}</td>
                       <td style={{ textAlign: "right" }}>{payment.dueDate.toLocaleDateString()}</td>
                     </tr>
                   ))}
@@ -116,20 +132,20 @@ export default async function DealProfilePage({ params }: { params: Promise<{ de
         </div>
 
         <div className="a-card p-4">
-          <h2 className="text-[15px] font-semibold mb-3">Documents</h2>
+          <h2 className="text-[15px] font-semibold mb-3">{t("documentsNav")}</h2>
           <div className="flex flex-col gap-3">
             {deal.documents.map((document) => (
               <a key={document.id} href={document.fileUrl} className="text-[13px] hover:underline" target="_blank" rel="noreferrer">
-                {document.title} · {document.type} · {document.status}
+                {document.title} · {documentTypeLabel(t, document.type)} · {documentStatusLabel(t, document.status)}
               </a>
             ))}
-            {deal.documents.length === 0 ? <p className="text-[13px]" style={{ color: "var(--a-text-tertiary)" }}>No documents yet.</p> : null}
+            {deal.documents.length === 0 ? <p className="text-[13px]" style={{ color: "var(--a-text-tertiary)" }}>{t("noDocumentsYet")}</p> : null}
           </div>
         </div>
       </div>
 
       <div className="a-card p-4">
-        <h2 className="text-[15px] font-semibold mb-3">Activity</h2>
+        <h2 className="text-[15px] font-semibold mb-3">{t("activity")}</h2>
         <div className="flex flex-col gap-3">
           {deal.activities.map((activity) => (
             <div key={activity.id} className="text-[13px]">

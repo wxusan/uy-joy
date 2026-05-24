@@ -69,12 +69,12 @@ export default function AdminUsers() {
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
-      setResetStatus(data.error || "Password reset failed.");
+      setResetStatus(data.error || t("passwordResetFailed"));
       return;
     }
     setResetPassword("");
     setResetTarget(null);
-    setResetStatus("Password reset.");
+    setResetStatus(t("passwordReset"));
   };
 
   if (!roleHasPlatformPermission(currentRole, "manageUsers")) {
@@ -160,23 +160,23 @@ export default function AdminUsers() {
         <form onSubmit={resetUserPassword} className="a-card p-4 flex flex-col gap-3">
           <div>
             <h2 className="text-[15px] font-semibold" style={{ color: "var(--a-text)" }}>
-              Reset password
+              {t("resetPassword")}
             </h2>
             <p className="text-[12px]" style={{ color: "var(--a-text-tertiary)" }}>
-              {resetTarget.name} will use this temporary password until they change it.
+              {t("resetPasswordHelper", { name: resetTarget.name })}
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-3">
             <input
               className="a-input"
               type="password"
-              placeholder="Temporary password"
+              placeholder={t("tempPassword")}
               value={resetPassword}
               minLength={10}
               onChange={(event) => setResetPassword(event.target.value)}
               required
             />
-            <button className="a-btn a-btn-primary">Reset password</button>
+            <button className="a-btn a-btn-primary">{t("resetPassword")}</button>
             <button
               type="button"
               className="a-btn"

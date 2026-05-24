@@ -159,9 +159,9 @@ export default function FloorsClient({ initialBuilding, buildingId, projectId }:
                   className="w-28 rounded-[6px] border border-neutral-200 px-3 py-2 text-sm outline-none transition focus:border-neutral-400" />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-neutral-500">{t("basePricePerM2")} (optional)</label>
+                <label className="mb-1 block text-xs font-medium text-neutral-500">{t("basePricePerM2")} ({t("optional")})</label>
                 <input type="number" value={newFloorPrice} onChange={(e) => setNewFloorPrice(e.target.value)}
-                  placeholder="e.g. 6500000" disabled={loading}
+                  placeholder={t("egPrice")} disabled={loading}
                   className="w-44 rounded-[6px] border border-neutral-200 px-3 py-2 text-sm outline-none transition focus:border-neutral-400" />
               </div>
               <button type="submit" disabled={loading || !newFloorNumber}
@@ -185,9 +185,9 @@ export default function FloorsClient({ initialBuilding, buildingId, projectId }:
                   className="w-24 rounded-[6px] border border-neutral-200 px-3 py-2 text-sm outline-none transition focus:border-neutral-400" />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-neutral-500">{t("basePricePerM2")} (optional)</label>
+                <label className="mb-1 block text-xs font-medium text-neutral-500">{t("basePricePerM2")} ({t("optional")})</label>
                 <input type="number" value={rangePrice} onChange={(e) => setRangePrice(e.target.value)}
-                  placeholder="e.g. 6500000" disabled={loading}
+                  placeholder={t("egPrice")} disabled={loading}
                   className="w-44 rounded-[6px] border border-neutral-200 px-3 py-2 text-sm outline-none transition focus:border-neutral-400" />
               </div>
               <div className="flex flex-col gap-1">

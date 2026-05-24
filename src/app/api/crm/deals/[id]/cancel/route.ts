@@ -60,7 +60,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     await createActivity(
       {
         type: "deal",
-        title: "Deal cancelled",
+        title: "Bitim bekor qilindi",
         clientId: updated.clientId,
         leadId: updated.leadId,
         dealId: updated.id,

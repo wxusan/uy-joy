@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
     await createActivity(
       {
         type: "deal",
-        title: "Deal created",
+        title: "Bitim yaratildi",
         clientId: created.clientId,
         leadId: created.leadId,
         dealId: created.id,
@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
       await createActivity(
         {
           type: "deal",
-          title: "Discount requires approval",
+          title: "Chegirma tasdiq talab qiladi",
           clientId: created.clientId,
           leadId: created.leadId,
           dealId: created.id,

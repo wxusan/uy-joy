@@ -13,7 +13,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
   });
   await createActivity({
     type: "document",
-    title: "Document approved",
+    title: "Hujjat tasdiqlandi",
     clientId: document.clientId,
     leadId: document.leadId,
     dealId: document.dealId,

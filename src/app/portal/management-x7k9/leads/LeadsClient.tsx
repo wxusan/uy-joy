@@ -39,6 +39,8 @@ interface Props {
   initialTotal: number;
   initialPages: number;
   emptyMessage?: string | null;
+  initialStatusFilter?: string;
+  extraApiFilters?: Record<string, string>;
 }
 
 function escapeCsvValue(value: unknown) {
@@ -47,7 +49,14 @@ function escapeCsvValue(value: unknown) {
   return `"${formulaSafe.replace(/"/g, '""')}"`;
 }
 
-export default function LeadsClient({ initialLeads, initialTotal, initialPages, emptyMessage }: Props) {
+export default function LeadsClient({
+  initialLeads,
+  initialTotal,
+  initialPages,
+  emptyMessage,
+  initialStatusFilter = "all",
+  extraApiFilters = {},
+}: Props) {
   const t = useTranslations("admin");
   const tc = useTranslations("common");
   const [leads, setLeads] = useState<Lead[]>(initialLeads);
@@ -57,10 +66,10 @@ export default function LeadsClient({ initialLeads, initialTotal, initialPages, 
     contact_form: t("sourceBoshSahifa"),
     apartment_page: t("sourceKvartiralar"),
     visual_explorer: t("sourceVizual"),
-    floating_contact: "Floating contact",
-    waitlist: "Waitlist",
-    campaign: "Campaign",
-    manual: "Manual",
+    floating_contact: t("sourceFloatingContact"),
+    waitlist: t("sourceWaitlist"),
+    campaign: t("sourceCampaign"),
+    manual: t("sourceManual"),
     kvartiralar: t("sourceKvartiralar"),
     vizual: t("sourceVizual"),
     "bosh-sahifa": t("sourceBoshSahifa"),
@@ -70,10 +79,13 @@ export default function LeadsClient({ initialLeads, initialTotal, initialPages, 
   const [total, setTotal] = useState(initialTotal);
   const [pages, setPages] = useState(initialPages);
   const [query, setQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>(initialStatusFilter);
 
   const buildLeadUrl = (p: number, nextQuery = query, nextStatus = statusFilter, limit = LIMIT) => {
     const params = new URLSearchParams({ page: String(p), limit: String(limit) });
+    for (const [key, value] of Object.entries(extraApiFilters)) {
+      params.set(key, value);
+    }
     const q = nextQuery.trim();
     if (q) params.set("q", q);
     if (nextStatus !== "all") params.set("status", nextStatus);

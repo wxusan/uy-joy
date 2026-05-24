@@ -1,7 +1,22 @@
 import assert from "node:assert/strict";
+import { tashkentDateString, AUTOMATION_INACTIVITY_CUTOFF_HOURS } from "../automation-rules";
+import {
+  clientStatusLabel,
+  dealStatusLabel,
+  documentStatusLabel,
+  documentTypeLabel,
+  leadSourceLabelUi,
+  leadStatusLabel,
+  leadStatusTextUz,
+  paymentStatusLabel,
+  pipelineStageLabel,
+  platformRoleLabel,
+  taskPriorityLabel,
+  taskStatusLabel,
+} from "../crm-labels";
 import { normalizeLeadStatus } from "../lead-status";
 import { taskIsOverdue } from "../crm";
-import { clientVisibilityWhere, leadVisibilityWhere, taskVisibilityWhere } from "../crm-access";
+import { canClaimUnassignedLead, clientVisibilityWhere, leadVisibilityWhere, taskVisibilityWhere } from "../crm-access";
 import { normalizePhone } from "../phone";
 import {
   calculateDealFinancials,
@@ -21,6 +36,8 @@ const tests: TestCase[] = [];
 function test(name: string, run: () => void) {
   tests.push({ name, run });
 }
+
+const testT = (key: string) => `label:${key}`;
 
 test("normalizes Uzbek E.164 and 998-prefixed numbers", () => {
   assert.equal(normalizePhone("+998 90 123 45 67").normalized, "+998901234567");
@@ -43,6 +60,26 @@ test("normalizes legacy lead statuses into v1 CRM stages", () => {
   assert.equal(normalizeLeadStatus("notInterested"), "lost");
   assert.equal(normalizeLeadStatus("inProgress"), "negotiation");
   assert.equal(normalizeLeadStatus("meeting"), "meeting");
+});
+
+test("CRM label helpers localize known values and humanize unknown values", () => {
+  assert.equal(leadStatusLabel(testT, "negotiation"), "label:negotiation");
+  assert.equal(leadStatusLabel(testT, "notInterested"), "label:notInterested");
+  assert.equal(leadStatusLabel(testT, null, "empty"), "empty");
+  assert.equal(leadStatusLabel(testT, "legacy_custom_status"), "legacy custom status");
+  assert.equal(leadStatusTextUz("meeting"), "Ofisga keladi");
+  assert.equal(leadSourceLabelUi("walk_in", "uz"), "Ofisga kelgan");
+  assert.equal(leadSourceLabelUi("custom_source", "uz"), "custom source");
+  assert.equal(pipelineStageLabel(testT, { key: "reserved", name: "Reserved" }), "label:reserved");
+  assert.equal(pipelineStageLabel(testT, { key: "custom_stage", name: "Custom stage" }), "Custom stage");
+  assert.equal(dealStatusLabel(testT, "contract_signed"), "label:contractSigned");
+  assert.equal(paymentStatusLabel(testT, "partial"), "label:paymentPartial");
+  assert.equal(documentStatusLabel(testT, "needs_review"), "label:documentNeedsReview");
+  assert.equal(documentTypeLabel(testT, "reservation_agreement"), "label:documentTypeReservationAgreement");
+  assert.equal(clientStatusLabel(testT, "active"), "label:clientActive");
+  assert.equal(taskStatusLabel(testT, "completed"), "label:taskCompleted");
+  assert.equal(taskPriorityLabel(testT, "urgent"), "label:priorityUrgent");
+  assert.equal(platformRoleLabel(testT, "sales_agent"), "label:roleSalesManager");
 });
 
 test("task overdue state is derived from status and due date", () => {
@@ -94,6 +131,14 @@ test("CRM visibility scopes team, agent, and specialist read-only roles", () => 
     ],
   });
   assert.deepEqual(taskVisibilityWhere({ id: "marketing-1", role: "marketing" }, true), { id: "__none__" });
+});
+
+test("CRM lead claiming is limited to selling roles and enabled settings", () => {
+  assert.equal(canClaimUnassignedLead({ id: "agent-1", role: "sales_agent" }, true), true);
+  assert.equal(canClaimUnassignedLead({ id: "external-1", role: "external_agent" }, true), true);
+  assert.equal(canClaimUnassignedLead({ id: "director-1", role: "sales_director" }, true), false);
+  assert.equal(canClaimUnassignedLead({ id: "agent-1", role: "sales_agent" }, false), false);
+  assert.equal(canClaimUnassignedLead({ role: "sales_agent" }, true), false);
 });
 
 test("deal calculator derives discount, initial payment, remaining, and monthly amounts", () => {
@@ -182,6 +227,60 @@ test("reserved to sold override is owner/developer only", () => {
   assert.equal(canOverrideReservedDealSold({ id: "finance-1", role: "finance" }), false);
   assert.equal(canOverrideReservedDealSold({ id: "director-1", role: "sales_director" }), false);
   assert.equal(canOverrideReservedDealSold({ id: "agent-1", role: "sales_agent" }), false);
+});
+
+test("automation idempotency refs use Tashkent date and are stable within the same day", () => {
+  // Two calls with the same UTC time should produce the same Tashkent date string.
+  const now = new Date("2026-05-24T20:00:00Z"); // UTC 20:00 = Tashkent 01:00 next day (UTC+5)
+  const dateStr = tashkentDateString(now);
+  assert.equal(dateStr, "2026-05-25"); // Tashkent is UTC+5, so this is already May 25
+
+  const earlier = new Date("2026-05-24T18:59:00Z"); // UTC 18:59 = Tashkent 23:59 May 24
+  assert.equal(tashkentDateString(earlier), "2026-05-24");
+
+  // followup_reminder ref format
+  const taskId = "task-abc";
+  const ref = `followup_reminder_${taskId}_${tashkentDateString(now)}`;
+  assert.equal(ref, "followup_reminder_task-abc_2026-05-25");
+
+  // Running again at a different UTC time within same Tashkent day produces same ref
+  const laterSameDay = new Date("2026-05-25T18:59:00Z"); // Tashkent 23:59 May 25
+  const ref2 = `followup_reminder_${taskId}_${tashkentDateString(laterSameDay)}`;
+  assert.equal(ref2, "followup_reminder_task-abc_2026-05-25");
+});
+
+test("automation inactivity cutoff constant is 48 hours", () => {
+  assert.equal(AUTOMATION_INACTIVITY_CUTOFF_HOURS, 48);
+  const now = new Date("2026-05-24T12:00:00Z");
+  const cutoff = new Date(now.getTime() - AUTOMATION_INACTIVITY_CUTOFF_HOURS * 60 * 60 * 1000);
+  assert.equal(cutoff.toISOString(), "2026-05-22T12:00:00.000Z");
+
+  // An agent last active 47h ago should NOT be flagged.
+  const recentContact = new Date(now.getTime() - 47 * 60 * 60 * 1000);
+  assert.equal(recentContact >= cutoff, true);
+
+  // An agent last active 49h ago SHOULD be flagged.
+  const staleContact = new Date(now.getTime() - 49 * 60 * 60 * 1000);
+  assert.equal(staleContact < cutoff, true);
+});
+
+test("automation duplicate ref is stable for a given lead pair and does not depend on date", () => {
+  const leadId = "lead-newer";
+  const primaryId = "lead-older";
+  const ref = `duplicate_flag_${leadId}_${primaryId}`;
+  assert.equal(ref, "duplicate_flag_lead-newer_lead-older");
+  // Running the check again produces the same ref → idempotent.
+  assert.equal(`duplicate_flag_${leadId}_${primaryId}`, ref);
+});
+
+test("automation manager inactivity ref includes agent id and today's date", () => {
+  const agentId = "agent-xyz";
+  const now = new Date("2026-05-24T10:00:00Z"); // Tashkent 15:00 May 24
+  const ref = `manager_inactive_${agentId}_${tashkentDateString(now)}`;
+  assert.equal(ref, "manager_inactive_agent-xyz_2026-05-24");
+  // Same ref for a second call at a different UTC time on same Tashkent day.
+  const later = new Date("2026-05-24T17:00:00Z"); // Tashkent 22:00 still May 24
+  assert.equal(`manager_inactive_${agentId}_${tashkentDateString(later)}`, ref);
 });
 
 let failures = 0;

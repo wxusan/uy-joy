@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type React from "react";
 import { Download, RefreshCw } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import type { ReportFilters } from "@/lib/reports";
 import { formatMoney } from "@/lib/reports";
 
@@ -33,7 +34,7 @@ function qs(base: string, params: Record<string, string | undefined>) {
   return `${base}?${search.toString()}`;
 }
 
-export function ReportTabs({
+export async function ReportTabs({
   active,
   financeEnabled,
   marketingEnabled,
@@ -42,13 +43,14 @@ export function ReportTabs({
   financeEnabled: boolean;
   marketingEnabled: boolean;
 }) {
+  const t = await getTranslations("admin");
   const tabs = [
-    { key: "overview", label: "Overview", href: "/portal/management-x7k9/reports" },
-    { key: "sales", label: "Sales", href: "/portal/management-x7k9/reports/sales" },
-    { key: "agents", label: "Agents", href: "/portal/management-x7k9/reports/agents" },
-    { key: "inventory", label: "Inventory", href: "/portal/management-x7k9/reports/inventory" },
-    marketingEnabled ? { key: "marketing", label: "Marketing", href: "/portal/management-x7k9/reports/marketing" } : null,
-    financeEnabled ? { key: "finance", label: "Finance", href: "/portal/management-x7k9/reports/finance" } : null,
+    { key: "overview", label: t("reportTabOverview"), href: "/portal/management-x7k9/reports" },
+    { key: "sales", label: t("reportTabSales"), href: "/portal/management-x7k9/reports/sales" },
+    { key: "agents", label: t("reportTabAgents"), href: "/portal/management-x7k9/reports/agents" },
+    { key: "inventory", label: t("reportTabInventory"), href: "/portal/management-x7k9/reports/inventory" },
+    marketingEnabled ? { key: "marketing", label: t("reportTabMarketing"), href: "/portal/management-x7k9/reports/marketing" } : null,
+    financeEnabled ? { key: "finance", label: t("reportTabFinance"), href: "/portal/management-x7k9/reports/finance" } : null,
   ].filter((tab): tab is { key: string; label: string; href: string } => Boolean(tab));
 
   return (
@@ -70,7 +72,7 @@ export function ReportTabs({
   );
 }
 
-export function ReportControls({
+export async function ReportControls({
   filters,
   options,
   exportHref,
@@ -83,6 +85,7 @@ export function ReportControls({
   showAgent?: boolean;
   showSource?: boolean;
 }) {
+  const t = await getTranslations("admin");
   const last7 = new Date(filters.to);
   last7.setDate(last7.getDate() - 7);
   const last30 = new Date(filters.to);
@@ -98,45 +101,45 @@ export function ReportControls({
   return (
     <div className="a-card p-3">
       <div className="mb-3 flex flex-wrap gap-2 text-[12px]">
-        <Link className="a-btn subtle" href={qs("", { from: dateInputValue(today), to: dateInputValue(today) })}>Today</Link>
-        <Link className="a-btn subtle" href={qs("", { from: dateInputValue(yesterday), to: dateInputValue(yesterday) })}>Yesterday</Link>
-        <Link className="a-btn subtle" href={qs("", { from: dateInputValue(last7), to: dateInputValue(filters.to) })}>Last 7 days</Link>
-        <Link className="a-btn subtle" href={qs("", { from: dateInputValue(last30), to: dateInputValue(filters.to) })}>Last 30 days</Link>
-        <Link className="a-btn subtle" href={qs("", { from: dateInputValue(monthStart), to: dateInputValue(today) })}>This month</Link>
-        <Link className="a-btn subtle" href={qs("", { from: dateInputValue(lastMonthStart), to: dateInputValue(lastMonthEnd) })}>Last month</Link>
+        <Link className="a-btn subtle" href={qs("", { from: dateInputValue(today), to: dateInputValue(today) })}>{t("reportRangeToday")}</Link>
+        <Link className="a-btn subtle" href={qs("", { from: dateInputValue(yesterday), to: dateInputValue(yesterday) })}>{t("reportRangeYesterday")}</Link>
+        <Link className="a-btn subtle" href={qs("", { from: dateInputValue(last7), to: dateInputValue(filters.to) })}>{t("reportRangeLast7")}</Link>
+        <Link className="a-btn subtle" href={qs("", { from: dateInputValue(last30), to: dateInputValue(filters.to) })}>{t("reportRangeLast30")}</Link>
+        <Link className="a-btn subtle" href={qs("", { from: dateInputValue(monthStart), to: dateInputValue(today) })}>{t("reportRangeThisMonth")}</Link>
+        <Link className="a-btn subtle" href={qs("", { from: dateInputValue(lastMonthStart), to: dateInputValue(lastMonthEnd) })}>{t("reportRangeLastMonth")}</Link>
       </div>
       <form className="grid gap-2 md:grid-cols-6" action="">
         <input className="a-input" type="date" name="from" defaultValue={dateInputValue(filters.from)} />
         <input className="a-input" type="date" name="to" defaultValue={dateInputValue(filters.to)} />
         <select className="a-input" name="projectId" defaultValue={filters.projectId || ""}>
-          <option value="">All projects</option>
+          <option value="">{t("filterAllProjects")}</option>
           {options.projects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}
         </select>
         <select className="a-input" name="buildingId" defaultValue={filters.buildingId || ""}>
-          <option value="">All buildings</option>
+          <option value="">{t("filterAllBuildings")}</option>
           {options.buildings.map((building) => <option key={building.id} value={building.id}>{building.name}</option>)}
         </select>
         {showAgent ? (
           <select className="a-input" name="agentId" defaultValue={filters.agentId || ""}>
-            <option value="">All agents</option>
+            <option value="">{t("filterAllAgents")}</option>
             {options.agents.map((agent) => <option key={agent.id} value={agent.id}>{agent.label}</option>)}
           </select>
         ) : <input type="hidden" name="agentId" value="" />}
         {showSource ? (
           <select className="a-input" name="source" defaultValue={filters.source || ""}>
-            <option value="">All sources</option>
+            <option value="">{t("filterAllSources")}</option>
             {options.sources.map((source) => <option key={source.key} value={source.key}>{source.label}</option>)}
           </select>
         ) : <input type="hidden" name="source" value="" />}
         <div className="flex gap-2 md:col-span-6">
           <button className="a-btn" type="submit">
             <RefreshCw className="h-3.5 w-3.5" />
-            Refresh
+            {t("reportRefresh")}
           </button>
           {exportHref ? (
             <Link className="a-btn subtle" href={exportHref}>
               <Download className="h-3.5 w-3.5" />
-              Export CSV
+              {t("reportExportCsv")}
             </Link>
           ) : null}
         </div>
@@ -182,8 +185,9 @@ export function ReportSection({ title, children }: { title: string; children: Re
   );
 }
 
-export function EmptyTable({ label = "No rows for this period." }: { label?: string }) {
-  return <div className="py-8 text-center text-[13px]" style={{ color: "var(--a-text-tertiary)" }}>{label}</div>;
+export async function EmptyTable({ label }: { label?: string }) {
+  const t = await getTranslations("admin");
+  return <div className="py-8 text-center text-[13px]" style={{ color: "var(--a-text-tertiary)" }}>{label ?? t("noRowsForPeriod")}</div>;
 }
 
 export function money(value: number | null | undefined) {

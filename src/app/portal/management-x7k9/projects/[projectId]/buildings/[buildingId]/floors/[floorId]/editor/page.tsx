@@ -283,7 +283,7 @@ export default function FloorPlanEditorPage() {
 
       if (!res.ok) {
         const error = await res.json();
-        throw new Error(error.error || "AI detection failed");
+        throw new Error(error.error || t("aiDetectionFailed"));
       }
 
       const { apartments } = await res.json();
@@ -311,7 +311,7 @@ export default function FloorPlanEditorPage() {
       await loadFloor();
       alert(t("aiDetectedApartments", { count: apartments.length }));
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "AI detection failed";
+      const message = error instanceof Error ? error.message : t("aiDetectionFailed");
       alert(message);
     } finally {
       setAiDetecting(false);
@@ -746,7 +746,7 @@ export default function FloorPlanEditorPage() {
                         : "bg-neutral-100 text-neutral-700"
                         }`}
                     >
-                      {unit.status}
+                      {unit.status === "available" ? t("available") : unit.status === "reserved" ? t("reserved") : unit.status === "sold" ? t("sold") : unit.status}
                     </span>
                   </button>
                 ))

@@ -14,15 +14,17 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { useTranslations } from "next-intl";
 
 type Datum = Record<string, string | number | null | undefined>;
 
 const COLORS = ["#2563eb", "#16a34a", "#f59e0b", "#dc2626", "#7c3aed", "#0891b2", "#64748b"];
 
-function EmptyChart({ label = "No data" }: { label?: string }) {
+function EmptyChart({ label }: { label?: string }) {
+  const t = useTranslations("admin");
   return (
     <div className="grid h-[240px] place-items-center text-[13px]" style={{ color: "var(--a-text-tertiary)" }}>
-      {label}
+      {label ?? t("noData")}
     </div>
   );
 }
@@ -91,11 +93,13 @@ export function ReportStackedBarChart({
   data,
   xKey,
   keys,
+  keyLabels,
   emptyLabel,
 }: {
   data: Datum[];
   xKey: string;
   keys: string[];
+  keyLabels?: Record<string, string>;
   emptyLabel?: string;
 }) {
   if (!hasRows(data)) return <EmptyChart label={emptyLabel} />;
@@ -109,7 +113,7 @@ export function ReportStackedBarChart({
           <YAxis tick={{ fontSize: 11 }} stroke="var(--a-text-tertiary)" />
           <Tooltip />
           {keys.map((key, index) => (
-            <Bar key={key} dataKey={key} stackId="total" fill={COLORS[index % COLORS.length]} radius={index === keys.length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]} />
+            <Bar key={key} dataKey={key} name={keyLabels?.[key] ?? key} stackId="total" fill={COLORS[index % COLORS.length]} radius={index === keys.length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]} />
           ))}
         </BarChart>
       </ResponsiveContainer>

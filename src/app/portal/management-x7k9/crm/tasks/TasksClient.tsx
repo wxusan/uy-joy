@@ -4,11 +4,13 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Check, Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { taskPriorityLabel, taskStatusLabel, taskTypeLabel } from "@/lib/crm-labels";
 
 type Task = {
   id: string;
   title: string;
   description: string | null;
+  type: string;
   status: string;
   priority: string;
   dueAt: string | null;
@@ -18,11 +20,25 @@ type Task = {
 };
 
 type User = { id: string; name: string | null; email: string; role: string };
+type TaskView = "my" | "overdue" | "today" | "week" | "all";
 
-export default function TasksClient({ initialTasks, users, currentUserId }: { initialTasks: Task[]; users: User[]; currentUserId?: string }) {
+export default function TasksClient({
+  initialTasks,
+  users,
+  currentUserId,
+  initialView = "my",
+  initialTypeFilter = "all",
+}: {
+  initialTasks: Task[];
+  users: User[];
+  currentUserId?: string;
+  initialView?: TaskView;
+  initialTypeFilter?: string;
+}) {
   const t = useTranslations("admin");
   const [tasks, setTasks] = useState(initialTasks);
-  const [view, setView] = useState<"my" | "overdue" | "today" | "week" | "all">("my");
+  const [view, setView] = useState<TaskView>(initialView);
+  const [typeFilter, setTypeFilter] = useState(initialTypeFilter);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
     title: "",
@@ -33,23 +49,27 @@ export default function TasksClient({ initialTasks, users, currentUserId }: { in
   });
   const dateBounds = useMemo(() => {
     const now = new Date();
+    const startOfToday = new Date(now);
+    startOfToday.setHours(0, 0, 0, 0);
     const endOfToday = new Date(now);
     endOfToday.setHours(23, 59, 59, 999);
     const endOfWeek = new Date(now);
     endOfWeek.setDate(now.getDate() + 7);
-    return { now, endOfToday, endOfWeek };
+    return { now, startOfToday, endOfToday, endOfWeek };
   }, []);
 
   const filtered = useMemo(() => {
     return tasks.filter((task) => {
       const due = task.dueAt ? new Date(task.dueAt) : null;
+      if (typeFilter === "office_visit" && task.type !== "meeting" && task.type !== "visit") return false;
+      if (typeFilter !== "all" && typeFilter !== "office_visit" && task.type !== typeFilter) return false;
       if (view === "my") return task.assignedTo.id === currentUserId && task.status === "open";
       if (view === "overdue") return task.status === "open" && Boolean(due && due < dateBounds.now);
-      if (view === "today") return task.status === "open" && Boolean(due && due <= dateBounds.endOfToday);
+      if (view === "today") return task.status === "open" && Boolean(due && due >= dateBounds.startOfToday && due <= dateBounds.endOfToday);
       if (view === "week") return task.status === "open" && Boolean(due && due <= dateBounds.endOfWeek);
       return true;
     });
-  }, [currentUserId, dateBounds, tasks, view]);
+  }, [currentUserId, dateBounds, tasks, typeFilter, view]);
 
   async function createTask(event: React.FormEvent) {
     event.preventDefault();
@@ -103,7 +123,7 @@ export default function TasksClient({ initialTasks, users, currentUserId }: { in
             {users.map((user) => <option key={user.id} value={user.id}>{user.name || user.email}</option>)}
           </select>
           <select className="a-input" value={form.priority} onChange={(event) => setForm({ ...form, priority: event.target.value })}>
-            {["low", "normal", "high", "urgent"].map((priority) => <option key={priority} value={priority}>{priority}</option>)}
+            {["low", "normal", "high", "urgent"].map((priority) => <option key={priority} value={priority}>{taskPriorityLabel(t, priority)}</option>)}
           </select>
           <input className="a-input" type="datetime-local" value={form.dueAt} onChange={(event) => setForm({ ...form, dueAt: event.target.value })} />
           <button className="a-btn a-btn-primary" type="submit">{t("create")}</button>
@@ -116,6 +136,11 @@ export default function TasksClient({ initialTasks, users, currentUserId }: { in
             {item === "my" ? t("myTasks") : item === "overdue" ? t("overdue") : item === "today" ? t("today") : item === "week" ? t("week") : t("allTasks")}
           </button>
         ))}
+        {typeFilter !== "all" ? (
+          <button className="a-btn" onClick={() => setTypeFilter("all")}>
+            {typeFilter === "office_visit" ? t("dashboardTodayVisits") : taskTypeLabel(t, typeFilter)} ×
+          </button>
+        ) : null}
       </div>
 
       <div className="a-card overflow-x-auto">
@@ -130,8 +155,8 @@ export default function TasksClient({ initialTasks, users, currentUserId }: { in
                 <td>{task.client ? <Link className="hover:underline" href={`/portal/management-x7k9/crm/clients/${task.client.id}`}>{task.client.fullName}</Link> : "—"}</td>
                 <td>{task.lead ? <Link className="hover:underline" href={`/portal/management-x7k9/crm/leads/${task.lead.id}`}>{task.lead.name}</Link> : "—"}</td>
                 <td>{task.assignedTo.name}</td>
-                <td>{task.priority}</td>
-                <td>{task.status}</td>
+                <td>{taskPriorityLabel(t, task.priority)}</td>
+                <td>{taskStatusLabel(t, task.status)}</td>
                 <td style={{ textAlign: "right" }}>{task.dueAt ? new Date(task.dueAt).toLocaleString() : "—"}</td>
                 <td style={{ textAlign: "right" }}>
                   {task.status === "open" ? (

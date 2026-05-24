@@ -82,9 +82,17 @@ export async function POST(request: NextRequest) {
     include: includeTask(),
   });
 
+  if (task.leadId && task.dueAt) {
+    await prisma.lead.update({
+      where: { id: task.leadId },
+      data: { nextActionAt: task.dueAt },
+    });
+  }
+
   await createActivity({
     type: "task",
-    title: `Task created: ${task.title}`,
+    title: input.activityTitle || task.title,
+    body: input.activityBody || null,
     clientId: task.clientId,
     leadId: task.leadId,
     unitId: task.unitId,

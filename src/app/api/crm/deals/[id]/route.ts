@@ -92,7 +92,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
   await createActivity({
     type: "deal",
-    title: "Deal updated",
+    title: "Bitim yangilandi",
     clientId: deal.clientId,
     leadId: deal.leadId,
     dealId: deal.id,
@@ -103,7 +103,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   if (shouldLogDiscountRequiresApproval && financials) {
     await createActivity({
       type: "deal",
-      title: "Discount requires approval",
+      title: "Chegirma tasdiq talab qiladi",
       clientId: deal.clientId,
       leadId: deal.leadId,
       dealId: deal.id,

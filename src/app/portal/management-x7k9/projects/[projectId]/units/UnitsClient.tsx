@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { formatPrice } from "@/lib/utils";
+import ReservationCountdown, { getReservationTone } from "@/components/crm/ReservationCountdown";
 
 interface Unit {
   id: string;
@@ -58,6 +59,14 @@ const statusMeta = (status: string) => {
   if (status === "sold") return { dot: "bg-neutral-900", labelClass: "text-neutral-900" };
   return { dot: "bg-neutral-300", labelClass: "text-neutral-700" };
 };
+
+function reservationCardClass(unit: Unit) {
+  const tone = getReservationTone(unit.reservationExpiresAt, unit.status);
+  if (tone === "expired") return "border-red-300 bg-red-50/60";
+  if (tone === "expiring") return "border-amber-300 bg-amber-50/60";
+  if (tone === "active") return "border-amber-200 bg-white";
+  return "border-neutral-200 bg-white";
+}
 
 export default function UnitsClient({ initialUnits, initialBuildings, projectId }: Props) {
   const t = useTranslations("admin");
@@ -119,7 +128,7 @@ export default function UnitsClient({ initialUnits, initialBuildings, projectId 
     const customerName = String(data.customerName || "").trim();
     const customerPhone = String(data.customerPhone || "").trim();
     if (!customerName || !customerPhone) {
-      alert("Client name and phone are required for deal-backed reservations.");
+      alert(t("clientNamePhoneRequired"));
       return;
     }
 
@@ -135,7 +144,7 @@ export default function UnitsClient({ initialUnits, initialBuildings, projectId 
     });
     const clientPayload = await clientRes.json();
     const clientId = clientRes.status === 409 ? clientPayload.clientId : clientPayload.id;
-    if (!clientRes.ok && clientRes.status !== 409) throw new Error(clientPayload.error || "Failed to create client");
+    if (!clientRes.ok && clientRes.status !== 409) throw new Error(clientPayload.error || t("failedCreateClient"));
 
     const pricePerM2 = unit.pricePerM2 || unit.floor.basePricePerM2 || 0;
     const listPrice = unit.totalPrice || pricePerM2 * unit.area;
@@ -153,7 +162,7 @@ export default function UnitsClient({ initialUnits, initialBuildings, projectId 
     });
     if (!dealRes.ok) {
       const payload = await dealRes.json().catch(() => null);
-      throw new Error(payload?.error || "Failed to create deal");
+      throw new Error(payload?.error || t("failedCreateDeal"));
     }
     const deal = await dealRes.json();
 
@@ -164,14 +173,14 @@ export default function UnitsClient({ initialUnits, initialBuildings, projectId 
     });
     if (!reserveRes.ok) {
       const payload = await reserveRes.json().catch(() => null);
-      throw new Error(payload?.error || "Failed to reserve unit");
+      throw new Error(payload?.error || t("failedReserveUnit"));
     }
 
     if (data.status === "sold") {
       const soldRes = await fetch(`/api/crm/deals/${deal.id}/mark-sold`, { method: "POST" });
       if (!soldRes.ok) {
         const payload = await soldRes.json().catch(() => null);
-        throw new Error(payload?.error || "Failed to mark sold");
+        throw new Error(payload?.error || t("failedMarkSold"));
       }
     }
 
@@ -297,7 +306,7 @@ export default function UnitsClient({ initialUnits, initialBuildings, projectId 
                   const meta = statusMeta(unit.status);
 
                   return (
-                    <div key={unit.id} className="rounded-[7px] border border-neutral-200 bg-white p-3 transition hover:border-neutral-400">
+                    <div key={unit.id} className={`rounded-[7px] border p-3 transition hover:border-neutral-400 ${reservationCardClass(unit)}`}>
                       <div className="mb-3 flex items-center justify-between gap-2">
                         <div className="flex min-w-0 items-center gap-2">
                           <input
@@ -348,16 +357,21 @@ export default function UnitsClient({ initialUnits, initialBuildings, projectId 
                           <p className="text-neutral-500">
                             {unit.currentDeal.salePrice.toLocaleString()} {unit.currentDeal.currency}
                           </p>
-                          {unit.reservationExpiresAt && unit.status === "reserved" ? (
-                            <p className="text-neutral-500">
-                              Expires {new Date(unit.reservationExpiresAt).toLocaleString()}
-                            </p>
-                          ) : null}
                           <p className="text-neutral-400">
-                            Docs {unit.currentDeal.documents.length} · Payments {unit.currentDeal.paymentPlans[0]?.payments.length || 0}
+                            {t("docs")} {unit.currentDeal.documents.length} · {t("payments")} {unit.currentDeal.paymentPlans[0]?.payments.length || 0}
                           </p>
                         </div>
                       )}
+                      {unit.reservationExpiresAt && unit.status === "reserved" ? (
+                        <div className="mt-3">
+                          <ReservationCountdown
+                            compact
+                            status={unit.status}
+                            expiresAt={unit.reservationExpiresAt}
+                            href={unit.currentDeal ? `/portal/management-x7k9/crm/deals/${unit.currentDeal.id}` : undefined}
+                          />
+                        </div>
+                      ) : null}
                     </div>
                   );
                 })}

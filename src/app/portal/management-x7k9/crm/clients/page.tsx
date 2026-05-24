@@ -2,6 +2,7 @@ import Link from "next/link";
 import prisma from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
 import { clientVisibilityWhere } from "@/lib/crm-access";
+import { clientStatusLabel } from "@/lib/crm-labels";
 import { getCrmScopeEmptyMessage } from "@/lib/crm-scope-copy";
 import { PLATFORM_PERMISSIONS } from "@/lib/platform-plans";
 import { getPlatformSettings, platformSettingsHasFeature } from "@/lib/platform-settings";
@@ -61,7 +62,7 @@ export default async function ClientsPage() {
                   </Link>
                 </td>
                 <td>{client.phone}</td>
-                <td>{client.status}</td>
+                <td>{clientStatusLabel(t, client.status)}</td>
                 <td>{client.assignedTo?.name || t("unassigned")}</td>
                 <td>{client._count.leads}</td>
                 <td>{client._count.activities}</td>

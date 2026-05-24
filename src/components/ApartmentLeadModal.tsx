@@ -129,7 +129,7 @@ export default function ApartmentLeadModal({ unit, allUnits = [], telegramUrl, s
           phone: formData.phone,
           unitId: activeUnit.id,
           unitNumber: displayNumber,
-          projectName: `${activeUnit.buildingName || "Residence"} - ${activeUnit.floorNumber}`,
+          projectName: `${activeUnit.buildingName || t("buildingDefault")} - ${activeUnit.floorNumber}`,
           ...collectLeadTracking(leadSource),
         }),
       });

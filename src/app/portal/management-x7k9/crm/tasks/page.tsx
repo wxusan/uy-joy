@@ -7,7 +7,11 @@ import TasksClient from "./TasksClient";
 
 export const dynamic = "force-dynamic";
 
-export default async function TasksPage() {
+function paramValue(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+export default async function TasksPage({ searchParams }: { searchParams?: Record<string, string | string[] | undefined> }) {
   const session = await requireAdmin(PLATFORM_PERMISSIONS.manageLeads);
   const settings = getPlatformSettings();
   if (!platformSettingsHasFeature(settings, "crm")) return null;
@@ -42,5 +46,17 @@ export default async function TasksPage() {
     updatedAt: task.updatedAt.toISOString(),
   }));
 
-  return <TasksClient initialTasks={serializedTasks} users={users} currentUserId={user.id} />;
+  const requestedView = paramValue(searchParams?.view);
+  const initialView = requestedView === "overdue" || requestedView === "today" || requestedView === "week" || requestedView === "all" ? requestedView : "my";
+  const initialTypeFilter = paramValue(searchParams?.type) || "all";
+
+  return (
+    <TasksClient
+      initialTasks={serializedTasks}
+      users={users}
+      currentUserId={user.id}
+      initialView={initialView}
+      initialTypeFilter={initialTypeFilter}
+    />
+  );
 }

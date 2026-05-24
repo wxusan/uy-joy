@@ -229,7 +229,7 @@ export default function ContactForm({
               <Send className="h-5 w-5" strokeWidth={1.8} />
             </span>
             <span>
-              <span className="block font-heading text-[15px] font-semibold text-[#15120f]">Telegram</span>
+              <span className="block font-heading text-[15px] font-semibold text-[#15120f]">{t("telegram")}</span>
               <span className="mt-1 block text-[13px] font-medium text-[#6f675e]">{telegramHandle}</span>
             </span>
           </a>

@@ -8,6 +8,7 @@ import {
   getFeatureEntitlement,
   hasPlatformFeature,
   normalizePlatformRole,
+  roleCanSeeNavigationAudience,
   roleHasPlatformPermission,
 } from "../platform-plans";
 import { createPlatformSettings, getClientEnvStatus, getPlatformSettings, platformSettingsHasFeature, resetPlatformSettingsCache } from "../platform-settings";
@@ -109,6 +110,16 @@ test("permission checks honor normalized roles", () => {
   assert.equal(roleHasPlatformPermission("sales_agent", "manageInventory"), false);
   assert.equal(roleHasPlatformPermission("external_agent", "manageLeads"), true);
   assert.equal(ADMIN_ACCESS_ROLES.includes("owner"), true);
+});
+
+test("navigation audience helper keeps owners/developers broad and specialists focused", () => {
+  assert.equal(roleCanSeeNavigationAudience("owner", ["sales_director"]), true);
+  assert.equal(roleCanSeeNavigationAudience("developer", ["finance"]), true);
+  assert.equal(roleCanSeeNavigationAudience("sales_director", ["sales_director"]), true);
+  assert.equal(roleCanSeeNavigationAudience("sales_agent", ["sales_director"]), false);
+  assert.equal(roleCanSeeNavigationAudience("finance", ["finance"]), true);
+  assert.equal(roleCanSeeNavigationAudience("marketing", ["finance"]), false);
+  assert.equal(roleCanSeeNavigationAudience("unknown", ["sales_agent"]), false);
 });
 
 test("client platform plan env wins over legacy platform plan env", () => {

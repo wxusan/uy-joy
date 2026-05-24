@@ -32,6 +32,13 @@ export const DOCUMENT_TYPES = [
   "other",
 ] as const;
 
+export type DealStatus = (typeof DEAL_STATUSES)[number];
+export type PaymentPlanType = (typeof PAYMENT_PLAN_TYPES)[number];
+export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
+export type RefundStatus = (typeof REFUND_STATUSES)[number];
+export type DocumentStatus = (typeof DOCUMENT_STATUSES)[number];
+export type DocumentType = (typeof DOCUMENT_TYPES)[number];
+
 export const DEFAULT_RESERVATION_HOURS = 48;
 export const DISCOUNT_APPROVAL_THRESHOLD_PERCENT = Number(process.env.CLIENT_DISCOUNT_APPROVAL_THRESHOLD_PERCENT || 7);
 

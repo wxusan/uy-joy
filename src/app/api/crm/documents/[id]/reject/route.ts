@@ -18,7 +18,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   });
   await createActivity({
     type: "document",
-    title: "Document rejected",
+    title: "Hujjat rad etildi",
     clientId: document.clientId,
     leadId: document.leadId,
     dealId: document.dealId,

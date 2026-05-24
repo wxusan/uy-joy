@@ -338,6 +338,16 @@ export function roleCanAccessAdmin(role: string | null | undefined) {
   return platformRoleMatches(role, ADMIN_ACCESS_ROLES);
 }
 
+export function roleCanSeeNavigationAudience(
+  role: string | null | undefined,
+  audiences?: readonly PlatformRole[]
+) {
+  if (!audiences?.length) return true;
+  const normalizedRole = normalizePlatformRole(role);
+  if (normalizedRole === "owner" || normalizedRole === "developer") return true;
+  return Boolean(normalizedRole && audiences.includes(normalizedRole));
+}
+
 export const PLATFORM_ROLE_LABELS: Record<PlatformRole, string> = {
   developer: "Developer",
   owner: "Owner",
@@ -346,6 +356,16 @@ export const PLATFORM_ROLE_LABELS: Record<PlatformRole, string> = {
   external_agent: "External agent",
   marketing: "Marketing",
   finance: "Finance",
+};
+
+export const PLATFORM_ROLE_LABEL_KEYS: Record<PlatformRole, string> = {
+  developer: "roleDeveloper",
+  owner: "roleOwner",
+  sales_director: "roleSalesDirector",
+  sales_agent: "roleSalesManager",
+  external_agent: "roleExternalAgent",
+  marketing: "roleMarketing",
+  finance: "roleFinance",
 };
 
 export const PLATFORM_PERMISSIONS = {

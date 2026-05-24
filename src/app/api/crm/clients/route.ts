@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
 
   await createActivity({
     type: "created",
-    title: "Client created",
+    title: "Klient yaratildi",
     clientId: client.id,
     actorId: auth.user?.id ?? null,
     channel: "manual",

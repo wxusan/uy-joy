@@ -104,6 +104,7 @@ export async function GET(request: NextRequest) {
       searchParams.get("campaign") ? { campaign: searchParams.get("campaign") } : {},
       createdAt ? { createdAt } : {},
       nextActionAt ? { nextActionAt } : {},
+      searchParams.get("unanswered") === "true" ? { firstResponseAt: null, status: { notIn: ["sold", "lost"] } } : {},
       searchParams.get("overdue") === "true" ? { nextActionAt: { lt: new Date() }, status: { notIn: ["sold", "lost"] } } : {},
     ],
   };
@@ -245,7 +246,7 @@ export async function POST(request: NextRequest) {
         await createActivity(
           {
             type: "created",
-            title: "Lead created",
+            title: "Lid yaratildi",
             clientId: client.id,
             leadId: createdLead.id,
             unitId: unitId || null,
@@ -267,25 +268,29 @@ export async function POST(request: NextRequest) {
       }
 
       if (leadBotEnabled) {
-        await createTelegramNotificationLog(
-          {
-            id: createdLead.id,
-            clientId: client.id,
-            name: createdLead.name,
-            phone: createdLead.phone,
-            source,
-            projectName: createdLead.projectName,
-            unitLabel:
-              buildingNameSnapshot || unitNumberSnapshot
-                ? [buildingNameSnapshot, floorNumberSnapshot ? `Floor ${floorNumberSnapshot}` : null, unitNumberSnapshot].filter(Boolean).join(" / ")
-                : createdLead.unitNumber,
-            preferredLanguage,
-            utmCampaign: createdLead.utmCampaign,
-            createdAt: createdLead.createdAt,
-          },
-          { crmEnabled, crmBaseUrl: baseUrl, locale: preferredLanguage },
-          tx
-        );
+        try {
+          await createTelegramNotificationLog(
+            {
+              id: createdLead.id,
+              clientId: client.id,
+              name: createdLead.name,
+              phone: createdLead.phone,
+              source,
+              projectName: createdLead.projectName,
+              unitLabel:
+                buildingNameSnapshot || unitNumberSnapshot
+                  ? [buildingNameSnapshot, floorNumberSnapshot ? `Floor ${floorNumberSnapshot}` : null, unitNumberSnapshot].filter(Boolean).join(" / ")
+                  : createdLead.unitNumber,
+              preferredLanguage,
+              utmCampaign: createdLead.utmCampaign,
+              createdAt: createdLead.createdAt,
+            },
+            { crmEnabled, crmBaseUrl: baseUrl, locale: preferredLanguage },
+            tx
+          );
+        } catch (error) {
+          console.error("Failed to queue Telegram lead notification:", error);
+        }
       }
 
       return tx.lead.findUniqueOrThrow({ where: { id: createdLead.id }, include: leadInclude() });

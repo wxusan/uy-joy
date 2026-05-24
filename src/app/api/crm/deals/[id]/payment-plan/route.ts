@@ -70,7 +70,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     await createActivity(
       {
         type: "payment",
-        title: "Payment plan drafted",
+        title: "To'lov rejasi tayyorlandi",
         clientId: deal.clientId,
         leadId: deal.leadId,
         dealId: id,
@@ -84,7 +84,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       await createActivity(
         {
           type: "deal",
-          title: "Discount requires approval",
+          title: "Chegirma tasdiq talab qiladi",
           clientId: deal.clientId,
           leadId: deal.leadId,
           dealId: id,

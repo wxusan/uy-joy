@@ -78,7 +78,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
   await createActivity({
     type: "note",
-    title: "Client updated",
+    title: "Klient yangilandi",
     clientId: client.id,
     actorId: auth.user?.id ?? null,
     channel: "manual",

@@ -62,6 +62,8 @@ export const TaskPrioritySchema = z.enum(["low", "normal", "high", "urgent"]);
 export const TaskCreateSchema = z.object({
   title: z.string().trim().min(1).max(180),
   description: z.string().max(2000).nullable().optional(),
+  activityTitle: z.string().trim().max(180).nullable().optional(),
+  activityBody: z.string().max(2000).nullable().optional(),
   type: TaskTypeSchema.default("call"),
   priority: TaskPrioritySchema.default("normal"),
   clientId: IdString.nullable().optional(),

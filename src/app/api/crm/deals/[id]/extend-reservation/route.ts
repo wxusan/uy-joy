@@ -31,7 +31,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     await createActivity(
       {
         type: "deal",
-        title: "Reservation extended",
+        title: "Bron muddati uzaytirildi",
         clientId: updated.clientId,
         leadId: updated.leadId,
         dealId: updated.id,

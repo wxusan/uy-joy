@@ -6,6 +6,7 @@ import { normalizeLeadStatus } from "@/lib/lead-status";
 import { PipelineStageUpdateSchema } from "@/lib/schemas/crm";
 import { invalidInput } from "@/lib/schemas/common";
 import { requirePlatformApiFeature } from "@/lib/platform-guards";
+import { leadStatusTextUz } from "@/lib/crm-labels";
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requirePlatformApiFeature("crm", "manageLeads");
@@ -62,7 +63,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     await createActivity(
       {
         type: "status_changed",
-        title: `Pipeline stage changed to ${nextStatus}`,
+        title: `Voronka holati o'zgardi: ${leadStatusTextUz(nextStatus)}`,
         clientId: updated.clientId,
         leadId: updated.id,
         actorId: auth.user?.id ?? null,

@@ -7,6 +7,8 @@ import { LeadUpdateSchema } from "@/lib/schemas/lead";
 import { requirePlatformApiAccess, requirePlatformFeature } from "@/lib/platform-guards";
 import { getPlatformSettings } from "@/lib/platform-settings";
 import { normalizePlatformRole } from "@/lib/platform-plans";
+import { leadStatusTextUz } from "@/lib/crm-labels";
+import { createTelegramAlertLog } from "@/lib/telegram";
 
 function includeLead() {
   return {
@@ -95,7 +97,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         await createActivity(
           {
             type: "status_changed",
-            title: `Status changed to ${nextStatus}`,
+            title: `Holat o'zgardi: ${leadStatusTextUz(nextStatus)}`,
             clientId: lead.clientId,
             leadId: lead.id,
             actorId,
@@ -109,7 +111,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         await createActivity(
           {
             type: "assigned",
-            title: input.assignedToId ? "Lead assigned" : "Lead unassigned",
+            title: input.assignedToId ? "Lid menejerga biriktirildi" : "Lid menejerdan olindi",
             clientId: lead.clientId,
             leadId: lead.id,
             actorId,
@@ -124,7 +126,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         await createActivity(
           {
             type: "note",
-            title: "Note updated",
+            title: "Izoh yangilandi",
             body: input.notes || null,
             clientId: lead.clientId,
             leadId: lead.id,
@@ -137,6 +139,22 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
       return tx.lead.findUniqueOrThrow({ where: { id }, include: includeLead() });
     });
+
+    if (input.assignedToId !== undefined && input.assignedToId && input.assignedToId !== existing.assignedToId) {
+      await createTelegramAlertLog({
+        type: "lead_assigned",
+        leadId: updated.id,
+        clientId: updated.clientId,
+        clientName: updated.client?.fullName || updated.name,
+        clientPhone: updated.client?.phone || updated.phone,
+        managerName: updated.assignedToUser?.name || updated.assignedToUser?.email,
+        crmPath: `/portal/management-x7k9/crm/leads/${updated.id}`,
+        locale: updated.preferredLanguage,
+        ref: `lead_assigned_${updated.id}_${input.assignedToId}`,
+      }, { crmBaseUrl: process.env.NEXTAUTH_URL || null }).catch((error) => {
+        console.error("Failed to queue Telegram reassignment alert:", error);
+      });
+    }
 
     return NextResponse.json(updated);
   } catch (error) {

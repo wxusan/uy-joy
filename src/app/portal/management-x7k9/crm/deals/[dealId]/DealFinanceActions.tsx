@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { documentStatusLabel, paymentPlanStatusLabel, paymentStatusLabel, refundStatusLabel } from "@/lib/crm-labels";
 
 type Plan = { id: string; name: string; status: string };
 type Payment = { id: string; label: string; expectedAmount: number; paidAmount: number; status: string };
@@ -19,6 +21,7 @@ export default function DealFinanceActions({
   documents: DocumentRow[];
   refunds: Refund[];
 }) {
+  const t = useTranslations("admin");
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
 
@@ -32,7 +35,7 @@ export default function DealFinanceActions({
     setBusy(null);
     if (!res.ok) {
       const payload = await res.json().catch(() => null);
-      window.alert(payload?.error || "Request failed");
+      window.alert(payload?.error || t("requestFailed2"));
       return;
     }
     router.refresh();
@@ -48,7 +51,7 @@ export default function DealFinanceActions({
     setBusy(null);
     if (!res.ok) {
       const payload = await res.json().catch(() => null);
-      window.alert(payload?.error || "Request failed");
+      window.alert(payload?.error || t("requestFailed2"));
       return;
     }
     router.refresh();
@@ -56,20 +59,20 @@ export default function DealFinanceActions({
 
   return (
     <div className="a-card p-4 grid gap-4">
-      <h2 className="text-[15px] font-semibold">Finance and document actions</h2>
+      <h2 className="text-[15px] font-semibold">{t("financeDocActions")}</h2>
       <div className="grid gap-3 lg:grid-cols-4">
         <div className="flex flex-col gap-2">
-          <div className="text-[12px] font-semibold">Payment plans</div>
+          <div className="text-[12px] font-semibold">{t("sectionPaymentPlans")}</div>
           {plans.map((plan) => (
             <button key={plan.id} className="a-btn justify-between" disabled={Boolean(busy) || plan.status !== "draft"} onClick={() => void post(`/api/crm/payment-plans/${plan.id}/activate`)}>
               <span>{plan.name}</span>
-              <span>{plan.status === "draft" ? "activate" : plan.status}</span>
+              <span>{plan.status === "draft" ? t("btnActivate") : paymentPlanStatusLabel(t, plan.status)}</span>
             </button>
           ))}
-          {plans.length === 0 ? <p className="text-[13px]" style={{ color: "var(--a-text-tertiary)" }}>No plans yet.</p> : null}
+          {plans.length === 0 ? <p className="text-[13px]" style={{ color: "var(--a-text-tertiary)" }}>{t("noPlansYet")}</p> : null}
         </div>
         <div className="flex flex-col gap-2">
-          <div className="text-[12px] font-semibold">Payments</div>
+          <div className="text-[12px] font-semibold">{t("sectionPayments")}</div>
           {payments.map((payment) => (
             <div key={payment.id} className="flex items-center gap-2">
               <button
@@ -78,46 +81,46 @@ export default function DealFinanceActions({
                 onClick={() => void patch(`/api/crm/payments/${payment.id}`, { paidAmount: payment.expectedAmount, status: "paid" })}
               >
                 <span>{payment.label}</span>
-                <span>{payment.status}</span>
+                <span>{paymentStatusLabel(t, payment.status)}</span>
               </button>
               <button
                 className="a-btn"
                 disabled={Boolean(busy) || payment.status === "paid"}
                 onClick={() => {
-                  const value = window.prompt("Paid amount", String(payment.paidAmount || ""));
+                  const value = window.prompt(t("paidAmountPrompt"), String(payment.paidAmount || ""));
                   if (value) void patch(`/api/crm/payments/${payment.id}`, { paidAmount: Number(value) });
                 }}
               >
-                partial
+                {t("btnPartial")}
               </button>
             </div>
           ))}
-          {payments.length === 0 ? <p className="text-[13px]" style={{ color: "var(--a-text-tertiary)" }}>No payments yet.</p> : null}
+          {payments.length === 0 ? <p className="text-[13px]" style={{ color: "var(--a-text-tertiary)" }}>{t("noPaymentsYet")}</p> : null}
         </div>
         <div className="flex flex-col gap-2">
-          <div className="text-[12px] font-semibold">Documents</div>
+          <div className="text-[12px] font-semibold">{t("sectionDocuments")}</div>
           {documents.map((document) => (
             <div key={document.id} className="flex items-center gap-2">
               <button className="a-btn flex-1 justify-between" disabled={Boolean(busy) || document.status === "approved"} onClick={() => void post(`/api/crm/documents/${document.id}/approve`)}>
                 <span>{document.title}</span>
-                <span>{document.status}</span>
+                <span>{documentStatusLabel(t, document.status)}</span>
               </button>
               <button
                 className="a-btn a-btn-danger"
                 disabled={Boolean(busy) || document.status === "rejected"}
                 onClick={() => {
-                  const reason = window.prompt("Rejection reason");
+                  const reason = window.prompt(t("rejectionReasonPrompt"));
                   if (reason) void post(`/api/crm/documents/${document.id}/reject`, { rejectionReason: reason });
                 }}
               >
-                reject
+                {t("btnReject")}
               </button>
             </div>
           ))}
-          {documents.length === 0 ? <p className="text-[13px]" style={{ color: "var(--a-text-tertiary)" }}>No documents yet.</p> : null}
+          {documents.length === 0 ? <p className="text-[13px]" style={{ color: "var(--a-text-tertiary)" }}>{t("noDocumentsYetMsg")}</p> : null}
         </div>
         <div className="flex flex-col gap-2">
-          <div className="text-[12px] font-semibold">Refunds</div>
+          <div className="text-[12px] font-semibold">{t("sectionRefunds")}</div>
           {refunds.map((refund) => (
             <div key={refund.id} className="flex items-center gap-2">
               <button
@@ -126,28 +129,28 @@ export default function DealFinanceActions({
                 onClick={() => void patch(`/api/crm/refunds/${refund.id}`, { status: "approved" })}
               >
                 <span>{refund.amount.toLocaleString()} {refund.currency}</span>
-                <span>{refund.status === "requested" ? "approve" : refund.status}</span>
+                <span>{refund.status === "requested" ? t("btnApprove") : refundStatusLabel(t, refund.status)}</span>
               </button>
               <button
                 className="a-btn"
                 disabled={Boolean(busy) || refund.status !== "approved"}
                 onClick={() => void patch(`/api/crm/refunds/${refund.id}`, { status: "paid" })}
               >
-                paid
+                {t("btnPaid")}
               </button>
               <button
                 className="a-btn a-btn-danger"
                 disabled={Boolean(busy) || refund.status !== "requested"}
                 onClick={() => {
-                  const notes = window.prompt("Rejection note");
+                  const notes = window.prompt(t("rejectionNotePrompt"));
                   if (notes) void patch(`/api/crm/refunds/${refund.id}`, { status: "rejected", notes });
                 }}
               >
-                reject
+                {t("btnReject")}
               </button>
             </div>
           ))}
-          {refunds.length === 0 ? <p className="text-[13px]" style={{ color: "var(--a-text-tertiary)" }}>No refunds.</p> : null}
+          {refunds.length === 0 ? <p className="text-[13px]" style={{ color: "var(--a-text-tertiary)" }}>{t("noRefundsYet")}</p> : null}
         </div>
       </div>
     </div>

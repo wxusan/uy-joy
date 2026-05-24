@@ -6,11 +6,15 @@ import { useSession, signOut } from "next-auth/react";
 import { useTranslations, useLocale } from "next-intl";
 import { useTransition } from "react";
 import { locales, localeNames, Locale } from "@/lib/locales";
+import { platformRoleLabel } from "@/lib/crm-labels";
 import {
   type FeatureEntitlement,
   type PlatformFeature,
   type PlatformPermission,
+  type PlatformRole,
   featureEntitlementIsEnabled,
+  normalizePlatformRole,
+  roleCanSeeNavigationAudience,
   roleHasPlatformPermission,
 } from "@/lib/platform-plans";
 import {
@@ -43,6 +47,7 @@ type NavItem = {
   permission?: PlatformPermission;
   feature?: PlatformFeature;
   exact?: boolean;
+  audiences?: PlatformRole[];
 };
 
 type NavGroup = { labelKey: string; items: NavItem[] };
@@ -64,6 +69,7 @@ const navGroups: NavGroup[] = [
         icon: <Contact className="w-[14px] h-[14px]" />,
         permission: "viewLeads",
         feature: "crm",
+        audiences: ["sales_director", "sales_agent", "external_agent"],
       },
       {
         href: "/portal/management-x7k9/crm/leads",
@@ -71,6 +77,7 @@ const navGroups: NavGroup[] = [
         icon: <MessageSquare className="w-[14px] h-[14px]" />,
         permission: "viewLeads",
         feature: "crm",
+        audiences: ["sales_director", "sales_agent", "external_agent"],
       },
       {
         href: "/portal/management-x7k9/crm/pipeline",
@@ -78,6 +85,7 @@ const navGroups: NavGroup[] = [
         icon: <KanbanSquare className="w-[14px] h-[14px]" />,
         permission: "manageLeads",
         feature: "pipeline",
+        audiences: ["sales_director", "sales_agent", "external_agent"],
       },
       {
         href: "/portal/management-x7k9/crm/clients",
@@ -85,6 +93,7 @@ const navGroups: NavGroup[] = [
         icon: <Users className="w-[14px] h-[14px]" />,
         permission: "viewLeads",
         feature: "crm",
+        audiences: ["sales_director", "sales_agent", "external_agent"],
       },
       {
         href: "/portal/management-x7k9/crm/deals",
@@ -92,6 +101,7 @@ const navGroups: NavGroup[] = [
         icon: <Handshake className="w-[14px] h-[14px]" />,
         permission: "viewDeals",
         feature: "deals",
+        audiences: ["sales_director", "sales_agent", "external_agent", "finance"],
       },
       {
         href: "/portal/management-x7k9/crm/tasks",
@@ -99,6 +109,7 @@ const navGroups: NavGroup[] = [
         icon: <ClipboardList className="w-[14px] h-[14px]" />,
         permission: "manageLeads",
         feature: "tasks",
+        audiences: ["sales_director", "sales_agent", "external_agent"],
       },
       {
         href: "/portal/management-x7k9/crm/documents",
@@ -106,6 +117,7 @@ const navGroups: NavGroup[] = [
         icon: <FileText className="w-[14px] h-[14px]" />,
         permission: "viewDeals",
         feature: "documents",
+        audiences: ["sales_director", "finance"],
       },
       {
         href: "/portal/management-x7k9/crm/agents",
@@ -113,12 +125,22 @@ const navGroups: NavGroup[] = [
         icon: <UserRoundCheck className="w-[14px] h-[14px]" />,
         permission: "viewReports",
         feature: "crm",
+        audiences: ["sales_director"],
+      },
+      {
+        href: "/portal/management-x7k9/crm/director",
+        labelKey: "directorPanel",
+        icon: <Activity className="w-[14px] h-[14px]" />,
+        permission: "viewReports",
+        feature: "crm",
+        audiences: ["sales_director"],
       },
       {
         href: "/portal/management-x7k9/reports/my",
         labelKey: "myReport",
         icon: <BarChart3 className="w-[14px] h-[14px]" />,
         feature: "reports",
+        audiences: ["sales_agent", "external_agent"],
       },
       {
         href: "/portal/management-x7k9/reports",
@@ -126,6 +148,7 @@ const navGroups: NavGroup[] = [
         icon: <BarChart3 className="w-[14px] h-[14px]" />,
         permission: "viewReports",
         feature: "reports",
+        audiences: ["sales_director"],
       },
       {
         href: "/portal/management-x7k9/reports/sales",
@@ -133,6 +156,7 @@ const navGroups: NavGroup[] = [
         icon: <BarChart3 className="w-[14px] h-[14px]" />,
         permission: "viewReports",
         feature: "reports",
+        audiences: ["sales_director"],
       },
       {
         href: "/portal/management-x7k9/reports/inventory",
@@ -140,6 +164,7 @@ const navGroups: NavGroup[] = [
         icon: <BarChart3 className="w-[14px] h-[14px]" />,
         permission: "viewReports",
         feature: "inventory",
+        audiences: ["sales_director"],
       },
       {
         href: "/portal/management-x7k9/reports/marketing",
@@ -147,6 +172,7 @@ const navGroups: NavGroup[] = [
         icon: <BarChart3 className="w-[14px] h-[14px]" />,
         permission: "viewMarketingReports",
         feature: "reports",
+        audiences: ["sales_director", "marketing"],
       },
       {
         href: "/portal/management-x7k9/reports/finance",
@@ -154,6 +180,7 @@ const navGroups: NavGroup[] = [
         icon: <BarChart3 className="w-[14px] h-[14px]" />,
         permission: "viewFinance",
         feature: "financeReports",
+        audiences: ["finance"],
       },
       {
         href: "/portal/management-x7k9/crm/sources",
@@ -161,6 +188,7 @@ const navGroups: NavGroup[] = [
         icon: <Tags className="w-[14px] h-[14px]" />,
         permission: "managePublicContent",
         feature: "publicPage",
+        audiences: ["marketing"],
       },
     ],
   },
@@ -173,6 +201,7 @@ const navGroups: NavGroup[] = [
         icon: <Globe2 className="w-[14px] h-[14px]" />,
         permission: "managePublicContent",
         feature: "publicPage",
+        audiences: ["marketing"],
       },
       {
         href: "/portal/management-x7k9/projects",
@@ -180,6 +209,7 @@ const navGroups: NavGroup[] = [
         icon: <Building2 className="w-[14px] h-[14px]" />,
         permission: "managePublicContent",
         feature: "publicPage",
+        audiences: ["marketing"],
       },
       {
         href: "/portal/management-x7k9/faqs",
@@ -187,6 +217,7 @@ const navGroups: NavGroup[] = [
         icon: <HelpCircle className="w-[14px] h-[14px]" />,
         permission: "managePublicContent",
         feature: "publicPage",
+        audiences: ["marketing"],
       },
     ],
   },
@@ -198,18 +229,21 @@ const navGroups: NavGroup[] = [
         labelKey: "settingsNav",
         icon: <Settings className="w-[14px] h-[14px]" />,
         permission: "manageDeploymentSettings",
+        audiences: ["developer", "owner"],
       },
       {
         href: "/portal/management-x7k9/users",
         labelKey: "users",
         icon: <Users className="w-[14px] h-[14px]" />,
         permission: "manageUsers",
+        audiences: ["developer", "owner"],
       },
       {
         href: "/portal/management-x7k9/analytics",
         labelKey: "analytics",
         icon: <Activity className="w-[14px] h-[14px]" />,
         permission: "technicalSettings",
+        audiences: ["developer"],
       },
     ],
   },
@@ -230,6 +264,7 @@ export default function AdminSidebar({ featureFlags, isOpen, onClose, brandName 
   const locale = useLocale();
   const { data: session } = useSession();
   const role = (session?.user as SessionUserWithRole | undefined)?.role;
+  const normalizedRole = normalizePlatformRole(role);
   const [isPending, startTransition] = useTransition();
   const currentProjectId = pathname.match(/\/projects\/([^/]+)/)?.[1] ?? null;
   const projectNavItems: NavItem[] = currentProjectId
@@ -266,6 +301,7 @@ export default function AdminSidebar({ featureFlags, isOpen, onClose, brandName 
   const isItemVisible = (item: NavItem) => {
     if (item.permission && !roleHasPlatformPermission(role, item.permission)) return false;
     if (item.feature && !featureEntitlementIsEnabled(featureFlags[item.feature])) return false;
+    if (!roleCanSeeNavigationAudience(normalizedRole, item.audiences)) return false;
     return true;
   };
 
@@ -414,7 +450,7 @@ export default function AdminSidebar({ featureFlags, isOpen, onClose, brandName 
               {session?.user?.name || session?.user?.email}
             </div>
             <div className="text-[11px]" style={{ color: "var(--a-text-tertiary)" }}>
-              {role || "user"}
+              {platformRoleLabel(t, role)}
             </div>
           </div>
           <button

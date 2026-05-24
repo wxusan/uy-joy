@@ -6,6 +6,7 @@ import { canReserveDeal, DEFAULT_RESERVATION_HOURS, syncLeadStageForDeal } from 
 import { DealReserveSchema } from "@/lib/schemas/real-estate";
 import { invalidInput } from "@/lib/schemas/common";
 import { requirePlatformApiFeature } from "@/lib/platform-guards";
+import { createTelegramAlertLog } from "@/lib/telegram";
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requirePlatformApiFeature("deals", "manageDeals");
@@ -61,7 +62,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     await createActivity(
       {
         type: "deal",
-        title: "Unit reserved",
+        title: "Xonadon bron qilindi",
         clientId: updatedDeal.clientId,
         leadId: updatedDeal.leadId,
         dealId: updatedDeal.id,
@@ -74,7 +75,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if (updatedDeal.assignedToId) {
       await tx.task.create({
         data: {
-          title: "Reservation expires soon",
+          title: "Bron muddati tugayapti",
           type: "other",
           priority: "high",
           clientId: updatedDeal.clientId,
@@ -95,5 +96,21 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   });
 
   if (!reserved) return NextResponse.json({ error: "Unit is no longer available" }, { status: 409 });
+  await createTelegramAlertLog({
+    type: "reservation_created",
+    leadId: reserved.leadId,
+    clientId: reserved.clientId,
+    clientName: reserved.client.fullName,
+    clientPhone: reserved.client.phone,
+    managerName: reserved.assignedTo?.name || reserved.assignedTo?.email,
+    dealNumber: reserved.dealNumber,
+    unitLabel: reserved.primaryUnit ? `${reserved.primaryUnit.floor.building.name} / ${reserved.primaryUnit.unitNumber}` : null,
+    expiresAt: reserved.reservationExpiresAt,
+    crmPath: `/portal/management-x7k9/crm/deals/${reserved.id}`,
+    locale: reserved.lead?.id ? undefined : null,
+    ref: `reservation_created_${reserved.id}_${reserved.reservationExpiresAt?.toISOString()}`,
+  }, { crmBaseUrl: process.env.NEXTAUTH_URL || null }).catch((error) => {
+    console.error("Failed to queue Telegram reservation alert:", error);
+  });
   return NextResponse.json(reserved);
 }

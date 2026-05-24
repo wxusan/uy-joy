@@ -70,6 +70,15 @@ export function canEditLead(user: CrmUser | null | undefined, lead: { assignedTo
   return isSellingAgentRole(user) && Boolean(user.id) && lead.assignedToId === user.id;
 }
 
+export function canClaimUnassignedLead(user: CrmUser | null | undefined, allowAgentClaim: boolean) {
+  return allowAgentClaim && Boolean(user?.id) && isSellingAgentRole(user);
+}
+
+/** Director control panel is visible to owners, developers, and sales directors. */
+export function canViewDirectorPanel(user: CrmUser | null | undefined) {
+  return roleHasPlatformPermission(user?.role, "viewReports");
+}
+
 export function leadVisibilityWhere(user: CrmUser | null | undefined, allowAgentClaim: boolean): Prisma.LeadWhereInput {
   if (!user) return { id: "__none__" };
   if (canViewAllLeads(user) || roleHasPlatformPermission(user.role, "viewReports")) return {};

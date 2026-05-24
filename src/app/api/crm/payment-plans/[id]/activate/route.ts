@@ -50,7 +50,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
     await createActivity(
       {
         type: "payment",
-        title: "Payment plan activated",
+        title: "To'lov rejasi faollashtirildi",
         clientId: plan.deal.clientId,
         leadId: plan.deal.leadId,
         dealId: plan.dealId,

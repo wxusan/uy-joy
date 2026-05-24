@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { requireAdmin } from "@/lib/auth";
 import { getPlatformSettings, platformSettingsHasFeature } from "@/lib/platform-settings";
 import { getAgentReport, getReportFilterOptions, parseReportFilters } from "@/lib/reports";
@@ -16,6 +17,7 @@ export default async function MyReportPage({
   const settings = getPlatformSettings();
   if (!platformSettingsHasFeature(settings, "reports")) return null;
 
+  const t = await getTranslations("admin");
   const filters = parseReportFilters(searchParams);
   const [options, report] = await Promise.all([getReportFilterOptions(), getAgentReport(filters, user, true)]);
   const row = report.tables.agents[0];
@@ -23,40 +25,40 @@ export default async function MyReportPage({
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <h1 className="a-page-title">My sales dashboard</h1>
-        <p className="a-page-sub">Your leads, tasks, activity, reservations, and sold deals.</p>
+        <h1 className="a-page-title">{t("myReportTitle")}</h1>
+        <p className="a-page-sub">{t("myReportSubtitle")}</p>
       </div>
       <ReportControls filters={filters} options={options} showAgent={false} showSource={false} />
       <MetricGrid
         metrics={[
-          { label: "My active leads", value: row?.assignedLeads ?? 0, href: "/portal/management-x7k9/crm/leads" },
-          { label: "My overdue tasks", value: row?.overdueTasks ?? 0, href: "/portal/management-x7k9/crm/tasks?overdue=true" },
-          { label: "Actions", value: row?.actions ?? 0 },
-          { label: "Calls", value: row?.calls ?? 0 },
-          { label: "Meetings", value: row?.meetings ?? 0 },
-          { label: "Reservations", value: row?.reservations ?? 0 },
-          { label: "Sold deals", value: row?.soldDeals ?? 0 },
-          { label: "Sold revenue", value: money(row?.soldRevenue ?? 0) },
+          { label: t("metricMyActiveLeads"), value: row?.assignedLeads ?? 0, href: "/portal/management-x7k9/crm/leads" },
+          { label: t("metricMyOverdueTasks"), value: row?.overdueTasks ?? 0, href: "/portal/management-x7k9/crm/tasks?overdue=true" },
+          { label: t("metricActions"), value: row?.actions ?? 0 },
+          { label: t("metricCalls"), value: row?.calls ?? 0 },
+          { label: t("metricMeetings"), value: row?.meetings ?? 0 },
+          { label: t("metricReservations"), value: row?.reservations ?? 0 },
+          { label: t("metricSoldDeals"), value: row?.soldDeals ?? 0 },
+          { label: t("metricSoldRevenue"), value: money(row?.soldRevenue ?? 0) },
         ]}
       />
-      <ReportSection title="Target progress">
+      <ReportSection title={t("sectionTargetProgress")}>
         {row ? (
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="rounded-[6px] border p-3" style={{ borderColor: "var(--a-border)" }}>
-              <div className="text-[12px]" style={{ color: "var(--a-text-tertiary)" }}>Deal target</div>
-              <div className="mt-1 text-[24px] font-semibold">{row.targetDealProgress != null ? `${row.targetDealProgress}%` : "Not set"}</div>
+              <div className="text-[12px]" style={{ color: "var(--a-text-tertiary)" }}>{t("dealTarget")}</div>
+              <div className="mt-1 text-[24px] font-semibold">{row.targetDealProgress != null ? `${row.targetDealProgress}%` : t("notSet")}</div>
             </div>
             <div className="rounded-[6px] border p-3" style={{ borderColor: "var(--a-border)" }}>
-              <div className="text-[12px]" style={{ color: "var(--a-text-tertiary)" }}>Revenue target</div>
-              <div className="mt-1 text-[24px] font-semibold">{row.targetRevenueProgress != null ? `${row.targetRevenueProgress}%` : "Not set"}</div>
+              <div className="text-[12px]" style={{ color: "var(--a-text-tertiary)" }}>{t("revenueTarget")}</div>
+              <div className="mt-1 text-[24px] font-semibold">{row.targetRevenueProgress != null ? `${row.targetRevenueProgress}%` : t("notSet")}</div>
             </div>
           </div>
         ) : (
-          <div className="py-8 text-center text-[13px]" style={{ color: "var(--a-text-tertiary)" }}>No sales profile is available.</div>
+          <div className="py-8 text-center text-[13px]" style={{ color: "var(--a-text-tertiary)" }}>{t("noSalesProfile")}</div>
         )}
       </ReportSection>
-      <ReportSection title="Personal sales trend">
-        <ReportBarChart data={report.series.soldByAgent} xKey="agent" yKey="soldDeals" emptyLabel="No sales yet" />
+      <ReportSection title={t("sectionPersonalSalesTrend")}>
+        <ReportBarChart data={report.series.soldByAgent} xKey="agent" yKey="soldDeals" emptyLabel={t("noSalesYet")} />
       </ReportSection>
     </div>
   );

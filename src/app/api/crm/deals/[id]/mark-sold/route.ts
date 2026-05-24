@@ -55,7 +55,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     await createActivity(
       {
         type: "deal",
-        title: "Unit sold",
+        title: "Xonadon sotildi",
         clientId: updated.clientId,
         leadId: updated.leadId,
         dealId: updated.id,

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 type Source = {
   key: string;
@@ -14,6 +15,8 @@ type Source = {
 
 export default function SourcesClient({ sources }: { sources: Source[] }) {
   const router = useRouter();
+  const t = useTranslations("admin");
+  const tc = useTranslations("common");
   const [drafts, setDrafts] = useState<Record<string, Source>>(
     Object.fromEntries(sources.map((source) => [source.key, source]))
   );
@@ -21,14 +24,14 @@ export default function SourcesClient({ sources }: { sources: Source[] }) {
   const [status, setStatus] = useState("");
 
   async function save(key: string) {
-    setStatus("Saving...");
+    setStatus(t("saving"));
     const draft = drafts[key];
     const res = await fetch(`/api/crm/sources/${encodeURIComponent(key)}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(draft),
     });
-    setStatus(res.ok ? "Saved" : "Save failed");
+    setStatus(res.ok ? t("saved") : t("saveFailed"));
     router.refresh();
   }
 
@@ -39,7 +42,7 @@ export default function SourcesClient({ sources }: { sources: Source[] }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ key: newKey.trim(), labelJson: { uz: newKey.trim(), ru: newKey.trim(), en: newKey.trim() } }),
     });
-    setStatus(res.ok ? "Created" : "Create failed");
+    setStatus(res.ok ? t("created") : t("createFailed"));
     setNewKey("");
     router.refresh();
   }
@@ -48,18 +51,18 @@ export default function SourcesClient({ sources }: { sources: Source[] }) {
     <div className="grid gap-4">
       <div className="a-card p-4 flex gap-2">
         <input className="a-input" value={newKey} onChange={(e) => setNewKey(e.target.value)} placeholder="new_source_key" />
-        <button className="a-btn" onClick={createSource}>Add source</button>
+        <button className="a-btn" onClick={createSource}>{t("addSource")}</button>
       </div>
       <div className="a-card overflow-x-auto">
         <table className="a-table min-w-[860px]">
           <thead>
             <tr>
-              <th>Key</th>
-              <th>Label UZ</th>
-              <th>Label RU</th>
-              <th>Label EN</th>
-              <th>Active</th>
-              <th style={{ textAlign: "right" }}>Action</th>
+              <th>{t("sourceKey")}</th>
+              <th>{t("labelUz")}</th>
+              <th>{t("labelRu")}</th>
+              <th>{t("labelEn")}</th>
+              <th>{t("activeLabel")}</th>
+              <th style={{ textAlign: "right" }}>{tc("actions")}</th>
             </tr>
           </thead>
           <tbody>
@@ -67,7 +70,7 @@ export default function SourcesClient({ sources }: { sources: Source[] }) {
               const draft = drafts[source.key];
               return (
                 <tr key={source.key}>
-                  <td>{source.key}{source.isSystem ? " · system" : ""}</td>
+                  <td>{source.key}{source.isSystem ? " · " + t("system").toLowerCase() : ""}</td>
                   {(["uz", "ru", "en"] as const).map((locale) => (
                     <td key={locale}>
                       <input
@@ -93,7 +96,7 @@ export default function SourcesClient({ sources }: { sources: Source[] }) {
                     />
                   </td>
                   <td style={{ textAlign: "right" }}>
-                    <button className="a-btn" onClick={() => save(source.key)}>Save</button>
+                    <button className="a-btn" onClick={() => save(source.key)}>{tc("save")}</button>
                   </td>
                 </tr>
               );

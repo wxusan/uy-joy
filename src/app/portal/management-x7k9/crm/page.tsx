@@ -1,12 +1,24 @@
 import Link from "next/link";
 import prisma from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
-import { activityVisibilityWhere, clientVisibilityWhere, leadVisibilityWhere, taskVisibilityWhere } from "@/lib/crm-access";
+import { canViewAllLeads, leadVisibilityWhere, taskVisibilityWhere } from "@/lib/crm-access";
+import { leadStatusLabel } from "@/lib/crm-labels";
+import { dealVisibilityWhere } from "@/lib/real-estate";
 import { PLATFORM_PERMISSIONS, roleHasPlatformPermission } from "@/lib/platform-plans";
 import { getPlatformSettings, platformSettingsHasFeature } from "@/lib/platform-settings";
 import { getTranslations } from "next-intl/server";
 
 export const dynamic = "force-dynamic";
+
+const TASHKENT_OFFSET_MS = 5 * 60 * 60 * 1000;
+
+function tashkentDayBounds(now = new Date()) {
+  const shifted = new Date(now.getTime() + TASHKENT_OFFSET_MS);
+  const start = new Date(Date.UTC(shifted.getUTCFullYear(), shifted.getUTCMonth(), shifted.getUTCDate()) - TASHKENT_OFFSET_MS);
+  const end = new Date(start);
+  end.setUTCDate(end.getUTCDate() + 1);
+  return { start, end };
+}
 
 export default async function CrmDashboardPage() {
   const session = await requireAdmin(PLATFORM_PERMISSIONS.viewLeads);
@@ -16,44 +28,85 @@ export default async function CrmDashboardPage() {
 
   const user = session.user as { id?: string; role?: string };
   const canManageLeads = roleHasPlatformPermission(user.role, "manageLeads");
+  const isTeamView = canViewAllLeads(user);
   const leadWhere = leadVisibilityWhere(user, settings.allowAgentClaim);
-  const clientWhere = clientVisibilityWhere(user, settings.allowAgentClaim);
   const taskWhere = taskVisibilityWhere(user, settings.allowAgentClaim);
-  const activityWhere = activityVisibilityWhere(user, settings.allowAgentClaim);
-  const today = new Date();
-  const sevenDaysAgo = new Date(today);
-  sevenDaysAgo.setDate(today.getDate() - 7);
+  const dealWhere = dealVisibilityWhere(user);
+  const now = new Date();
+  const { start: todayStart, end: tomorrowStart } = tashkentDayBounds(now);
+  const expiringBy = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+  const activeLeadFilter = { status: { notIn: ["sold", "lost"] } };
+  const newLeadHref = `/portal/management-x7k9/crm/leads?status=new&from=${todayStart.toISOString()}&to=${tomorrowStart.toISOString()}`;
 
-  const [leadCount, clientCount, openTasks, overdueTasks, recentLeads, recentActivities, byStatus] = await Promise.all([
-    prisma.lead.count({ where: leadWhere }),
-    prisma.client.count({ where: clientWhere }),
-    prisma.task.count({ where: { AND: [taskWhere, { status: "open" }] } }),
-    prisma.task.count({ where: { AND: [taskWhere, { status: "open", dueAt: { lt: today } }] } }),
+  const [
+    newLeadsToday,
+    unansweredLeads,
+    overdueFollowups,
+    todayVisits,
+    activeReservations,
+    expiringReservations,
+    urgentLeads,
+    todaysFollowups,
+  ] = await Promise.all([
+    prisma.lead.count({ where: { AND: [leadWhere, { status: "new", createdAt: { gte: todayStart, lt: tomorrowStart } }] } }),
+    prisma.lead.count({ where: { AND: [leadWhere, activeLeadFilter, { firstResponseAt: null }] } }),
+    prisma.task.count({ where: { AND: [taskWhere, { status: "open", dueAt: { lt: now } }] } }),
+    prisma.task.count({
+      where: {
+        AND: [taskWhere, { status: "open", type: { in: ["meeting", "visit"] }, dueAt: { gte: todayStart, lt: tomorrowStart } }],
+      },
+    }),
+    prisma.deal.count({ where: { AND: [dealWhere, { status: "reserved" }] } }),
+    prisma.deal.count({
+      where: {
+        AND: [dealWhere, { status: "reserved", reservationExpiresAt: { gte: now, lte: expiringBy } }],
+      },
+    }),
     prisma.lead.findMany({
-      where: leadWhere,
+      where: {
+        AND: [
+          leadWhere,
+          activeLeadFilter,
+          { OR: [{ firstResponseAt: null }, { nextActionAt: { lt: now } }] },
+        ],
+      },
       include: { client: { select: { fullName: true, phone: true } }, assignedToUser: { select: { name: true } } },
-      orderBy: { createdAt: "desc" },
+      orderBy: [{ nextActionAt: "asc" }, { createdAt: "desc" }],
       take: 6,
     }),
-    prisma.activity.findMany({
-      where: activityWhere,
-      orderBy: { occurredAt: "desc" },
-      include: { client: { select: { fullName: true } }, lead: { select: { name: true } } },
+    prisma.task.findMany({
+      where: { AND: [taskWhere, { status: "open", dueAt: { gte: todayStart, lt: tomorrowStart } }] },
+      orderBy: [{ dueAt: "asc" }, { createdAt: "desc" }],
+      include: {
+        client: { select: { id: true, fullName: true } },
+        lead: { select: { id: true, name: true, status: true } },
+        assignedTo: { select: { name: true, email: true } },
+      },
       take: 8,
     }),
-    prisma.lead.groupBy({
-      by: ["status"],
-      where: { AND: [leadWhere, { createdAt: { gte: sevenDaysAgo } }] },
-      _count: { _all: true },
-    }),
   ]);
+
+  const queueCards: Array<{ label: string; value: number; href: string; accent: string }> = [
+    { label: t("dashboardNewLeadsToday"), value: newLeadsToday, href: newLeadHref, accent: "var(--a-accent)" },
+    { label: t("dashboardUnansweredLeads"), value: unansweredLeads, href: "/portal/management-x7k9/crm/leads?unanswered=true", accent: "var(--a-danger)" },
+    { label: t("dashboardOverdueFollowups"), value: overdueFollowups, href: "/portal/management-x7k9/crm/tasks?view=overdue", accent: "var(--a-danger)" },
+    { label: t("dashboardTodayVisits"), value: todayVisits, href: "/portal/management-x7k9/crm/tasks?view=today&type=office_visit", accent: "var(--a-warning)" },
+    { label: t("dashboardActiveReservations"), value: activeReservations, href: "/portal/management-x7k9/crm/deals?status=reserved", accent: "var(--a-success)" },
+    { label: t("dashboardExpiringReservations"), value: expiringReservations, href: "/portal/management-x7k9/crm/deals?status=reserved&expiring=true", accent: "var(--a-warning)" },
+  ];
+
+  const leadReason = (lead: { firstResponseAt: Date | null; nextActionAt: Date | null }) => {
+    if (!lead.firstResponseAt) return t("dashboardLeadUnanswered");
+    if (lead.nextActionAt && lead.nextActionAt < now) return t("dashboardLeadOverdue");
+    return lead.nextActionAt ? `${t("dashboardDue")}: ${lead.nextActionAt.toLocaleString()}` : t("dashboardViewQueue");
+  };
 
   return (
     <div className="flex flex-col gap-5">
       <div className="flex items-end justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="a-page-title">{t("crm")}</h1>
-          <p className="a-page-sub">{t("crmSubtitle")}</p>
+          <h1 className="a-page-title">{t("crmTodayTitle")}</h1>
+          <p className="a-page-sub">{isTeamView ? t("crmTodaySubtitleDirector") : t("crmTodaySubtitleManager")}</p>
         </div>
         {canManageLeads ? (
           <div className="flex gap-2">
@@ -63,37 +116,36 @@ export default async function CrmDashboardPage() {
         ) : null}
       </div>
 
-      <div className="grid gap-3 md:grid-cols-4">
-        {[
-          [t("leads"), leadCount],
-          [t("clients"), clientCount],
-          [t("openTasks"), openTasks],
-          [t("overdue"), overdueTasks],
-        ].map(([label, value]) => (
-          <div key={label} className="a-card p-4">
-            <div className="text-[12px]" style={{ color: "var(--a-text-tertiary)" }}>{label}</div>
-            <div className="text-[26px] font-semibold" style={{ color: "var(--a-text)" }}>{value}</div>
-          </div>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
+        {queueCards.map((card) => (
+          <Link key={card.label} href={card.href} className="a-card p-4 hover:shadow-sm transition-shadow">
+            <div className="flex items-center gap-2 text-[12px]" style={{ color: "var(--a-text-tertiary)" }}>
+              <span className="a-dot" style={{ color: card.accent }} />
+              <span>{card.label}</span>
+            </div>
+            <div className="mt-2 text-[28px] font-semibold" style={{ color: "var(--a-text)" }}>{card.value}</div>
+            <div className="mt-2 text-[12px]" style={{ color: "var(--a-text-tertiary)" }}>{t("dashboardViewQueue")}</div>
+          </Link>
         ))}
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
         <div className="a-card overflow-x-auto">
           <div className="p-4 border-b" style={{ borderColor: "var(--a-border)" }}>
-            <h2 className="text-[15px] font-semibold">{t("recentLeads")}</h2>
+            <h2 className="text-[15px] font-semibold">{t("dashboardNeedsAction")}</h2>
           </div>
           <table className="a-table min-w-[720px]">
             <thead>
               <tr>
                 <th>{t("name")}</th>
                 <th>{t("phone")}</th>
-                <th>{t("status")}</th>
+                <th>{t("fieldNextAction")}</th>
                 <th>{t("assigned")}</th>
                 <th style={{ textAlign: "right" }}>{t("created")}</th>
               </tr>
             </thead>
             <tbody>
-              {recentLeads.map((lead) => (
+              {urgentLeads.map((lead) => (
                 <tr key={lead.id}>
                   <td>
                     <Link className="hover:underline" href={`/portal/management-x7k9/crm/leads/${lead.id}`}>
@@ -101,40 +153,40 @@ export default async function CrmDashboardPage() {
                     </Link>
                   </td>
                   <td>{lead.client?.phone || lead.phone}</td>
-                  <td>{lead.status}</td>
-                  <td>{lead.assignedToUser?.name || t("unassigned")}</td>
+                  <td>{leadReason(lead)}</td>
+                  <td>{lead.assignedToUser?.name || t("dashboardNoManager")}</td>
                   <td style={{ textAlign: "right" }}>{lead.createdAt.toLocaleDateString()}</td>
                 </tr>
               ))}
+              {urgentLeads.length === 0 ? (
+                <tr><td colSpan={5} className="text-center py-10" style={{ color: "var(--a-text-tertiary)" }}>{t("dashboardNoUrgentLeads")}</td></tr>
+              ) : null}
             </tbody>
           </table>
         </div>
 
         <div className="flex flex-col gap-4">
           <div className="a-card p-4">
-            <h2 className="text-[15px] font-semibold mb-3">{t("last7DaysByStage")}</h2>
-            <div className="flex flex-col gap-2">
-              {byStatus.map((row) => (
-                <div key={row.status} className="flex items-center justify-between text-[13px]">
-                  <span>{row.status}</span>
-                  <span className="font-semibold">{row._count._all}</span>
-                </div>
-              ))}
-              {byStatus.length === 0 ? <p className="text-[13px]" style={{ color: "var(--a-text-tertiary)" }}>{t("noRecentMovement")}</p> : null}
-            </div>
-          </div>
-
-          <div className="a-card p-4">
-            <h2 className="text-[15px] font-semibold mb-3">{t("activity")}</h2>
+            <h2 className="text-[15px] font-semibold mb-3">{t("dashboardTodaysFollowups")}</h2>
             <div className="flex flex-col gap-3">
-              {recentActivities.map((activity) => (
-                <div key={activity.id} className="text-[13px]">
-                  <div className="font-medium">{activity.title}</div>
+              {todaysFollowups.map((task) => (
+                <div key={task.id} className="text-[13px]">
+                  <div className="font-medium">{task.title}</div>
                   <div style={{ color: "var(--a-text-tertiary)" }}>
-                    {activity.client?.fullName || activity.lead?.name || t("crm")} · {activity.occurredAt.toLocaleString()}
+                    {task.lead ? (
+                      <Link className="hover:underline" href={`/portal/management-x7k9/crm/leads/${task.lead.id}`}>
+                        {task.lead.name} · {leadStatusLabel(t, task.lead.status)}
+                      </Link>
+                    ) : task.client ? (
+                      <Link className="hover:underline" href={`/portal/management-x7k9/crm/clients/${task.client.id}`}>{task.client.fullName}</Link>
+                    ) : t("crm")}
+                  </div>
+                  <div style={{ color: "var(--a-text-tertiary)" }}>
+                    {task.assignedTo.name || task.assignedTo.email || t("dashboardNoManager")} · {task.dueAt?.toLocaleTimeString() || t("noDueDate")}
                   </div>
                 </div>
               ))}
+              {todaysFollowups.length === 0 ? <p className="text-[13px]" style={{ color: "var(--a-text-tertiary)" }}>{t("dashboardNoFollowupsToday")}</p> : null}
             </div>
           </div>
         </div>

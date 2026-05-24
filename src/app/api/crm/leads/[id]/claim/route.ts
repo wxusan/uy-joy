@@ -3,7 +3,8 @@ import prisma from "@/lib/prisma";
 import { createActivity } from "@/lib/crm";
 import { requirePlatformApiFeature } from "@/lib/platform-guards";
 import { getPlatformSettings } from "@/lib/platform-settings";
-import { normalizePlatformRole } from "@/lib/platform-plans";
+import { canClaimUnassignedLead } from "@/lib/crm-access";
+import { createTelegramAlertLog } from "@/lib/telegram";
 
 export async function POST(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requirePlatformApiFeature("crm", "manageLeads");
@@ -12,8 +13,7 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
   const settings = getPlatformSettings();
   if (!settings.allowAgentClaim) return NextResponse.json({ error: "Lead claiming is disabled" }, { status: 403 });
   if (!auth.user?.id) return NextResponse.json({ error: "Authentication required" }, { status: 401 });
-  const role = normalizePlatformRole(auth.user.role);
-  if (role !== "sales_agent" && role !== "external_agent") {
+  if (!canClaimUnassignedLead(auth.user, settings.allowAgentClaim)) {
     return NextResponse.json({ error: "Only sales agents can claim leads" }, { status: 403 });
   }
 
@@ -43,12 +43,25 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
 
   await createActivity({
     type: "assigned",
-    title: "Lead claimed",
+    title: "Lid olindi",
     clientId: lead.clientId,
     leadId: lead.id,
     actorId: auth.user.id,
     assignedToId: auth.user.id,
     channel: "manual",
+  });
+  await createTelegramAlertLog({
+    type: "lead_assigned",
+    leadId: lead.id,
+    clientId: lead.clientId,
+    clientName: lead.client?.fullName || lead.name,
+    clientPhone: lead.client?.phone || lead.phone,
+    managerName: lead.assignedToUser?.name || lead.assignedToUser?.email,
+    crmPath: `/portal/management-x7k9/crm/leads/${lead.id}`,
+    locale: lead.preferredLanguage,
+    ref: `lead_assigned_${lead.id}_${auth.user.id}`,
+  }, { crmBaseUrl: process.env.NEXTAUTH_URL || null }).catch((error) => {
+    console.error("Failed to queue Telegram assignment alert:", error);
   });
 
   return NextResponse.json(lead);

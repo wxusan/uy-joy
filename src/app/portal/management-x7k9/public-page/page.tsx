@@ -2,18 +2,20 @@ import prisma from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
 import { PLATFORM_PERMISSIONS } from "@/lib/platform-plans";
 import { ensurePublicPageConfig, getDefaultProject, publicPageColorWarnings } from "@/lib/public-page";
+import { getTranslations } from "next-intl/server";
 import PublicPageSettingsClient from "./PublicPageSettingsClient";
 
 export const dynamic = "force-dynamic";
 
 export default async function PublicPageSettingsPage() {
   await requireAdmin(PLATFORM_PERMISSIONS.managePublicContent);
+  const t = await getTranslations("admin");
   const project = await getDefaultProject();
   if (!project) {
     return (
       <div>
-        <h1 className="a-page-title">Public page</h1>
-        <p className="a-page-sub">Create a project before configuring the public page.</p>
+        <h1 className="a-page-title">{t("publicPageNav")}</h1>
+        <p className="a-page-sub">{t("publicPageNoProject")}</p>
       </div>
     );
   }
@@ -28,8 +30,8 @@ export default async function PublicPageSettingsPage() {
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <h1 className="a-page-title">Public page</h1>
-        <p className="a-page-sub">Branding, public copy, lead form, embed, and Telegram delivery.</p>
+        <h1 className="a-page-title">{t("publicPageNav")}</h1>
+        <p className="a-page-sub">{t("publicPageSubtitle")}</p>
       </div>
       <PublicPageSettingsClient
         initialConfig={JSON.parse(JSON.stringify(config))}

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { leadSourceLabel, normalizeLeadSource } from "../lead-sources";
 import { colorContrastRatio, publicPageColorWarnings, translatePublicText } from "../public-page";
-import { buildLeadTelegramMessage, nextTelegramAttempt } from "../telegram";
+import { buildLeadTelegramMessage, buildTelegramAlertMessage, nextTelegramAttempt } from "../telegram";
 
 type TestCase = { name: string; run: () => void };
 const tests: TestCase[] = [];
@@ -44,7 +44,46 @@ test("telegram message includes CRM only when CRM is enabled", () => {
   };
   assert.equal(buildLeadTelegramMessage(lead, { crmEnabled: false }).includes("CRM:"), false);
   assert.equal(buildLeadTelegramMessage(lead, { crmEnabled: true, crmBaseUrl: "https://crm.example" }).includes("CRM:"), true);
-  assert.equal(buildLeadTelegramMessage(lead).includes("Phone: +998901234567"), true);
+  assert.equal(buildLeadTelegramMessage(lead).includes("Telefon: +998901234567"), true);
+});
+
+test("telegram operational alerts are concise and link back to CRM", () => {
+  const text = buildTelegramAlertMessage(
+    {
+      type: "reservation_expiring",
+      leadId: "lead-1",
+      clientName: "Ali",
+      clientPhone: "+998901234567",
+      managerName: "Jasur",
+      dealNumber: "D-100",
+      unitLabel: "A / 401",
+      expiresAt: new Date("2026-05-21T10:00:00.000Z"),
+      crmPath: "/portal/management-x7k9/crm/deals/deal-1",
+      ref: "reservation_expiring_deal-1",
+      locale: "uz",
+    },
+    { crmBaseUrl: "https://crm.example" }
+  );
+  assert.equal(text.includes("Bron tugayapti"), true);
+  assert.equal(text.includes("CRM"), true);
+  assert.equal(text.includes("https://crm.example/portal/management-x7k9/crm/deals/deal-1"), true);
+  assert.equal(text.includes("Ref: reservation_expiring_deal-1"), true);
+});
+
+test("telegram payment alert omits client phone and amount", () => {
+  const text = buildTelegramAlertMessage({
+    type: "payment_overdue",
+    leadId: "lead-1",
+    clientName: "Ali",
+    clientPhone: "+998901234567",
+    dealNumber: "D-100",
+    paymentLabel: "May payment",
+    dueAt: new Date("2026-05-21T10:00:00.000Z"),
+    locale: "uz",
+  });
+  assert.equal(text.includes("+998901234567"), false);
+  assert.equal(text.includes("Ali"), false);
+  assert.equal(text.includes("May payment"), true);
 });
 
 test("telegram retry backoff uses one, five, then fifteen minute windows", () => {

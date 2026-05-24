@@ -1,9 +1,8 @@
 import prisma from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
 import { ensureDefaultPipelineStages } from "@/lib/crm";
-import { leadVisibilityWhere } from "@/lib/crm-access";
+import { canClaimUnassignedLead, leadVisibilityWhere } from "@/lib/crm-access";
 import { PLATFORM_PERMISSIONS } from "@/lib/platform-plans";
-import { normalizePlatformRole } from "@/lib/platform-plans";
 import { getPlatformSettings, platformSettingsHasFeature } from "@/lib/platform-settings";
 import PipelineBoard from "./PipelineBoard";
 import { getTranslations } from "next-intl/server";
@@ -61,7 +60,8 @@ export default async function PipelinePage() {
       <PipelineBoard
         initialStages={stages}
         initialLeads={serializedLeads}
-        canClaim={["sales_agent", "external_agent"].includes(normalizePlatformRole(user.role) || "")}
+        canClaim={canClaimUnassignedLead(user, settings.allowAgentClaim)}
+        currentUserId={user.id || null}
       />
     </div>
   );

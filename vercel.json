@@ -3,6 +3,9 @@
     "src/app/api/cron/telegram-outbox/route.ts": {
       "maxDuration": 60
     },
+    "src/app/api/cron/crm-ops/route.ts": {
+      "maxDuration": 60
+    },
     "src/app/api/crm/automation/run-followup-reminders/route.ts": {
       "maxDuration": 60
     },
@@ -21,27 +24,7 @@
   },
   "crons": [
     {
-      "path": "/api/cron/telegram-outbox",
-      "schedule": "*/5 * * * *"
-    },
-    {
-      "path": "/api/crm/automation/run-followup-reminders",
-      "schedule": "*/30 * * * *"
-    },
-    {
-      "path": "/api/crm/deals/run-reservation-expiry-check",
-      "schedule": "*/30 * * * *"
-    },
-    {
-      "path": "/api/crm/payments/run-overdue-check",
-      "schedule": "0 * * * *"
-    },
-    {
-      "path": "/api/crm/automation/run-duplicate-check",
-      "schedule": "10 * * * *"
-    },
-    {
-      "path": "/api/crm/automation/run-inactivity-check",
+      "path": "/api/cron/crm-ops",
       "schedule": "30 5 * * *"
     }
   ]

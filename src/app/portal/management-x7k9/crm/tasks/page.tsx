@@ -1,6 +1,6 @@
 import prisma from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
-import { canViewAllLeads, leadVisibilityWhere } from "@/lib/crm-access";
+import { canViewAllLeads, taskVisibilityWhere } from "@/lib/crm-access";
 import { PLATFORM_PERMISSIONS } from "@/lib/platform-plans";
 import { getPlatformSettings, platformSettingsHasFeature } from "@/lib/platform-settings";
 import TasksClient from "./TasksClient";
@@ -17,15 +17,22 @@ export default async function TasksPage({ searchParams }: { searchParams?: Recor
   if (!platformSettingsHasFeature(settings, "crm")) return null;
 
   const user = session.user as { id?: string; role?: string };
-  const visibility = canViewAllLeads(user)
-    ? {}
-    : { OR: [{ assignedToId: user.id }, { createdById: user.id }, { lead: { is: leadVisibilityWhere(user, settings.allowAgentClaim) } }] };
+  const canReassignTasks = canViewAllLeads(user);
+  const visibility = taskVisibilityWhere(user, settings.allowAgentClaim);
   const [tasks, users] = await Promise.all([
     prisma.task.findMany({
     where: visibility,
     include: {
       client: { select: { id: true, fullName: true } },
-      lead: { select: { id: true, name: true, status: true } },
+      lead: {
+        select: {
+          id: true,
+          name: true,
+          status: true,
+          assignedToId: true,
+          assignedToUser: { select: { id: true, name: true, email: true } },
+        },
+      },
       assignedTo: { select: { id: true, name: true } },
     },
     orderBy: [{ status: "asc" }, { dueAt: "asc" }, { createdAt: "desc" }],
@@ -47,7 +54,10 @@ export default async function TasksPage({ searchParams }: { searchParams?: Recor
   }));
 
   const requestedView = paramValue(searchParams?.view);
-  const initialView = requestedView === "overdue" || requestedView === "today" || requestedView === "week" || requestedView === "all" ? requestedView : "my";
+  const initialView =
+    requestedView === "overdue" || requestedView === "today" || requestedView === "week" || requestedView === "backup" || requestedView === "all"
+      ? requestedView
+      : "my";
   const initialTypeFilter = paramValue(searchParams?.type) || "all";
 
   return (
@@ -55,6 +65,7 @@ export default async function TasksPage({ searchParams }: { searchParams?: Recor
       initialTasks={serializedTasks}
       users={users}
       currentUserId={user.id}
+      canReassignTasks={canReassignTasks}
       initialView={initialView}
       initialTypeFilter={initialTypeFilter}
     />

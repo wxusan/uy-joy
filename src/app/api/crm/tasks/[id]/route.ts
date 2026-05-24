@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { createActivity } from "@/lib/crm";
+import { createActivity, taskIsOperationalBackup } from "@/lib/crm";
 import { canViewAllLeads, taskVisibilityWhere } from "@/lib/crm-access";
 import { TaskUpdateSchema } from "@/lib/schemas/crm";
 import { invalidInput } from "@/lib/schemas/common";
@@ -10,10 +10,36 @@ import { getPlatformSettings } from "@/lib/platform-settings";
 function includeTask() {
   return {
     client: { select: { id: true, fullName: true, phone: true } },
-    lead: { select: { id: true, name: true, status: true } },
+    lead: {
+      select: {
+        id: true,
+        name: true,
+        status: true,
+        assignedToId: true,
+        assignedToUser: { select: { id: true, name: true, email: true } },
+      },
+    },
     assignedTo: { select: { id: true, name: true, email: true } },
     createdBy: { select: { id: true, name: true, email: true } },
   };
+}
+
+function taskActivityCopy(input: {
+  title: string;
+  completed: boolean;
+  reassigned: boolean;
+  leadOwnerId?: string | null;
+  nextAssignedToId: string;
+}) {
+  if (input.completed) return { title: `Vazifa bajarildi: ${input.title}`, body: null };
+  if (input.reassigned && input.leadOwnerId && input.leadOwnerId !== input.nextAssignedToId) {
+    return {
+      title: "Backup vazifa topshirildi",
+      body: "Lid egasi o'zgarmadi. Faqat operatsion vazifa boshqa menejerga berildi.",
+    };
+  }
+  if (input.reassigned) return { title: "Vazifa boshqa menejerga topshirildi", body: null };
+  return { title: `Vazifa yangilandi: ${input.title}`, body: null };
 }
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -41,7 +67,10 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   if (!parsed.success) return invalidInput(parsed.error);
 
   const input = parsed.data;
-  const existing = await prisma.task.findUnique({ where: { id } });
+  const existing = await prisma.task.findUnique({
+    where: { id },
+    include: { lead: { select: { assignedToId: true } } },
+  });
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
   const canManageTask = canViewAllLeads(auth.user) || existing.assignedToId === auth.user?.id || existing.createdById === auth.user?.id;
   if (!canManageTask) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -76,9 +105,19 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     include: includeTask(),
   });
 
+  const reassigned = input.assignedToId !== undefined && input.assignedToId !== existing.assignedToId;
+  const activityCopy = taskActivityCopy({
+    title: task.title,
+    completed: input.status === "completed",
+    reassigned,
+    leadOwnerId: existing.lead?.assignedToId,
+    nextAssignedToId: task.assignedToId,
+  });
+
   await createActivity({
     type: "task",
-    title: input.status === "completed" ? `Task completed: ${task.title}` : `Task updated: ${task.title}`,
+    title: activityCopy.title,
+    body: activityCopy.body,
     clientId: task.clientId,
     leadId: task.leadId,
     unitId: task.unitId,
@@ -86,7 +125,14 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     actorId: auth.user?.id ?? null,
     assignedToId: task.assignedToId,
     channel: "manual",
-    metadata: { previousStatus: existing.status, nextStatus: task.status },
+    metadata: {
+      previousStatus: existing.status,
+      nextStatus: task.status,
+      fromAssignedToId: existing.assignedToId,
+      toAssignedToId: task.assignedToId,
+      leadOwnerId: existing.lead?.assignedToId ?? null,
+      backupTask: taskIsOperationalBackup(task),
+    },
   });
 
   return NextResponse.json(task);

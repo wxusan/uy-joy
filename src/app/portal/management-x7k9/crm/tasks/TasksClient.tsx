@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
 import { Check, Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -15,23 +15,31 @@ type Task = {
   priority: string;
   dueAt: string | null;
   client: { id: string; fullName: string } | null;
-  lead: { id: string; name: string; status: string } | null;
-  assignedTo: { id: string; name: string | null };
+  lead: {
+    id: string;
+    name: string;
+    status: string;
+    assignedToId: string | null;
+    assignedToUser: { id: string; name: string | null; email: string } | null;
+  } | null;
+  assignedTo: { id: string; name: string | null; email?: string | null };
 };
 
 type User = { id: string; name: string | null; email: string; role: string };
-type TaskView = "my" | "overdue" | "today" | "week" | "all";
+type TaskView = "my" | "today" | "backup" | "overdue" | "week" | "all";
 
 export default function TasksClient({
   initialTasks,
   users,
   currentUserId,
+  canReassignTasks,
   initialView = "my",
   initialTypeFilter = "all",
 }: {
   initialTasks: Task[];
   users: User[];
   currentUserId?: string;
+  canReassignTasks?: boolean;
   initialView?: TaskView;
   initialTypeFilter?: string;
 }) {
@@ -47,6 +55,13 @@ export default function TasksClient({
     type: "call",
     dueAt: "",
   });
+
+  const isMyBackupTask = useCallback(
+    (task: Task) =>
+      Boolean(currentUserId && task.lead?.assignedToId && task.lead.assignedToId !== currentUserId && task.assignedTo.id === currentUserId),
+    [currentUserId]
+  );
+
   const dateBounds = useMemo(() => {
     const now = new Date();
     const startOfToday = new Date(now);
@@ -64,12 +79,21 @@ export default function TasksClient({
       if (typeFilter === "office_visit" && task.type !== "meeting" && task.type !== "visit") return false;
       if (typeFilter !== "all" && typeFilter !== "office_visit" && task.type !== typeFilter) return false;
       if (view === "my") return task.assignedTo.id === currentUserId && task.status === "open";
-      if (view === "overdue") return task.status === "open" && Boolean(due && due < dateBounds.now);
       if (view === "today") return task.status === "open" && Boolean(due && due >= dateBounds.startOfToday && due <= dateBounds.endOfToday);
+      if (view === "backup") return isMyBackupTask(task) && task.status === "open";
+      if (view === "overdue") return task.status === "open" && Boolean(due && due < dateBounds.now);
       if (view === "week") return task.status === "open" && Boolean(due && due <= dateBounds.endOfWeek);
       return true;
     });
-  }, [currentUserId, dateBounds, tasks, typeFilter, view]);
+  }, [currentUserId, dateBounds, isMyBackupTask, tasks, typeFilter, view]);
+
+  function managerLabel(user: { name: string | null; email?: string | null } | null | undefined) {
+    return user?.name || user?.email || "—";
+  }
+
+  function isOperationalBackup(task: Task) {
+    return Boolean(task.lead?.assignedToId && task.lead.assignedToId !== task.assignedTo.id);
+  }
 
   async function createTask(event: React.FormEvent) {
     event.preventDefault();
@@ -131,9 +155,19 @@ export default function TasksClient({
       ) : null}
 
       <div className="flex gap-2 flex-wrap">
-        {(["my", "overdue", "today", "week", "all"] as const).map((item) => (
+        {(["my", "today", "backup", "overdue", "week", "all"] as const).map((item) => (
           <button key={item} className={`a-btn ${view === item ? "a-btn-primary" : ""}`} onClick={() => setView(item)}>
-            {item === "my" ? t("myTasks") : item === "overdue" ? t("overdue") : item === "today" ? t("today") : item === "week" ? t("week") : t("allTasks")}
+            {item === "my"
+              ? t("myTasks")
+              : item === "today"
+                ? t("todayTasks")
+                : item === "backup"
+                  ? t("backupTasks")
+                  : item === "overdue"
+                    ? t("overdue")
+                    : item === "week"
+                      ? t("week")
+                      : t("allTasks")}
           </button>
         ))}
         {typeFilter !== "all" ? (
@@ -144,17 +178,49 @@ export default function TasksClient({
       </div>
 
       <div className="a-card overflow-x-auto">
-        <table className="a-table min-w-[860px]">
+        <table className="a-table min-w-[1040px]">
           <thead>
-            <tr><th>{t("task")}</th><th>{t("client")}</th><th>{t("leadCol")}</th><th>{t("assigned")}</th><th>{t("priority")}</th><th>{t("status")}</th><th style={{ textAlign: "right" }}>{t("due")}</th><th /></tr>
+            <tr>
+              <th>{t("task")}</th>
+              <th>{t("client")}</th>
+              <th>{t("leadCol")}</th>
+              <th>{t("leadOwner")}</th>
+              <th>{t("taskExecutor")}</th>
+              <th>{t("priority")}</th>
+              <th>{t("status")}</th>
+              <th style={{ textAlign: "right" }}>{t("due")}</th>
+              <th />
+            </tr>
           </thead>
           <tbody>
             {filtered.map((task) => (
               <tr key={task.id}>
-                <td className="font-medium">{task.title}</td>
+                <td className="font-medium">
+                  <div>{task.title}</div>
+                  {isOperationalBackup(task) ? (
+                    <div className="mt-1 text-[11px] font-normal" style={{ color: "var(--a-warning)" }}>
+                      {t("backupTaskBadge")}
+                    </div>
+                  ) : null}
+                </td>
                 <td>{task.client ? <Link className="hover:underline" href={`/portal/management-x7k9/crm/clients/${task.client.id}`}>{task.client.fullName}</Link> : "—"}</td>
                 <td>{task.lead ? <Link className="hover:underline" href={`/portal/management-x7k9/crm/leads/${task.lead.id}`}>{task.lead.name}</Link> : "—"}</td>
-                <td>{task.assignedTo.name}</td>
+                <td>{managerLabel(task.lead?.assignedToUser)}</td>
+                <td>
+                  {canReassignTasks ? (
+                    <select
+                      className="a-input !h-8 min-w-[150px]"
+                      value={task.assignedTo.id}
+                      onChange={(event) => void updateTask(task.id, { assignedToId: event.target.value })}
+                    >
+                      {users.map((user) => (
+                        <option key={user.id} value={user.id}>{user.name || user.email}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    managerLabel(task.assignedTo)
+                  )}
+                </td>
                 <td>{taskPriorityLabel(t, task.priority)}</td>
                 <td>{taskStatusLabel(t, task.status)}</td>
                 <td style={{ textAlign: "right" }}>{task.dueAt ? new Date(task.dueAt).toLocaleString() : "—"}</td>

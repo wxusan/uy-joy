@@ -47,6 +47,7 @@ export default async function CrmDashboardPage() {
     expiringReservations,
     urgentLeads,
     todaysFollowups,
+    backupTasks,
   ] = await Promise.all([
     prisma.lead.count({ where: { AND: [leadWhere, { status: "new", createdAt: { gte: todayStart, lt: tomorrowStart } }] } }),
     prisma.lead.count({ where: { AND: [leadWhere, activeLeadFilter, { firstResponseAt: null }] } }),
@@ -84,6 +85,18 @@ export default async function CrmDashboardPage() {
       },
       take: 8,
     }),
+    user.id
+      ? prisma.task.count({
+          where: {
+            AND: [
+              taskWhere,
+              { status: "open", assignedToId: user.id },
+              { lead: { is: { assignedToId: { not: null } } } },
+              { NOT: { lead: { is: { assignedToId: user.id } } } },
+            ],
+          },
+        })
+      : Promise.resolve(0),
   ]);
 
   const queueCards: Array<{ label: string; value: number; href: string; accent: string }> = [
@@ -91,6 +104,9 @@ export default async function CrmDashboardPage() {
     { label: t("dashboardUnansweredLeads"), value: unansweredLeads, href: "/portal/management-x7k9/crm/leads?unanswered=true", accent: "var(--a-danger)" },
     { label: t("dashboardOverdueFollowups"), value: overdueFollowups, href: "/portal/management-x7k9/crm/tasks?view=overdue", accent: "var(--a-danger)" },
     { label: t("dashboardTodayVisits"), value: todayVisits, href: "/portal/management-x7k9/crm/tasks?view=today&type=office_visit", accent: "var(--a-warning)" },
+    ...(isTeamView
+      ? []
+      : [{ label: t("backupTasks"), value: backupTasks, href: "/portal/management-x7k9/crm/tasks?view=backup", accent: "var(--a-warning)" }]),
     { label: t("dashboardActiveReservations"), value: activeReservations, href: "/portal/management-x7k9/crm/deals?status=reserved", accent: "var(--a-success)" },
     { label: t("dashboardExpiringReservations"), value: expiringReservations, href: "/portal/management-x7k9/crm/deals?status=reserved&expiring=true", accent: "var(--a-warning)" },
   ];
@@ -116,7 +132,7 @@ export default async function CrmDashboardPage() {
         ) : null}
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-7">
         {queueCards.map((card) => (
           <Link key={card.label} href={card.href} className="a-card p-4 hover:shadow-sm transition-shadow">
             <div className="flex items-center gap-2 text-[12px]" style={{ color: "var(--a-text-tertiary)" }}>

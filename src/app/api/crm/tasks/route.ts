@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
-import { createActivity } from "@/lib/crm";
+import { createActivity, taskIsOperationalBackup } from "@/lib/crm";
 import { taskVisibilityWhere } from "@/lib/crm-access";
 import { TaskCreateSchema } from "@/lib/schemas/crm";
 import { invalidInput } from "@/lib/schemas/common";
@@ -11,7 +11,15 @@ import { getPlatformSettings } from "@/lib/platform-settings";
 function includeTask() {
   return {
     client: { select: { id: true, fullName: true, phone: true } },
-    lead: { select: { id: true, name: true, status: true } },
+    lead: {
+      select: {
+        id: true,
+        name: true,
+        status: true,
+        assignedToId: true,
+        assignedToUser: { select: { id: true, name: true, email: true } },
+      },
+    },
     assignedTo: { select: { id: true, name: true, email: true } },
     createdBy: { select: { id: true, name: true, email: true } },
   };
@@ -91,8 +99,14 @@ export async function POST(request: NextRequest) {
 
   await createActivity({
     type: "task",
-    title: input.activityTitle || task.title,
-    body: input.activityBody || null,
+    title:
+      input.activityTitle ||
+      (taskIsOperationalBackup(task) ? "Backup vazifa yaratildi" : task.title),
+    body:
+      input.activityBody ||
+      (taskIsOperationalBackup(task)
+        ? "Lid egasi o'zgarmadi. Faqat shu vazifa boshqa menejerga berildi."
+        : null),
     clientId: task.clientId,
     leadId: task.leadId,
     unitId: task.unitId,
@@ -100,6 +114,9 @@ export async function POST(request: NextRequest) {
     actorId: auth.user?.id ?? null,
     assignedToId: task.assignedToId,
     channel: "manual",
+    metadata: task.lead?.assignedToId
+      ? { leadOwnerId: task.lead.assignedToId, taskExecutorId: task.assignedToId, backupTask: taskIsOperationalBackup(task) }
+      : undefined,
   });
 
   return NextResponse.json(task, { status: 201 });

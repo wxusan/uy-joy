@@ -15,7 +15,7 @@ import {
   taskStatusLabel,
 } from "../crm-labels";
 import { normalizeLeadStatus } from "../lead-status";
-import { taskIsOverdue } from "../crm";
+import { taskIsOperationalBackup, taskIsOverdue } from "../crm";
 import { canClaimUnassignedLead, clientVisibilityWhere, leadVisibilityWhere, taskVisibilityWhere } from "../crm-access";
 import { normalizePhone } from "../phone";
 import {
@@ -87,6 +87,12 @@ test("task overdue state is derived from status and due date", () => {
   assert.equal(taskIsOverdue({ status: "open", dueAt: "2026-05-20T09:59:00.000Z" }, now), true);
   assert.equal(taskIsOverdue({ status: "completed", dueAt: "2026-05-20T09:59:00.000Z" }, now), false);
   assert.equal(taskIsOverdue({ status: "open", dueAt: "2026-05-20T10:01:00.000Z" }, now), false);
+});
+
+test("task executor can differ from stable lead owner", () => {
+  assert.equal(taskIsOperationalBackup({ assignedToId: "manager-b", lead: { assignedToId: "manager-a" } }), true);
+  assert.equal(taskIsOperationalBackup({ assignedToId: "manager-a", lead: { assignedToId: "manager-a" } }), false);
+  assert.equal(taskIsOperationalBackup({ assignedToId: "manager-b", lead: { assignedToId: null } }), false);
 });
 
 test("CRM visibility scopes team, agent, and specialist read-only roles", () => {

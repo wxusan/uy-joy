@@ -18,6 +18,10 @@ export function taskIsOverdue(task: { status: string; dueAt: Date | string | nul
   return task.status === "open" && Boolean(task.dueAt) && new Date(task.dueAt as Date | string).getTime() < now.getTime();
 }
 
+export function taskIsOperationalBackup(task: { assignedToId?: string | null; lead?: { assignedToId?: string | null } | null }) {
+  return Boolean(task.assignedToId && task.lead?.assignedToId && task.assignedToId !== task.lead.assignedToId);
+}
+
 export async function ensureDefaultPipelineStages(db: Db = prisma) {
   await Promise.all(
     DEFAULT_PIPELINE_STAGES.map((stage) =>

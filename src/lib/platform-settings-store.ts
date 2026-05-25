@@ -41,15 +41,33 @@ function featureFlagsFromJson(value: Prisma.JsonValue | null | undefined) {
   }, {});
 }
 
+function storedSettingsSchemaMissing(error: unknown) {
+  if (!error || typeof error !== "object") return false;
+  const maybe = error as { code?: string; message?: string };
+  return (
+    maybe.code === "P2021" ||
+    maybe.code === "P2022" ||
+    Boolean(
+      maybe.message?.includes("PlatformSettingsRecord") &&
+        (maybe.message.includes("does not exist") || maybe.message.includes("not exist") || maybe.message.includes("no such table"))
+    )
+  );
+}
+
 export async function getPlatformSettingsRecord() {
-  return prisma.platformSettingsRecord.findUnique({
-    where: { id: PLATFORM_SETTINGS_RECORD_ID },
-    include: {
-      updatedBy: {
-        select: { id: true, name: true, email: true, role: true },
+  try {
+    return await prisma.platformSettingsRecord.findUnique({
+      where: { id: PLATFORM_SETTINGS_RECORD_ID },
+      include: {
+        updatedBy: {
+          select: { id: true, name: true, email: true, role: true },
+        },
       },
-    },
-  });
+    });
+  } catch (error) {
+    if (storedSettingsSchemaMissing(error)) return null;
+    throw error;
+  }
 }
 
 export function platformSettingsRecordToInput(record: PlatformSettingsRecord | null): PlatformSettingsInput {
@@ -137,11 +155,19 @@ export async function upsertPlatformSettingsRecord(input: PlatformSettingsInput,
     updatedById: updatedById || undefined,
   };
 
-  const record = await prisma.platformSettingsRecord.upsert({
-    where: { id: PLATFORM_SETTINGS_RECORD_ID },
-    create: { id: PLATFORM_SETTINGS_RECORD_ID, ...data },
-    update: data,
-  });
+  let record;
+  try {
+    record = await prisma.platformSettingsRecord.upsert({
+      where: { id: PLATFORM_SETTINGS_RECORD_ID },
+      create: { id: PLATFORM_SETTINGS_RECORD_ID, ...data },
+      update: data,
+    });
+  } catch (error) {
+    if (storedSettingsSchemaMissing(error)) {
+      throw new Error("Platform settings database table is not migrated yet. Run prisma migrate deploy, then try again.");
+    }
+    throw error;
+  }
 
   resetPlatformSettingsCache();
   resetStoredPlatformSettingsCache();

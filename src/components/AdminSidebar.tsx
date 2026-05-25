@@ -148,7 +148,7 @@ const navGroups: NavGroup[] = [
         icon: <BarChart3 className="w-[14px] h-[14px]" />,
         permission: "viewReports",
         feature: "reports",
-        audiences: ["sales_director"],
+        audiences: ["owner", "sales_director"],
       },
       {
         href: "/portal/management-x7k9/reports/sales",
@@ -180,7 +180,7 @@ const navGroups: NavGroup[] = [
         icon: <BarChart3 className="w-[14px] h-[14px]" />,
         permission: "viewFinance",
         feature: "financeReports",
-        audiences: ["finance"],
+        audiences: ["owner", "finance"],
       },
       {
         href: "/portal/management-x7k9/crm/sources",

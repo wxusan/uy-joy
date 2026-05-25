@@ -14,86 +14,87 @@ model User {
   password                String
   name                    String
   role                    String                   @default("admin")
+  createdAt               DateTime                 @default(now())
   isActive                Boolean                  @default(true)
   phone                   String?
   avatarUrl               String?
   lastLoginAt             DateTime?
-  createdAt               DateTime                 @default(now())
-  createdClients          Client[]                 @relation("ClientCreatedBy")
-  assignedClients         Client[]                 @relation("ClientAssignedTo")
-  assignedLeads           Lead[]                   @relation("LeadAssignedTo")
-  changedStageHistory     LeadStageHistory[]       @relation("LeadStageChangedBy")
   activitiesAuthored      Activity[]               @relation("ActivityActor")
   activitiesAssigned      Activity[]               @relation("ActivityAssignedTo")
-  tasksCreated            Task[]                   @relation("TaskCreatedBy")
-  tasksAssigned           Task[]                   @relation("TaskAssignedTo")
-  dealsCreated            Deal[]                   @relation("DealCreatedBy")
-  dealsAssigned           Deal[]                   @relation("DealAssignedTo")
-  discountsApproved       Deal[]                   @relation("DealDiscountApprovedBy")
-  paymentPlansCreated     PaymentPlan[]            @relation("PaymentPlanCreatedBy")
-  documentsUploaded       Document[]               @relation("DocumentUploadedBy")
-  documentsReviewed       Document[]               @relation("DocumentReviewedBy")
-  refundsRequested        Refund[]                 @relation("RefundRequestedBy")
-  refundsApproved         Refund[]                 @relation("RefundApprovedBy")
-  salesAgentProfile       SalesAgentProfile?
   adSpends                AdSpend[]                @relation("AdSpendCreatedBy")
+  assignedClients         Client[]                 @relation("ClientAssignedTo")
+  createdClients          Client[]                 @relation("ClientCreatedBy")
+  dealsAssigned           Deal[]                   @relation("DealAssignedTo")
+  dealsCreated            Deal[]                   @relation("DealCreatedBy")
+  discountsApproved       Deal[]                   @relation("DealDiscountApprovedBy")
+  documentsReviewed       Document[]               @relation("DocumentReviewedBy")
+  documentsUploaded       Document[]               @relation("DocumentUploadedBy")
+  assignedLeads           Lead[]                   @relation("LeadAssignedTo")
+  changedStageHistory     LeadStageHistory[]       @relation("LeadStageChangedBy")
+  paymentPlansCreated     PaymentPlan[]            @relation("PaymentPlanCreatedBy")
+  refundsApproved         Refund[]                 @relation("RefundApprovedBy")
+  refundsRequested        Refund[]                 @relation("RefundRequestedBy")
+  salesAgentProfile       SalesAgentProfile?
+  tasksAssigned           Task[]                   @relation("TaskAssignedTo")
+  tasksCreated            Task[]                   @relation("TaskCreatedBy")
   platformSettingsUpdates PlatformSettingsRecord[] @relation("PlatformSettingsUpdatedBy")
   reportDigestPreference  ReportDigestPreference?
+  qualificationsUpdated   ClientQualification[]    @relation("ClientQualificationUpdatedBy")
+  interestedUnitsAdded    ClientInterestedUnit[]   @relation("ClientInterestedUnitAddedBy")
 }
 
 model Project {
   id                      String            @id @default(cuid())
-  slug                    String?           @unique // e.g. "navruz" — used for tenant routing
-  domain                  String?           @unique // e.g. "navruz.uy-joy.com" — custom domain for tenant
   name                    String
-  nameTranslations        String? // JSON: {"en": "...", "ru": "...", "uz": "..."}
+  nameTranslations        String?
   description             String?
-  descriptionTranslations String? // JSON for translations
+  descriptionTranslations String?
   address                 String?
-  addressTranslations     String? // JSON for translations
+  addressTranslations     String?
   coverImage              String?
-  topViewImage            String? // Aerial view of entire complex
-  latitude                Float? // GPS latitude
-  longitude               Float? // GPS longitude
-  infrastructure          Json? // nearby places data
-  expectedYear            Int? // Expected year of project completion (e.g., 2028)
-  // Contact / tenant settings
-  phoneNumber             String? // e.g. "+998 77 041 12 22"
-  telegramUrl             String? // full t.me/... URL
-  instagramUrl            String? // Instagram profile URL
-  salesOfficeAddress      String? // Physical address of sales office
-  salesHoursStart         String? // HH:mm e.g. "09:00"
-  salesHoursEnd           String? // HH:mm e.g. "19:00"
-  salesDaysJson           String? // Comma-separated ISO day numbers "1,2,3,4,5,6" (1=Mon)
-  masterPlanImage         String? // Fallback aerial / master-plan image
-  brandLogo               String? // Project logo image URL
+  topViewImage            String?
+  latitude                Float?
+  longitude               Float?
+  infrastructure          Json?
+  createdAt               DateTime          @default(now())
+  expectedYear            Int?
+  brandLogo               String?
+  domain                  String?           @unique
+  instagramUrl            String?
+  masterPlanImage         String?
+  phoneNumber             String?
+  salesDaysJson           String?
+  salesHoursEnd           String?
+  salesHoursStart         String?
+  salesOfficeAddress      String?
+  slug                    String?           @unique
+  telegramUrl             String?
+  analyticsEvents         AnalyticsEvent[]
   buildings               Building[]
   deals                   Deal[]
   publicPageConfig        PublicPageConfig?
-  analyticsEvents         AnalyticsEvent[]
-  createdAt               DateTime          @default(now())
 }
 
 model Building {
   id               String   @id @default(cuid())
   name             String
-  nameTranslations String? // JSON: {"en": "...", "ru": "...", "uz": "..."}
+  nameTranslations String?
   projectId        String
+  frontViewImage   String?
+  backViewImage    String?
+  leftViewImage    String?
+  rightViewImage   String?
+  polygonData      Json?
+  sortOrder        Int      @default(0)
+  createdAt        DateTime @default(now())
+  labelX           Float?
+  labelY           Float?
+  pointX           Float?
+  pointY           Float?
+  labelScale       Float?
+  completionYear   Int?
   project          Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   floors           Floor[]
-  frontViewImage   String? // Front facade image
-  backViewImage    String? // Back facade image
-  leftViewImage    String? // Left side image
-  rightViewImage   String? // Right side image
-  polygonData      Json? // [{x, y}, ...] polygon coordinates on aerial view (as % of image)
-  labelX           Float? // Label position X (as % of image width)
-  labelY           Float? // Label position Y (as % of image height)
-  pointX           Float? // Point (dot) position X (as % of image width)
-  pointY           Float? // Point (dot) position Y (as % of image height)
-  labelScale       Float? // Scale multiplier for the label box (default 1.0)
-  completionYear   Int? // Expected year this building will be ready (e.g. 2027)
-  sortOrder        Int      @default(0) // For ordering buildings A, B, C...
-  createdAt        DateTime @default(now())
 
   @@index([projectId])
 }
@@ -102,58 +103,58 @@ model Floor {
   id             String   @id @default(cuid())
   number         Int
   buildingId     String
-  building       Building @relation(fields: [buildingId], references: [id], onDelete: Cascade)
   basePricePerM2 Float?
-  floorPlanImage String? // Interior floor plan image
-  positionData   Json? // {yStart, yEnd} for clickable area on building view
-  units          Unit[]
+  floorPlanImage String?
+  positionData   Json?
   createdAt      DateTime @default(now())
+  building       Building @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  units          Unit[]
 
   @@index([buildingId])
 }
 
 model Unit {
-  id                      String           @id @default(cuid())
+  id                      String                 @id @default(cuid())
   unitNumber              String
   floorId                 String
-  floor                   Floor            @relation(fields: [floorId], references: [id], onDelete: Cascade)
   rooms                   Int
   area                    Float
-  status                  String           @default("available")
+  status                  String                 @default("available")
   pricePerM2              Float?
   totalPrice              Float?
-  polygonData             Json? // [{x, y}, ...] polygon coordinates on floor plan (as % of image)
-  labelX                  Float? // Label position X (as % of image width)
-  labelY                  Float? // Label position Y (as % of image height)
-  sketchImage             String? // Unit layout/sketch image (photo 1)
-  sketchImage2            String? // Photo 2
-  sketchImage3            String? // Photo 3
-  sketchImage4            String? // Photo 4
+  polygonData             Json?
+  labelX                  Float?
+  labelY                  Float?
+  sketchImage             String?
+  sketchImage2            String?
+  sketchImage3            String?
+  sketchImage4            String?
   description             String?
-  descriptionTranslations String? // JSON for translations
-  features                Json? // additional features like balcony, view, etc.
-  // Reservation/Sale details
+  descriptionTranslations String?
+  features                Json?
   customerName            String?
   customerPhone           String?
   customerNotes           String?
+  statusChangedAt         DateTime?
+  createdAt               DateTime               @default(now())
+  updatedAt               DateTime               @updatedAt
   currentDealId           String?
-  currentDeal             Deal?            @relation("UnitCurrentDeal", fields: [currentDealId], references: [id], onDelete: SetNull)
   reservedByClientId      String?
-  reservedByClient        Client?          @relation("UnitReservedByClient", fields: [reservedByClientId], references: [id], onDelete: SetNull)
   soldToClientId          String?
-  soldToClient            Client?          @relation("UnitSoldToClient", fields: [soldToClientId], references: [id], onDelete: SetNull)
   reservedAt              DateTime?
   soldAt                  DateTime?
   reservationExpiresAt    DateTime?
-  statusChangedAt         DateTime?
-  createdAt               DateTime         @default(now())
-  updatedAt               DateTime         @updatedAt
-  primaryDeals            Deal[]           @relation("DealPrimaryUnit")
-  dealUnits               DealUnit[]
   activities              Activity[]
-  tasks                   Task[]
-  documents               Document[]
   analyticsEvents         AnalyticsEvent[]
+  primaryDeals            Deal[]                 @relation("DealPrimaryUnit")
+  dealUnits               DealUnit[]
+  documents               Document[]
+  tasks                   Task[]
+  interestedClients       ClientInterestedUnit[]
+  currentDeal             Deal?                  @relation("UnitCurrentDeal", fields: [currentDealId], references: [id])
+  floor                   Floor                  @relation(fields: [floorId], references: [id], onDelete: Cascade)
+  reservedByClient        Client?                @relation("UnitReservedByClient", fields: [reservedByClientId], references: [id])
+  soldToClient            Client?                @relation("UnitSoldToClient", fields: [soldToClientId], references: [id])
 
   @@index([floorId])
   @@index([status])
@@ -167,15 +168,24 @@ model Lead {
   id                    String                    @id @default(cuid())
   name                  String
   phone                 String
-  clientId              String?
-  client                Client?                   @relation(fields: [clientId], references: [id], onDelete: SetNull)
   projectId             String?
   projectName           String?
-  unitId                String? // Optional: if they selected a specific unit
+  unitId                String?
   unitNumber            String?
   status                String                    @default("new")
   notes                 String?
-  source                String? // "kvartiralar", "vizual", "bosh-sahifa"
+  createdAt             DateTime                  @default(now())
+  source                String?
+  assignedTo            String?
+  nextFollowUp          DateTime?
+  buildingNameSnapshot  String?
+  floorNumberSnapshot   Int?
+  unitAreaSnapshot      Float?
+  unitNumberSnapshot    String?
+  unitPriceSnapshot     Float?
+  unitRoomsSnapshot     Int?
+  clientId              String?
+  assignedToId          String?
   sourceDetail          String?
   campaign              String?
   utmSource             String?
@@ -183,14 +193,7 @@ model Lead {
   utmCampaign           String?
   utmContent            String?
   utmTerm               String?
-  referrer              String?
-  landingPath           String?
-  preferredLanguage     String?
-  assignedTo            String? // Legacy text field; new CRM uses assignedToId.
-  assignedToId          String?
-  assignedToUser        User?                     @relation("LeadAssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
   lostReason            String?
-  nextFollowUp          DateTime? // Legacy follow-up field; new CRM uses nextActionAt/tasks.
   lastActivityAt        DateTime?
   lastContactedAt       DateTime?
   nextActionAt          DateTime?
@@ -198,23 +201,20 @@ model Lead {
   convertedAt           DateTime?
   stageEnteredAt        DateTime                  @default(now())
   firstResponseAt       DateTime?
-  // Snapshot fields — captured at lead-creation time so reports still work
-  // if the unit is later deleted or renamed.
-  unitNumberSnapshot    String?
-  unitAreaSnapshot      Float?
-  unitRoomsSnapshot     Int?
-  unitPriceSnapshot     Float?
-  buildingNameSnapshot  String?
-  floorNumberSnapshot   Int?
-  createdAt             DateTime                  @default(now())
   updatedAt             DateTime                  @updatedAt
-  stageHistory          LeadStageHistory[]
+  referrer              String?
+  landingPath           String?
+  preferredLanguage     String?
   activities            Activity[]
-  tasks                 Task[]
+  analyticsEvents       AnalyticsEvent[]
   deals                 Deal[]
   documents             Document[]
+  assignedToUser        User?                     @relation("LeadAssignedTo", fields: [assignedToId], references: [id])
+  client                Client?                   @relation(fields: [clientId], references: [id])
+  stageHistory          LeadStageHistory[]
+  tasks                 Task[]
   telegramNotifications TelegramNotificationLog[]
-  analyticsEvents       AnalyticsEvent[]
+  interestedUnits       ClientInterestedUnit[]
 
   @@index([clientId])
   @@index([projectId])
@@ -241,22 +241,24 @@ model Client {
   notes                 String?
   status                String                    @default("active")
   createdById           String?
-  createdBy             User?                     @relation("ClientCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   assignedToId          String?
-  assignedTo            User?                     @relation("ClientAssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
-  leads                 Lead[]
-  deals                 Deal[]
-  payments              Payment[]
-  refunds               Refund[]
-  documents             Document[]
-  telegramNotifications TelegramNotificationLog[]
-  analyticsEvents       AnalyticsEvent[]
-  reservedUnits         Unit[]                    @relation("UnitReservedByClient")
-  soldUnits             Unit[]                    @relation("UnitSoldToClient")
-  activities            Activity[]
-  tasks                 Task[]
   createdAt             DateTime                  @default(now())
   updatedAt             DateTime                  @updatedAt
+  activities            Activity[]
+  analyticsEvents       AnalyticsEvent[]
+  assignedTo            User?                     @relation("ClientAssignedTo", fields: [assignedToId], references: [id])
+  createdBy             User?                     @relation("ClientCreatedBy", fields: [createdById], references: [id])
+  deals                 Deal[]
+  documents             Document[]
+  leads                 Lead[]
+  payments              Payment[]
+  refunds               Refund[]
+  tasks                 Task[]
+  telegramNotifications TelegramNotificationLog[]
+  reservedUnits         Unit[]                    @relation("UnitReservedByClient")
+  soldUnits             Unit[]                    @relation("UnitSoldToClient")
+  qualification         ClientQualification?
+  interestedUnits       ClientInterestedUnit[]
 
   @@index([phoneNormalized])
   @@index([assignedToId])
@@ -267,7 +269,6 @@ model Client {
 model PublicPageConfig {
   id                    String   @id @default(cuid())
   projectId             String   @unique
-  project               Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   brandName             String?
   logoUrl               String?
   faviconUrl            String?
@@ -293,8 +294,48 @@ model PublicPageConfig {
   redirectAfterSubmit   String?
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
+  project               Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([projectId])
+}
+
+model LeadSource {
+  id                      String   @id @default(cuid())
+  key                     String   @unique
+  labelJson               Json?
+  isSystem                Boolean  @default(false)
+  isActive                Boolean  @default(true)
+  defaultAssignedAgentId  String?
+  defaultPipelineStageKey String?
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  @@index([isActive])
+}
+
+model TelegramNotificationLog {
+  id                String    @id @default(cuid())
+  leadId            String
+  clientId          String?
+  chatId            String?
+  status            String    @default("pending")
+  messageText       String
+  ref               String?
+  telegramMessageId String?
+  errorMessage      String?
+  attemptCount      Int       @default(0)
+  nextAttemptAt     DateTime?
+  lastAttemptAt     DateTime?
+  sentAt            DateTime?
+  createdAt         DateTime  @default(now())
+  client            Client?   @relation(fields: [clientId], references: [id])
+  lead              Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@index([clientId])
+  @@index([status, nextAttemptAt])
+  @@index([ref])
+  @@index([createdAt])
 }
 
 model PlatformSettingsRecord {
@@ -322,9 +363,9 @@ model PlatformSettingsRecord {
   storageLabel       String?
   allowAgentClaim    Boolean?
   updatedById        String?
-  updatedBy          User?    @relation("PlatformSettingsUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
+  updatedBy          User?    @relation("PlatformSettingsUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
 
   @@index([updatedById])
 }
@@ -332,52 +373,76 @@ model PlatformSettingsRecord {
 model ReportDigestPreference {
   id        String   @id @default(cuid())
   userId    String   @unique
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   enabled   Boolean  @default(true)
   email     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([enabled])
 }
 
-model LeadSource {
-  id                      String   @id @default(cuid())
-  key                     String   @unique
-  labelJson               Json?
-  isSystem                Boolean  @default(false)
-  isActive                Boolean  @default(true)
-  defaultAssignedAgentId  String?
-  defaultPipelineStageKey String?
-  createdAt               DateTime @default(now())
-  updatedAt               DateTime @updatedAt
+model ClientQualification {
+  id                    String   @id @default(cuid())
+  clientId              String   @unique
+  cityRegion            String?
+  familySize            Int?
+  roomCounts            Json?
+  preferredBuilding     String?
+  preferredFloorMin     Int?
+  preferredFloorMax     Int?
+  preferredView         String?
+  preferredAreaMin      Float?
+  preferredAreaMax      Float?
+  budgetMin             Float?
+  budgetMax             Float?
+  paymentPreference     String?
+  initialPaymentAmount  Float?
+  monthlyPaymentComfort Float?
+  installmentMonths     Int?
+  mortgageInterest      Boolean?
+  subsidyInterest       Boolean?
+  buyingPurpose         String?
+  temperature           String?
+  urgency               String?
+  seriousnessLevel      String?
+  decisionMaker         String?
+  objection             String?
+  competitorProjects    String?
+  bestCallTime          String?
+  preferredChannel      String?
+  updatedById           String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  client                Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  updatedBy             User?    @relation("ClientQualificationUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
 
-  @@index([isActive])
+  @@index([temperature])
+  @@index([paymentPreference])
+  @@index([budgetMax])
+  @@index([updatedById])
 }
 
-model TelegramNotificationLog {
-  id                String    @id @default(cuid())
-  leadId            String
-  lead              Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  clientId          String?
-  client            Client?   @relation(fields: [clientId], references: [id], onDelete: SetNull)
-  chatId            String?
-  status            String    @default("pending")
-  messageText       String
-  ref               String?
-  telegramMessageId String?
-  errorMessage      String?
-  attemptCount      Int       @default(0)
-  nextAttemptAt     DateTime?
-  lastAttemptAt     DateTime?
-  sentAt            DateTime?
-  createdAt         DateTime  @default(now())
+model ClientInterestedUnit {
+  id            String   @id @default(cuid())
+  clientId      String
+  unitId        String
+  leadId        String?
+  interestLevel String   @default("interested")
+  note          String?
+  addedById     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  client        Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  unit          Unit     @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  lead          Lead?    @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  addedBy       User?    @relation("ClientInterestedUnitAddedBy", fields: [addedById], references: [id], onDelete: SetNull)
 
-  @@index([leadId])
+  @@unique([clientId, unitId])
   @@index([clientId])
-  @@index([status, nextAttemptAt])
-  @@index([createdAt])
-  @@index([ref])
+  @@index([unitId])
+  @@index([leadId])
+  @@index([addedById])
 }
 
 model PipelineStage {
@@ -401,15 +466,15 @@ model PipelineStage {
 model LeadStageHistory {
   id              String    @id @default(cuid())
   leadId          String
-  lead            Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
   fromStatus      String?
   toStatus        String
   changedById     String?
-  changedBy       User?     @relation("LeadStageChangedBy", fields: [changedById], references: [id], onDelete: SetNull)
   enteredAt       DateTime  @default(now())
   leftAt          DateTime?
   durationSeconds Int?
   createdAt       DateTime  @default(now())
+  changedBy       User?     @relation("LeadStageChangedBy", fields: [changedById], references: [id])
+  lead            Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
 
   @@index([leadId])
   @@index([toStatus])
@@ -423,24 +488,24 @@ model Activity {
   title        String
   body         String?
   clientId     String?
-  client       Client?  @relation(fields: [clientId], references: [id], onDelete: SetNull)
   leadId       String?
-  lead         Lead?    @relation(fields: [leadId], references: [id], onDelete: SetNull)
   unitId       String?
-  unit         Unit?    @relation(fields: [unitId], references: [id], onDelete: SetNull)
   dealId       String?
-  deal         Deal?    @relation(fields: [dealId], references: [id], onDelete: SetNull)
   taskId       String?
-  task         Task?    @relation("TaskActivities", fields: [taskId], references: [id], onDelete: SetNull)
   actorId      String?
-  actor        User?    @relation("ActivityActor", fields: [actorId], references: [id], onDelete: SetNull)
   assignedToId String?
-  assignedTo   User?    @relation("ActivityAssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
   direction    String?
   channel      String?
   metadata     Json?
   occurredAt   DateTime @default(now())
   createdAt    DateTime @default(now())
+  actor        User?    @relation("ActivityActor", fields: [actorId], references: [id])
+  assignedTo   User?    @relation("ActivityAssignedTo", fields: [assignedToId], references: [id])
+  client       Client?  @relation(fields: [clientId], references: [id])
+  deal         Deal?    @relation(fields: [dealId], references: [id])
+  lead         Lead?    @relation(fields: [leadId], references: [id])
+  task         Task?    @relation("TaskActivities", fields: [taskId], references: [id])
+  unit         Unit?    @relation(fields: [unitId], references: [id])
 
   @@index([clientId])
   @@index([leadId])
@@ -461,22 +526,22 @@ model Task {
   status       String     @default("open")
   priority     String     @default("normal")
   clientId     String?
-  client       Client?    @relation(fields: [clientId], references: [id], onDelete: SetNull)
   leadId       String?
-  lead         Lead?      @relation(fields: [leadId], references: [id], onDelete: SetNull)
   dealId       String?
-  deal         Deal?      @relation(fields: [dealId], references: [id], onDelete: SetNull)
   unitId       String?
-  unit         Unit?      @relation(fields: [unitId], references: [id], onDelete: SetNull)
   assignedToId String
-  assignedTo   User       @relation("TaskAssignedTo", fields: [assignedToId], references: [id], onDelete: Restrict)
   createdById  String?
-  createdBy    User?      @relation("TaskCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   dueAt        DateTime?
   completedAt  DateTime?
-  activities   Activity[] @relation("TaskActivities")
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
+  activities   Activity[] @relation("TaskActivities")
+  assignedTo   User       @relation("TaskAssignedTo", fields: [assignedToId], references: [id])
+  client       Client?    @relation(fields: [clientId], references: [id])
+  createdBy    User?      @relation("TaskCreatedBy", fields: [createdById], references: [id])
+  deal         Deal?      @relation(fields: [dealId], references: [id])
+  lead         Lead?      @relation(fields: [leadId], references: [id])
+  unit         Unit?      @relation(fields: [unitId], references: [id])
 
   @@index([clientId])
   @@index([leadId])
@@ -491,7 +556,6 @@ model Task {
 model SalesAgentProfile {
   id                   String   @id @default(cuid())
   userId               String   @unique
-  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   displayName          String
   phone                String?
   telegramUsername     String?
@@ -501,23 +565,18 @@ model SalesAgentProfile {
   monthlyTargetRevenue Float?
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Deal {
   id                            String        @id @default(cuid())
   dealNumber                    String        @unique
   clientId                      String
-  client                        Client        @relation(fields: [clientId], references: [id], onDelete: Restrict)
   leadId                        String?
-  lead                          Lead?         @relation(fields: [leadId], references: [id], onDelete: SetNull)
   projectId                     String?
-  project                       Project?      @relation(fields: [projectId], references: [id], onDelete: SetNull)
   primaryUnitId                 String?
-  primaryUnit                   Unit?         @relation("DealPrimaryUnit", fields: [primaryUnitId], references: [id], onDelete: SetNull)
   assignedToId                  String?
-  assignedTo                    User?         @relation("DealAssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
   createdById                   String?
-  createdBy                     User?         @relation("DealCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   status                        String        @default("draft")
   source                        String?
   currency                      String        @default("USD")
@@ -531,7 +590,6 @@ model Deal {
   salePrice                     Float         @default(0)
   discountFlaggedAt             DateTime?
   discountApprovedById          String?
-  discountApprovedBy            User?         @relation("DealDiscountApprovedBy", fields: [discountApprovedById], references: [id], onDelete: SetNull)
   discountApprovedAt            DateTime?
   initialPaymentAmount          Float         @default(0)
   initialPaymentPercent         Float         @default(0)
@@ -548,14 +606,21 @@ model Deal {
   notes                         String?
   createdAt                     DateTime      @default(now())
   updatedAt                     DateTime      @updatedAt
-  currentUnits                  Unit[]        @relation("UnitCurrentDeal")
-  dealUnits                     DealUnit[]
-  paymentPlans                  PaymentPlan[]
-  payments                      Payment[]
-  refunds                       Refund[]
-  documents                     Document[]
   activities                    Activity[]
+  assignedTo                    User?         @relation("DealAssignedTo", fields: [assignedToId], references: [id])
+  client                        Client        @relation(fields: [clientId], references: [id])
+  createdBy                     User?         @relation("DealCreatedBy", fields: [createdById], references: [id])
+  discountApprovedBy            User?         @relation("DealDiscountApprovedBy", fields: [discountApprovedById], references: [id])
+  lead                          Lead?         @relation(fields: [leadId], references: [id])
+  primaryUnit                   Unit?         @relation("DealPrimaryUnit", fields: [primaryUnitId], references: [id])
+  project                       Project?      @relation(fields: [projectId], references: [id])
+  dealUnits                     DealUnit[]
+  documents                     Document[]
+  payments                      Payment[]
+  paymentPlans                  PaymentPlan[]
+  refunds                       Refund[]
   tasks                         Task[]
+  currentUnits                  Unit[]        @relation("UnitCurrentDeal")
 
   @@index([clientId])
   @@index([leadId])
@@ -570,12 +635,12 @@ model Deal {
 model DealUnit {
   id          String   @id @default(cuid())
   dealId      String
-  deal        Deal     @relation(fields: [dealId], references: [id], onDelete: Cascade)
   unitId      String
-  unit        Unit     @relation(fields: [unitId], references: [id], onDelete: Restrict)
   priceAtDeal Float
   isPrimary   Boolean  @default(true)
   createdAt   DateTime @default(now())
+  deal        Deal     @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  unit        Unit     @relation(fields: [unitId], references: [id])
 
   @@unique([dealId, unitId])
   @@index([dealId])
@@ -585,7 +650,6 @@ model DealUnit {
 model PaymentPlan {
   id                   String    @id @default(cuid())
   dealId               String
-  deal                 Deal      @relation(fields: [dealId], references: [id], onDelete: Cascade)
   name                 String
   type                 String    @default("installment")
   totalAmount          Float
@@ -597,10 +661,11 @@ model PaymentPlan {
   status               String    @default("draft")
   notes                String?
   createdById          String?
-  createdBy            User?     @relation("PaymentPlanCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  payments             Payment[]
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
+  payments             Payment[]
+  createdBy            User?     @relation("PaymentPlanCreatedBy", fields: [createdById], references: [id])
+  deal                 Deal      @relation(fields: [dealId], references: [id], onDelete: Cascade)
 
   @@index([dealId])
   @@index([status])
@@ -610,11 +675,8 @@ model PaymentPlan {
 model Payment {
   id                            String      @id @default(cuid())
   paymentPlanId                 String
-  paymentPlan                   PaymentPlan @relation(fields: [paymentPlanId], references: [id], onDelete: Cascade)
   dealId                        String
-  deal                          Deal        @relation(fields: [dealId], references: [id], onDelete: Cascade)
   clientId                      String
-  client                        Client      @relation(fields: [clientId], references: [id], onDelete: Restrict)
   sequence                      Int
   label                         String
   dueDate                       DateTime
@@ -627,11 +689,14 @@ model Payment {
   paidAt                        DateTime?
   method                        String?
   receiptDocumentId             String?
-  receiptDocument               Document?   @relation("PaymentReceiptDocument", fields: [receiptDocumentId], references: [id], onDelete: SetNull)
   notes                         String?
   createdAt                     DateTime    @default(now())
   updatedAt                     DateTime    @updatedAt
   documents                     Document[]  @relation("DocumentPayment")
+  client                        Client      @relation(fields: [clientId], references: [id])
+  deal                          Deal        @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  paymentPlan                   PaymentPlan @relation(fields: [paymentPlanId], references: [id], onDelete: Cascade)
+  receiptDocument               Document?   @relation("PaymentReceiptDocument", fields: [receiptDocumentId], references: [id])
   refunds                       Refund[]
 
   @@unique([paymentPlanId, sequence])
@@ -646,23 +711,23 @@ model Payment {
 model Refund {
   id            String    @id @default(cuid())
   dealId        String
-  deal          Deal      @relation(fields: [dealId], references: [id], onDelete: Cascade)
   paymentId     String?
-  payment       Payment?  @relation(fields: [paymentId], references: [id], onDelete: SetNull)
   clientId      String
-  client        Client    @relation(fields: [clientId], references: [id], onDelete: Restrict)
   amount        Float
   currency      String    @default("USD")
   reason        String
   status        String    @default("requested")
   requestedById String?
-  requestedBy   User?     @relation("RefundRequestedBy", fields: [requestedById], references: [id], onDelete: SetNull)
   approvedById  String?
-  approvedBy    User?     @relation("RefundApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
   paidAt        DateTime?
   notes         String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+  approvedBy    User?     @relation("RefundApprovedBy", fields: [approvedById], references: [id])
+  client        Client    @relation(fields: [clientId], references: [id])
+  deal          Deal      @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  payment       Payment?  @relation(fields: [paymentId], references: [id])
+  requestedBy   User?     @relation("RefundRequestedBy", fields: [requestedById], references: [id])
 
   @@index([dealId])
   @@index([paymentId])
@@ -673,19 +738,12 @@ model Refund {
 model Document {
   id              String    @id @default(cuid())
   clientId        String?
-  client          Client?   @relation(fields: [clientId], references: [id], onDelete: SetNull)
   leadId          String?
-  lead            Lead?     @relation(fields: [leadId], references: [id], onDelete: SetNull)
   dealId          String?
-  deal            Deal?     @relation(fields: [dealId], references: [id], onDelete: SetNull)
   unitId          String?
-  unit            Unit?     @relation(fields: [unitId], references: [id], onDelete: SetNull)
   paymentId       String?
-  payment         Payment?  @relation("DocumentPayment", fields: [paymentId], references: [id], onDelete: SetNull)
   uploadedById    String?
-  uploadedBy      User?     @relation("DocumentUploadedBy", fields: [uploadedById], references: [id], onDelete: SetNull)
   reviewedById    String?
-  reviewedBy      User?     @relation("DocumentReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
   type            String
   title           String
   fileUrl         String
@@ -697,6 +755,13 @@ model Document {
   expiresAt       DateTime?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
+  client          Client?   @relation(fields: [clientId], references: [id])
+  deal            Deal?     @relation(fields: [dealId], references: [id])
+  lead            Lead?     @relation(fields: [leadId], references: [id])
+  payment         Payment?  @relation("DocumentPayment", fields: [paymentId], references: [id])
+  reviewedBy      User?     @relation("DocumentReviewedBy", fields: [reviewedById], references: [id])
+  unit            Unit?     @relation(fields: [unitId], references: [id])
+  uploadedBy      User?     @relation("DocumentUploadedBy", fields: [uploadedById], references: [id])
   receiptPayments Payment[] @relation("PaymentReceiptDocument")
 
   @@index([clientId])
@@ -720,9 +785,9 @@ model AdSpend {
   currency    String   @default("USD")
   notes       String?
   createdById String?
-  createdBy   User?    @relation("AdSpendCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  createdBy   User?    @relation("AdSpendCreatedBy", fields: [createdById], references: [id])
 
   @@index([source])
   @@index([campaign])
@@ -741,13 +806,9 @@ model AnalyticsEvent {
   utmContent  String?
   utmTerm     String?
   projectId   String?
-  project     Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
   unitId      String?
-  unit        Unit?    @relation(fields: [unitId], references: [id], onDelete: SetNull)
   leadId      String?
-  lead        Lead?    @relation(fields: [leadId], references: [id], onDelete: SetNull)
   clientId    String?
-  client      Client?  @relation(fields: [clientId], references: [id], onDelete: SetNull)
   distinctId  String?
   sessionId   String?
   landingPath String?
@@ -756,6 +817,10 @@ model AnalyticsEvent {
   properties  Json?
   occurredAt  DateTime @default(now())
   createdAt   DateTime @default(now())
+  client      Client?  @relation(fields: [clientId], references: [id])
+  lead        Lead?    @relation(fields: [leadId], references: [id])
+  project     Project? @relation(fields: [projectId], references: [id])
+  unit        Unit?    @relation(fields: [unitId], references: [id])
 
   @@index([eventName, occurredAt])
   @@index([source, occurredAt])

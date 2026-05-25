@@ -6,6 +6,7 @@ import { leadSourceLabel } from "./lead-sources";
 import { getPlatformSettings } from "./platform-settings";
 import { normalizePlatformRole, roleHasPlatformPermission } from "./platform-plans";
 import { CSV_BOM, csvRow, previousPeriod } from "./report-utils";
+import { ACTIVE_LEAD_STATUS_WHERE, overdueTaskWhere, tashkentDayBounds } from "./operational-counts";
 
 export type ReportUser = { id?: string; role?: string };
 export type ReportFilters = {
@@ -241,8 +242,7 @@ export async function getOverviewReport(filters: ReportFilters, user: ReportUser
   const previousSoldWhere = await dealWhere(filters, user, { from: filters.previousFrom, to: filters.previousTo }, "soldAt");
   const paymentDueWhere = await paymentWhere(filters, user, filters);
 
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
+  const { start: todayStart } = tashkentDayBounds(new Date());
   const currentLeadsForSeries = await prisma.lead.findMany({
     where: currentLeadWhere,
     select: { createdAt: true, status: true, source: true, assignedToId: true, unitPriceSnapshot: true },
@@ -265,8 +265,8 @@ export async function getOverviewReport(filters: ReportFilters, user: ReportUser
     prisma.lead.count({ where: currentLeadWhere }),
     prisma.lead.count({ where: previousLeadWhere }),
     prisma.lead.count({ where: { AND: [currentLeadWhere, { createdAt: { gte: todayStart } }] } }),
-    prisma.lead.count({ where: { AND: [currentLeadWhere, { status: { notIn: ACTIVE_LEAD_CLOSED_STATUSES } }] } }),
-    prisma.task.count({ where: { AND: [taskVisibilityWhere(user, getPlatformSettings().allowAgentClaim), { status: "open", dueAt: { lt: new Date() } }] } }),
+    prisma.lead.count({ where: { AND: [currentLeadWhere, ACTIVE_LEAD_STATUS_WHERE] } }),
+    prisma.task.count({ where: overdueTaskWhere(new Date(), taskVisibilityWhere(user, getPlatformSettings().allowAgentClaim)) }),
     prisma.deal.count({ where: reservedWhere }),
     prisma.deal.count({ where: soldWhere }),
     prisma.deal.count({ where: previousSoldWhere }),
@@ -358,7 +358,7 @@ export async function getSalesReport(filters: ReportFilters, user: ReportUser | 
     await Promise.all([
       prisma.lead.count({ where: { AND: [currentLeadWhere, { assignedToId: null }] } }),
       prisma.task.findMany({
-        where: { AND: [taskWhere, { status: "open", dueAt: { lt: new Date() } }] },
+        where: overdueTaskWhere(new Date(), taskWhere),
         select: { assignedToId: true, assignedTo: { select: { name: true, email: true } } },
       }),
       prisma.lead.groupBy({ by: ["status"], where: currentLeadWhere, _count: { _all: true } }),
@@ -446,9 +446,9 @@ export async function getAgentReport(filters: ReportFilters, user: ReportUser | 
       const leadBase = await leadWhere({ ...filters, agentId: agent.id }, user);
       const dealBase = await dealWhere({ ...filters, agentId: agent.id }, user);
       const [assignedLeads, periodAssignedLeads, overdueTasks, actions, calls, meetings, reservations, soldDeals] = await Promise.all([
-        prisma.lead.count({ where: { AND: [leadBase, { status: { notIn: ACTIVE_LEAD_CLOSED_STATUSES } }] } }),
+        prisma.lead.count({ where: { AND: [leadBase, ACTIVE_LEAD_STATUS_WHERE] } }),
         prisma.lead.count({ where: { AND: [leadBase, { createdAt: dateFilter(filters.from, filters.to) }] } }),
-        prisma.task.count({ where: { assignedToId: agent.id, status: "open", dueAt: { lt: new Date() } } }),
+        prisma.task.count({ where: overdueTaskWhere(new Date(), { assignedToId: agent.id }) }),
         prisma.activity.count({ where: { actorId: agent.id, occurredAt: dateFilter(filters.from, filters.to) } }),
         prisma.activity.count({ where: { actorId: agent.id, channel: "call", occurredAt: dateFilter(filters.from, filters.to) } }),
         prisma.task.count({ where: { assignedToId: agent.id, type: "meeting", createdAt: dateFilter(filters.from, filters.to) } }),

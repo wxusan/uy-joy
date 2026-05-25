@@ -3,22 +3,22 @@ import prisma from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
 import { canViewAllLeads, leadVisibilityWhere, taskVisibilityWhere } from "@/lib/crm-access";
 import { leadStatusLabel } from "@/lib/crm-labels";
+import {
+  ACTIVE_LEAD_STATUS_WHERE,
+  activeReservationWhere,
+  expiringReservationWhere,
+  overdueTaskWhere,
+  tashkentDayBounds,
+  todayTaskWhere,
+  todayVisitTaskWhere,
+  unansweredLeadWhere,
+} from "@/lib/operational-counts";
 import { dealVisibilityWhere } from "@/lib/real-estate";
 import { PLATFORM_PERMISSIONS, roleHasPlatformPermission } from "@/lib/platform-plans";
 import { getPlatformSettings, platformSettingsHasFeature } from "@/lib/platform-settings";
 import { getTranslations } from "next-intl/server";
 
 export const dynamic = "force-dynamic";
-
-const TASHKENT_OFFSET_MS = 5 * 60 * 60 * 1000;
-
-function tashkentDayBounds(now = new Date()) {
-  const shifted = new Date(now.getTime() + TASHKENT_OFFSET_MS);
-  const start = new Date(Date.UTC(shifted.getUTCFullYear(), shifted.getUTCMonth(), shifted.getUTCDate()) - TASHKENT_OFFSET_MS);
-  const end = new Date(start);
-  end.setUTCDate(end.getUTCDate() + 1);
-  return { start, end };
-}
 
 export default async function CrmDashboardPage() {
   const session = await requireAdmin(PLATFORM_PERMISSIONS.viewLeads);
@@ -34,8 +34,6 @@ export default async function CrmDashboardPage() {
   const dealWhere = dealVisibilityWhere(user);
   const now = new Date();
   const { start: todayStart, end: tomorrowStart } = tashkentDayBounds(now);
-  const expiringBy = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-  const activeLeadFilter = { status: { notIn: ["sold", "lost"] } };
   const newLeadHref = `/portal/management-x7k9/crm/leads?status=new&from=${todayStart.toISOString()}&to=${tomorrowStart.toISOString()}`;
 
   const [
@@ -50,24 +48,16 @@ export default async function CrmDashboardPage() {
     backupTasks,
   ] = await Promise.all([
     prisma.lead.count({ where: { AND: [leadWhere, { status: "new", createdAt: { gte: todayStart, lt: tomorrowStart } }] } }),
-    prisma.lead.count({ where: { AND: [leadWhere, activeLeadFilter, { firstResponseAt: null }] } }),
-    prisma.task.count({ where: { AND: [taskWhere, { status: "open", dueAt: { lt: now } }] } }),
-    prisma.task.count({
-      where: {
-        AND: [taskWhere, { status: "open", type: { in: ["meeting", "visit"] }, dueAt: { gte: todayStart, lt: tomorrowStart } }],
-      },
-    }),
-    prisma.deal.count({ where: { AND: [dealWhere, { status: "reserved" }] } }),
-    prisma.deal.count({
-      where: {
-        AND: [dealWhere, { status: "reserved", reservationExpiresAt: { gte: now, lte: expiringBy } }],
-      },
-    }),
+    prisma.lead.count({ where: unansweredLeadWhere(leadWhere) }),
+    prisma.task.count({ where: overdueTaskWhere(now, taskWhere) }),
+    prisma.task.count({ where: todayVisitTaskWhere(now, taskWhere) }),
+    prisma.deal.count({ where: activeReservationWhere(dealWhere) }),
+    prisma.deal.count({ where: expiringReservationWhere(now, dealWhere) }),
     prisma.lead.findMany({
       where: {
         AND: [
           leadWhere,
-          activeLeadFilter,
+          ACTIVE_LEAD_STATUS_WHERE,
           { OR: [{ firstResponseAt: null }, { nextActionAt: { lt: now } }] },
         ],
       },
@@ -76,7 +66,7 @@ export default async function CrmDashboardPage() {
       take: 6,
     }),
     prisma.task.findMany({
-      where: { AND: [taskWhere, { status: "open", dueAt: { gte: todayStart, lt: tomorrowStart } }] },
+      where: todayTaskWhere(now, taskWhere),
       orderBy: [{ dueAt: "asc" }, { createdAt: "desc" }],
       include: {
         client: { select: { id: true, fullName: true } },

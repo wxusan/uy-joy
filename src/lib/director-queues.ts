@@ -5,29 +5,23 @@
  * so callers can gate the section per role before rendering.
  */
 import prisma from "./prisma";
-
-const TASHKENT_OFFSET_MS = 5 * 60 * 60 * 1000;
-
-function tashkentDayBounds(now = new Date()) {
-  const shifted = new Date(now.getTime() + TASHKENT_OFFSET_MS);
-  const start = new Date(
-    Date.UTC(shifted.getUTCFullYear(), shifted.getUTCMonth(), shifted.getUTCDate()) - TASHKENT_OFFSET_MS
-  );
-  const end = new Date(start);
-  end.setUTCDate(end.getUTCDate() + 1);
-  return { start, end };
-}
+import {
+  ACTIVE_LEAD_STATUS_WHERE,
+  activeDealWhere,
+  expiringReservationWhere,
+  overduePaymentWhere,
+  overdueTaskWhere,
+  tashkentDayBounds,
+  unansweredLeadWhere,
+} from "./operational-counts";
 
 const SELLING_ROLES = ["sales_agent", "external_agent", "sales_director"] as const;
-const ACTIVE_LEAD_STATUSES = { status: { notIn: ["sold", "lost"] } };
-
 export type DirectorQueues = Awaited<ReturnType<typeof fetchDirectorQueues>>;
 
 export async function fetchDirectorQueues(now = new Date()) {
   const { start: todayStart, end: tomorrowStart } = tashkentDayBounds(now);
   const cutoff48h = new Date(now.getTime() - 48 * 60 * 60 * 1000);
   const cutoff7d = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-  const expiringBy = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
   // Load agents first so we can use their IDs in groupBy queries.
   const agentUsers = await prisma.user.findMany({
@@ -37,7 +31,7 @@ export async function fetchDirectorQueues(now = new Date()) {
       name: true,
       email: true,
       role: true,
-      _count: { select: { assignedLeads: { where: ACTIVE_LEAD_STATUSES } } },
+      _count: { select: { assignedLeads: { where: ACTIVE_LEAD_STATUS_WHERE } } },
     },
     orderBy: { name: "asc" },
   });
@@ -62,7 +56,7 @@ export async function fetchDirectorQueues(now = new Date()) {
   ] = await Promise.all([
     // Unanswered: active leads with no first response, oldest first.
     prisma.lead.findMany({
-      where: { ...ACTIVE_LEAD_STATUSES, firstResponseAt: null },
+      where: unansweredLeadWhere(),
       select: {
         id: true,
         name: true,
@@ -77,12 +71,12 @@ export async function fetchDirectorQueues(now = new Date()) {
     }),
 
     prisma.lead.count({
-      where: { ...ACTIVE_LEAD_STATUSES, firstResponseAt: null },
+      where: unansweredLeadWhere(),
     }),
 
     // Overdue follow-ups: open tasks past due date.
     prisma.task.findMany({
-      where: { status: "open", dueAt: { lt: now } },
+      where: overdueTaskWhere(now),
       select: {
         id: true,
         title: true,
@@ -98,12 +92,12 @@ export async function fetchDirectorQueues(now = new Date()) {
     }),
 
     prisma.task.count({
-      where: { status: "open", dueAt: { lt: now } },
+      where: overdueTaskWhere(now),
     }),
 
     // Bron expiring within 24h.
     prisma.deal.findMany({
-      where: { status: "reserved", reservationExpiresAt: { gte: now, lte: expiringBy } },
+      where: expiringReservationWhere(now),
       select: {
         id: true,
         dealNumber: true,
@@ -116,17 +110,17 @@ export async function fetchDirectorQueues(now = new Date()) {
     }),
 
     prisma.deal.count({
-      where: { status: "reserved", reservationExpiresAt: { gte: now, lte: expiringBy } },
+      where: expiringReservationWhere(now),
     }),
 
     // Overdue payment count (finance-safe: no amounts).
     prisma.payment.count({
-      where: { status: { in: ["scheduled", "partial", "overdue"] }, dueDate: { lt: now } },
+      where: overduePaymentWhere(now),
     }),
 
     // Overdue payments list — NO amounts, NO client name.
     prisma.payment.findMany({
-      where: { status: { in: ["scheduled", "partial", "overdue"] }, dueDate: { lt: now } },
+      where: overduePaymentWhere(now),
       select: {
         id: true,
         dealId: true,
@@ -142,7 +136,7 @@ export async function fetchDirectorQueues(now = new Date()) {
     // Weak sources: sources with unanswered active leads.
     prisma.lead.groupBy({
       by: ["source"],
-      where: { ...ACTIVE_LEAD_STATUSES, firstResponseAt: null },
+      where: unansweredLeadWhere(),
       _count: { _all: true },
     }),
 
@@ -183,7 +177,7 @@ export async function fetchDirectorQueues(now = new Date()) {
     agentIds.length > 0
       ? prisma.task.groupBy({
           by: ["assignedToId"],
-          where: { assignedToId: { in: agentIds }, status: "open", dueAt: { lt: now } },
+          where: overdueTaskWhere(now, { assignedToId: { in: agentIds } }),
           _count: { _all: true },
         })
       : Promise.resolve([]),
@@ -194,7 +188,7 @@ export async function fetchDirectorQueues(now = new Date()) {
           by: ["assignedToId"],
           where: {
             assignedToId: { in: agentIds },
-            status: { in: ["reserved", "payment_active", "contract_preparation", "contract_signed"] },
+            ...activeDealWhere(),
           },
           _count: { _all: true },
         })
@@ -204,7 +198,7 @@ export async function fetchDirectorQueues(now = new Date()) {
     agentIds.length > 0
       ? prisma.lead.groupBy({
           by: ["assignedToId"],
-          where: { assignedToId: { in: agentIds }, ...ACTIVE_LEAD_STATUSES },
+          where: { assignedToId: { in: agentIds }, ...ACTIVE_LEAD_STATUS_WHERE },
           _max: { lastContactedAt: true },
         })
       : Promise.resolve([]),

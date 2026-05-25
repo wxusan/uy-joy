@@ -56,6 +56,11 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ c
         <Link href="/portal/management-x7k9/crm/clients" className="a-btn">{t("backToClients")}</Link>
       </div>
 
+      <div className="a-card p-3 text-[13px]" style={{ color: "var(--a-text-secondary)" }}>
+        <span className="font-medium" style={{ color: "var(--a-text)" }}>{t("clientCardMeaningTitle")}</span>
+        {" "}{t("clientCardMeaningBody")}
+      </div>
+
       <div className="grid gap-4 lg:grid-cols-[0.8fr_1.2fr]">
         <div className="a-card p-4">
           <h2 className="text-[15px] font-semibold mb-3">{t("profile")}</h2>

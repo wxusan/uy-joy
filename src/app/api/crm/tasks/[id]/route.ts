@@ -31,6 +31,12 @@ function taskActivityCopy(input: {
   leadOwnerId?: string | null;
   nextAssignedToId: string;
 }) {
+  if (input.completed && input.leadOwnerId && input.leadOwnerId !== input.nextAssignedToId) {
+    return {
+      title: `Backup vazifa bajarildi: ${input.title}`,
+      body: "Backup menejer vazifani bajardi. Lid egasi va sotuv krediti o'zgarmadi.",
+    };
+  }
   if (input.completed) return { title: `Vazifa bajarildi: ${input.title}`, body: null };
   if (input.reassigned && input.leadOwnerId && input.leadOwnerId !== input.nextAssignedToId) {
     return {

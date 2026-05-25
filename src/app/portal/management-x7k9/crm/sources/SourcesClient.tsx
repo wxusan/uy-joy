@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { Clipboard } from "lucide-react";
 
 type Source = {
   key: string;
@@ -13,7 +14,15 @@ type Source = {
   defaultPipelineStageKey: string | null;
 };
 
-export default function SourcesClient({ sources }: { sources: Source[] }) {
+type SourceMetric = {
+  key: string;
+  leads: number;
+  unanswered: number;
+  reservations: number;
+  sold: number;
+};
+
+export default function SourcesClient({ sources, metrics }: { sources: Source[]; metrics: SourceMetric[] }) {
   const router = useRouter();
   const t = useTranslations("admin");
   const tc = useTranslations("common");
@@ -22,6 +31,7 @@ export default function SourcesClient({ sources }: { sources: Source[] }) {
   );
   const [newName, setNewName] = useState("");
   const [status, setStatus] = useState("");
+  const metricByKey = new Map(metrics.map((metric) => [metric.key, metric]));
 
   function sourceName(source: Source) {
     return source.labelJson?.uz || source.labelJson?.ru || source.labelJson?.en || source.key.replace(/[_-]+/g, " ");
@@ -42,6 +52,12 @@ export default function SourcesClient({ sources }: { sources: Source[] }) {
     return `${origin}/?source=${encodeURIComponent(key)}`;
   }
 
+  async function copyLink(key: string) {
+    const link = sourceLink(key);
+    await navigator.clipboard?.writeText(link);
+    setStatus(t("sourceLinkCopied"));
+  }
+
   async function save(key: string) {
     setStatus(t("saving"));
     const draft = drafts[key];
@@ -56,7 +72,7 @@ export default function SourcesClient({ sources }: { sources: Source[] }) {
 
   async function createSource() {
     const name = newName.trim();
-    const key = sourceKey(name);
+    const key = sourceKey(name) || `manba_${Date.now()}`;
     if (!name || !key) return;
     const res = await fetch("/api/crm/sources", {
       method: "POST",
@@ -85,6 +101,10 @@ export default function SourcesClient({ sources }: { sources: Source[] }) {
             <tr>
               <th>{t("sourceName")}</th>
               <th>{t("trackingLink")}</th>
+              <th style={{ textAlign: "right" }}>{t("metricLeads")}</th>
+              <th style={{ textAlign: "right" }}>{t("directorUnansweredLeads")}</th>
+              <th style={{ textAlign: "right" }}>{t("reservations")}</th>
+              <th style={{ textAlign: "right" }}>{t("sold")}</th>
               <th>{t("sourceInternalCode")}</th>
               <th>{t("activeLabel")}</th>
               <th style={{ textAlign: "right" }}>{tc("actions")}</th>
@@ -111,8 +131,17 @@ export default function SourcesClient({ sources }: { sources: Source[] }) {
                     />
                   </td>
                   <td>
-                    <code className="text-[12px] break-all rounded bg-black/5 px-2 py-1">{sourceLink(source.key)}</code>
+                    <div className="flex items-center gap-2">
+                      <code className="text-[12px] break-all rounded bg-black/5 px-2 py-1">{sourceLink(source.key)}</code>
+                      <button className="a-btn !h-7 !px-2" type="button" onClick={() => void copyLink(source.key)} aria-label={t("copyTrackingLink")}>
+                        <Clipboard className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
                   </td>
+                  <td style={{ textAlign: "right" }}>{metricByKey.get(source.key)?.leads || 0}</td>
+                  <td style={{ textAlign: "right" }}>{metricByKey.get(source.key)?.unanswered || 0}</td>
+                  <td style={{ textAlign: "right" }}>{metricByKey.get(source.key)?.reservations || 0}</td>
+                  <td style={{ textAlign: "right" }}>{metricByKey.get(source.key)?.sold || 0}</td>
                   <td>
                     <span className="text-[12px]" style={{ color: "var(--a-text-tertiary)" }}>
                       {source.key}{source.isSystem ? " · " + t("system").toLowerCase() : ""}

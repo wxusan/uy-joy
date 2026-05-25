@@ -5,8 +5,17 @@ import prisma from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
 import { clientVisibilityWhere } from "@/lib/crm-access";
 import { clientStatusLabel, leadSourceLabelUi, leadStatusLabel, taskStatusLabel } from "@/lib/crm-labels";
+import {
+  canEditClientQualification,
+  getClientQualification,
+  getInterestedUnits,
+  getUnitRecommendations,
+  qualificationCompleteness,
+  qualificationForRole,
+} from "@/lib/client-qualification";
 import { PLATFORM_PERMISSIONS } from "@/lib/platform-plans";
 import { getPlatformSettings, platformSettingsHasFeature } from "@/lib/platform-settings";
+import ClientQualificationPanel from "@/components/crm/ClientQualificationPanel";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +38,13 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ c
   if (!client) notFound();
   const t = await getTranslations("admin");
   const locale = await getLocale();
+  const [qualification, interestedUnits, recommendations] = await Promise.all([
+    getClientQualification(client.id),
+    getInterestedUnits(client.id),
+    getUnitRecommendations(client.id),
+  ]);
+  const visibleQualification = qualificationForRole(qualification, user);
+  const canEditQualification = canEditClientQualification(user, client);
 
   return (
     <div className="flex flex-col gap-5">
@@ -75,6 +91,15 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ c
           </table>
         </div>
       </div>
+
+      <ClientQualificationPanel
+        clientId={client.id}
+        initialQualification={JSON.parse(JSON.stringify(visibleQualification))}
+        initialCompleteness={qualificationCompleteness(visibleQualification)}
+        initialInterestedUnits={JSON.parse(JSON.stringify(interestedUnits))}
+        initialRecommendations={JSON.parse(JSON.stringify(recommendations))}
+        canEdit={canEditQualification}
+      />
 
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="a-card p-4">

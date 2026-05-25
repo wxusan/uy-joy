@@ -5,8 +5,17 @@ import prisma from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
 import { canEditLead, leadVisibilityWhere } from "@/lib/crm-access";
 import { leadSourceLabelUi, leadStatusLabel, taskStatusLabel } from "@/lib/crm-labels";
+import {
+  canEditClientQualification,
+  getClientQualification,
+  getInterestedUnits,
+  getUnitRecommendations,
+  qualificationCompleteness,
+  qualificationForRole,
+} from "@/lib/client-qualification";
 import { PLATFORM_PERMISSIONS } from "@/lib/platform-plans";
 import { getPlatformSettings, platformSettingsHasFeature } from "@/lib/platform-settings";
+import ClientQualificationPanel from "@/components/crm/ClientQualificationPanel";
 import LeadQuickActions from "./LeadQuickActions";
 
 export const dynamic = "force-dynamic";
@@ -31,6 +40,15 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ lea
     },
   });
   if (!lead) notFound();
+  const [qualification, interestedUnits, recommendations] = lead.clientId
+    ? await Promise.all([
+        getClientQualification(lead.clientId),
+        getInterestedUnits(lead.clientId),
+        getUnitRecommendations(lead.clientId),
+      ])
+    : [null, [], []] as const;
+  const visibleQualification = qualificationForRole(qualification, user);
+  const canEditQualification = Boolean(lead.client && canEditClientQualification(user, { ...lead.client, leads: [{ assignedToId: lead.assignedToId }] }));
 
   return (
     <div className="flex flex-col gap-5">
@@ -85,6 +103,18 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ lea
         source={lead.source}
         phone={lead.client?.phone || lead.phone}
       />
+
+      {lead.clientId ? (
+        <ClientQualificationPanel
+          clientId={lead.clientId}
+          leadId={lead.id}
+          initialQualification={JSON.parse(JSON.stringify(visibleQualification))}
+          initialCompleteness={qualificationCompleteness(visibleQualification)}
+          initialInterestedUnits={JSON.parse(JSON.stringify(interestedUnits))}
+          initialRecommendations={JSON.parse(JSON.stringify(recommendations))}
+          canEdit={canEditQualification}
+        />
+      ) : null}
 
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="a-card p-4">

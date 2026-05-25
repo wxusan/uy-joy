@@ -51,7 +51,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ c
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="a-page-title">{client.fullName}</h1>
-          <p className="a-page-sub">{client.phone} · {clientStatusLabel(t, client.status)}</p>
+          <p className="a-page-sub">{t("clientCardTitle")} · {client.phone} · {clientStatusLabel(t, client.status)}</p>
         </div>
         <Link href="/portal/management-x7k9/crm/clients" className="a-btn">{t("backToClients")}</Link>
       </div>

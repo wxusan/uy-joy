@@ -438,6 +438,7 @@
     "noRecentMovement": "So'nggi harakat yo'q.",
     "activity": "Harakatlar tarixi",
     "assigned": "Mas'ul menejer",
+    "assignmentFailed": "Menejerni biriktirib bo'lmadi",
     "created": "Yaratilgan",
     "unassigned": "Menejer biriktirilmagan",
     "dealsSubtitle": "Xonadon bronlari, shartnoma, to'lov grafigi va sotuv holati.",

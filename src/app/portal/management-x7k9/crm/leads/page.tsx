@@ -1,6 +1,6 @@
 import prisma from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
-import { leadVisibilityWhere } from "@/lib/crm-access";
+import { canViewAllLeads, leadVisibilityWhere } from "@/lib/crm-access";
 import { getCrmScopeEmptyMessage } from "@/lib/crm-scope-copy";
 import { normalizeLeadStatus } from "@/lib/lead-status";
 import { PLATFORM_PERMISSIONS } from "@/lib/platform-plans";
@@ -37,7 +37,8 @@ export default async function CrmLeadsPage({ searchParams }: { searchParams?: Re
       Object.keys(createdAt).length ? { createdAt } : {},
     ],
   };
-  const [leads, total] = await Promise.all([
+  const canAssignLeads = canViewAllLeads(user);
+  const [leads, total, managers] = await Promise.all([
     prisma.lead.findMany({
       where,
       include: {
@@ -48,6 +49,13 @@ export default async function CrmLeadsPage({ searchParams }: { searchParams?: Re
       take: LIMIT,
     }),
     prisma.lead.count({ where }),
+    canAssignLeads
+      ? prisma.user.findMany({
+          where: { isActive: true, role: { in: ["sales_director", "sales_agent", "external_agent"] } },
+          select: { id: true, name: true, email: true },
+          orderBy: [{ role: "asc" }, { name: "asc" }],
+        })
+      : Promise.resolve([]),
   ]);
 
   const serialized = leads.map((lead) => ({
@@ -71,6 +79,8 @@ export default async function CrmLeadsPage({ searchParams }: { searchParams?: Re
       initialPages={Math.ceil(total / LIMIT)}
       emptyMessage={getCrmScopeEmptyMessage(user.role)}
       initialStatusFilter={statusParam ? normalizeLeadStatus(statusParam) : "all"}
+      managers={managers}
+      canAssignLeads={canAssignLeads}
       extraApiFilters={{
         ...(unansweredParam === "true" ? { unanswered: "true" } : {}),
         ...(fromParam ? { from: fromParam } : {}),

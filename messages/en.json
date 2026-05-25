@@ -462,6 +462,7 @@
     "noRecentMovement": "No recent movement.",
     "activity": "Action history",
     "assigned": "Responsible manager",
+    "assignmentFailed": "Could not assign manager",
     "created": "Created",
     "unassigned": "No manager assigned",
     "dealsSubtitle": "Apartment reservations, contracts, payment schedules, and sales status.",

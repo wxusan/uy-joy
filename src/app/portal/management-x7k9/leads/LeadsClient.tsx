@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Download, Search } from "lucide-react";
 import { getLeadStatusTone, LEAD_STATUSES } from "@/lib/lead-status";
+import LeadOwnerSelect from "@/components/crm/LeadOwnerSelect";
 
 interface Lead {
   id: string;
@@ -18,6 +19,7 @@ interface Lead {
   source: string | null;
   notes: string | null;
   assignedTo: string | null;
+  assignedToId?: string | null;
   nextFollowUp: string | null;
   unitNumberSnapshot: string | null;
   unitAreaSnapshot: number | null;
@@ -41,6 +43,8 @@ interface Props {
   emptyMessage?: string | null;
   initialStatusFilter?: string;
   extraApiFilters?: Record<string, string>;
+  managers?: { id: string; name: string | null; email: string | null }[];
+  canAssignLeads?: boolean;
 }
 
 function escapeCsvValue(value: unknown) {
@@ -56,6 +60,8 @@ export default function LeadsClient({
   emptyMessage,
   initialStatusFilter = "all",
   extraApiFilters = {},
+  managers = [],
+  canAssignLeads = false,
 }: Props) {
   const t = useTranslations("admin");
   const tc = useTranslations("common");
@@ -254,7 +260,7 @@ export default function LeadsClient({
         </div>
       ) : (
         <div className="a-card overflow-x-auto">
-          <table className="a-table min-w-[820px]">
+          <table className="a-table min-w-[980px]">
             <thead>
               <tr>
                 <th>{t("name")}</th>
@@ -263,6 +269,7 @@ export default function LeadsClient({
                 <th>{t("unit")}</th>
                 <th>{t("source")}</th>
                 <th>{t("status")}</th>
+                <th>{t("assigned")}</th>
                 <th style={{ textAlign: "right" }}>{t("date")}</th>
               </tr>
             </thead>
@@ -273,11 +280,6 @@ export default function LeadsClient({
                     <Link className="hover:underline" href={`/portal/management-x7k9/crm/leads/${lead.id}`}>
                       {lead.client?.fullName || lead.name}
                     </Link>
-                    {lead.assignedToUser ? (
-                      <div className="text-[11px]" style={{ color: "var(--a-text-tertiary)" }}>
-                        {lead.assignedToUser.name || lead.assignedToUser.email}
-                      </div>
-                    ) : null}
                   </td>
                   <td>
                     <a
@@ -364,6 +366,24 @@ export default function LeadsClient({
                         ))}
                       </select>
                     </span>
+                  </td>
+                  <td>
+                    <LeadOwnerSelect
+                      leadId={lead.id}
+                      assignedToId={lead.assignedToUser?.id || null}
+                      managers={managers}
+                      canAssign={canAssignLeads}
+                      compact
+                      onChanged={(assignedToId, assignedToUser) => {
+                        setLeads((prev) =>
+                          prev.map((item) =>
+                            item.id === lead.id
+                              ? { ...item, assignedToUser, assignedTo: assignedToUser?.name || assignedToUser?.email || null, assignedToId }
+                              : item
+                          )
+                        );
+                      }}
+                    />
                   </td>
                   <td
                     style={{

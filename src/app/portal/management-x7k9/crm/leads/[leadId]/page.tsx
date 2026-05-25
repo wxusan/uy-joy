@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import prisma from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
-import { canEditLead, leadVisibilityWhere } from "@/lib/crm-access";
+import { canEditLead, canViewAllLeads, leadVisibilityWhere } from "@/lib/crm-access";
 import { leadSourceLabelUi, leadStatusLabel, taskStatusLabel } from "@/lib/crm-labels";
 import {
   canEditClientQualification,
@@ -16,6 +16,7 @@ import {
 import { PLATFORM_PERMISSIONS } from "@/lib/platform-plans";
 import { getPlatformSettings, platformSettingsHasFeature } from "@/lib/platform-settings";
 import ClientQualificationPanel from "@/components/crm/ClientQualificationPanel";
+import LeadOwnerSelect from "@/components/crm/LeadOwnerSelect";
 import LeadQuickActions from "./LeadQuickActions";
 
 export const dynamic = "force-dynamic";
@@ -40,13 +41,32 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ lea
     },
   });
   if (!lead) notFound();
-  const [qualification, interestedUnits, recommendations] = lead.clientId
+  const canAssignLeads = canViewAllLeads(user);
+  const [qualification, interestedUnits, recommendations, managers] = lead.clientId
     ? await Promise.all([
         getClientQualification(lead.clientId),
         getInterestedUnits(lead.clientId),
         getUnitRecommendations(lead.clientId),
+        canAssignLeads
+          ? prisma.user.findMany({
+              where: { isActive: true, role: { in: ["sales_director", "sales_agent", "external_agent"] } },
+              select: { id: true, name: true, email: true },
+              orderBy: [{ role: "asc" }, { name: "asc" }],
+            })
+          : Promise.resolve([]),
       ])
-    : [null, [], []] as const;
+    : await Promise.all([
+        Promise.resolve(null),
+        Promise.resolve([]),
+        Promise.resolve([]),
+        canAssignLeads
+          ? prisma.user.findMany({
+              where: { isActive: true, role: { in: ["sales_director", "sales_agent", "external_agent"] } },
+              select: { id: true, name: true, email: true },
+              orderBy: [{ role: "asc" }, { name: "asc" }],
+            })
+          : Promise.resolve([]),
+      ]);
   const visibleQualification = qualificationForRole(qualification, user);
   const canEditQualification = Boolean(lead.client && canEditClientQualification(user, { ...lead.client, leads: [{ assignedToId: lead.assignedToId }] }));
 
@@ -73,6 +93,18 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ lea
             <div className="flex justify-between gap-4"><dt>{t("fieldCampaign")}</dt><dd>{lead.campaign || "—"}</dd></div>
             <div className="flex justify-between gap-4"><dt>{t("fieldNextAction")}</dt><dd>{lead.nextActionAt?.toLocaleString() || "—"}</dd></div>
             <div className="flex justify-between gap-4"><dt>{t("fieldEditable")}</dt><dd>{canEditLead(user, lead) ? t("yes") : t("no")}</dd></div>
+            <div className="flex justify-between gap-4 items-center">
+              <dt>{t("assigned")}</dt>
+              <dd>
+                <LeadOwnerSelect
+                  leadId={lead.id}
+                  assignedToId={lead.assignedToId}
+                  managers={managers}
+                  canAssign={canAssignLeads}
+                  compact
+                />
+              </dd>
+            </div>
           </dl>
           {lead.notes ? <p className="mt-4 text-[13px]" style={{ color: "var(--a-text-secondary)" }}>{lead.notes}</p> : null}
         </div>

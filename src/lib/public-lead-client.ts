@@ -38,6 +38,7 @@ function getAnalyticsSessionId() {
 
 export function collectLeadTracking(source: string) {
   const url = new URL(window.location.href);
+  const trackedSource = (url.searchParams.get("source") || url.searchParams.get("ref") || source).slice(0, 80);
   const stored = readStoredUtm();
   const utm: Partial<Record<UtmKey, string>> = { ...stored };
   for (const [queryKey, bodyKey] of Object.entries(queryToBodyKey)) {
@@ -52,7 +53,7 @@ export function collectLeadTracking(source: string) {
     // Storage can be blocked; lead capture should continue.
   }
   return {
-    source,
+    source: trackedSource,
     analyticsSessionId: getAnalyticsSessionId(),
     ...utm,
     campaign: utm.utmCampaign,

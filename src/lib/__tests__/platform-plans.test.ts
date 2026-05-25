@@ -112,8 +112,9 @@ test("permission checks honor normalized roles", () => {
   assert.equal(ADMIN_ACCESS_ROLES.includes("owner"), true);
 });
 
-test("navigation audience helper keeps owners/developers broad and specialists focused", () => {
-  assert.equal(roleCanSeeNavigationAudience("owner", ["sales_director"]), true);
+test("navigation audience helper keeps owner sidebar explicit and developers broad", () => {
+  assert.equal(roleCanSeeNavigationAudience("owner", ["sales_director"]), false);
+  assert.equal(roleCanSeeNavigationAudience("owner", ["owner"]), true);
   assert.equal(roleCanSeeNavigationAudience("developer", ["finance"]), true);
   assert.equal(roleCanSeeNavigationAudience("sales_director", ["sales_director"]), true);
   assert.equal(roleCanSeeNavigationAudience("sales_agent", ["sales_director"]), false);

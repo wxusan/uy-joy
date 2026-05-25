@@ -1,6 +1,8 @@
 import { getTranslations } from "next-intl/server";
+import { notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
 import { getPlatformSettings, platformSettingsHasFeature } from "@/lib/platform-settings";
+import { normalizePlatformRole } from "@/lib/platform-plans";
 import { getAgentReport, getReportFilterOptions, parseReportFilters } from "@/lib/reports";
 import { MetricGrid, ReportControls, ReportSection, money } from "@/components/reports/ReportUi";
 import { ReportBarChart } from "@/components/reports/ReportCharts";
@@ -14,6 +16,8 @@ export default async function MyReportPage({
 }) {
   const session = await requireAdmin();
   const user = session.user as { id?: string; role?: string };
+  const role = normalizePlatformRole(user.role);
+  if (role !== "sales_agent" && role !== "external_agent") notFound();
   const settings = getPlatformSettings();
   if (!platformSettingsHasFeature(settings, "reports")) return null;
 
@@ -32,7 +36,7 @@ export default async function MyReportPage({
       <MetricGrid
         metrics={[
           { label: t("metricMyActiveLeads"), value: row?.assignedLeads ?? 0, href: "/portal/management-x7k9/crm/leads" },
-          { label: t("metricMyOverdueTasks"), value: row?.overdueTasks ?? 0, href: "/portal/management-x7k9/crm/tasks?overdue=true" },
+          { label: t("metricMyOverdueTasks"), value: row?.overdueTasks ?? 0, href: "/portal/management-x7k9/crm/tasks?view=overdue" },
           { label: t("metricActions"), value: row?.actions ?? 0 },
           { label: t("metricCalls"), value: row?.calls ?? 0 },
           { label: t("metricMeetings"), value: row?.meetings ?? 0 },

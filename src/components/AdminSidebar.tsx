@@ -101,7 +101,7 @@ const navGroups: NavGroup[] = [
         icon: <Handshake className="w-[14px] h-[14px]" />,
         permission: "viewDeals",
         feature: "deals",
-        audiences: ["sales_director", "sales_agent", "external_agent", "finance"],
+        audiences: ["owner", "sales_director", "sales_agent", "external_agent", "finance"],
       },
       {
         href: "/portal/management-x7k9/crm/tasks",
@@ -133,7 +133,7 @@ const navGroups: NavGroup[] = [
         icon: <Activity className="w-[14px] h-[14px]" />,
         permission: "viewReports",
         feature: "crm",
-        audiences: ["sales_director"],
+        audiences: ["owner", "sales_director"],
       },
       {
         href: "/portal/management-x7k9/reports/my",

@@ -36,6 +36,7 @@ export async function GET(request: NextRequest) {
   const assignedToId = searchParams.get("assignedToId");
   const clientId = searchParams.get("clientId");
   const leadId = searchParams.get("leadId");
+  const view = searchParams.get("view");
   const settings = getPlatformSettings();
   const visibility: Prisma.TaskWhereInput = taskVisibilityWhere(auth.user, settings.allowAgentClaim);
   const dueBefore = searchParams.get("dueBefore");
@@ -46,7 +47,7 @@ export async function GET(request: NextRequest) {
       assignedToId ? { assignedToId } : {},
       clientId ? { clientId } : {},
       leadId ? { leadId } : {},
-      searchParams.get("overdue") === "true" ? { status: "open", dueAt: { lt: new Date() } } : {},
+      searchParams.get("overdue") === "true" || view === "overdue" ? { status: "open", dueAt: { lt: new Date() } } : {},
       dueBefore ? { dueAt: { lte: new Date(dueBefore) } } : {},
     ],
   };

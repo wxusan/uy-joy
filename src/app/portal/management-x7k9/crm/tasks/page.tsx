@@ -19,9 +19,35 @@ export default async function TasksPage({ searchParams }: { searchParams?: Recor
   const user = session.user as { id?: string; role?: string };
   const canReassignTasks = canViewAllLeads(user);
   const visibility = taskVisibilityWhere(user, settings.allowAgentClaim);
+  const requestedView = paramValue(searchParams?.view);
+  const initialView =
+    requestedView === "overdue" || requestedView === "today" || requestedView === "week" || requestedView === "backup" || requestedView === "all"
+      ? requestedView
+      : "my";
+  const initialTypeFilter = paramValue(searchParams?.type) || "all";
+  const now = new Date();
+  const todayStart = new Date(now);
+  todayStart.setHours(0, 0, 0, 0);
+  const todayEnd = new Date(now);
+  todayEnd.setHours(23, 59, 59, 999);
+  const weekEnd = new Date(now);
+  weekEnd.setDate(now.getDate() + 7);
+  const taskWhere = {
+    AND: [
+      visibility,
+      initialView === "overdue" ? { status: "open", dueAt: { lt: now } } : {},
+      initialView === "today" ? { status: "open", dueAt: { gte: todayStart, lte: todayEnd } } : {},
+      initialView === "week" ? { status: "open", dueAt: { lte: weekEnd } } : {},
+      initialTypeFilter === "office_visit"
+        ? { type: { in: ["meeting", "visit"] } }
+        : initialTypeFilter !== "all"
+          ? { type: initialTypeFilter }
+          : {},
+    ],
+  };
   const [tasks, users] = await Promise.all([
     prisma.task.findMany({
-    where: visibility,
+    where: taskWhere,
     include: {
       client: { select: { id: true, fullName: true } },
       lead: {
@@ -52,13 +78,6 @@ export default async function TasksPage({ searchParams }: { searchParams?: Recor
     createdAt: task.createdAt.toISOString(),
     updatedAt: task.updatedAt.toISOString(),
   }));
-
-  const requestedView = paramValue(searchParams?.view);
-  const initialView =
-    requestedView === "overdue" || requestedView === "today" || requestedView === "week" || requestedView === "backup" || requestedView === "all"
-      ? requestedView
-      : "my";
-  const initialTypeFilter = paramValue(searchParams?.type) || "all";
 
   return (
     <TasksClient

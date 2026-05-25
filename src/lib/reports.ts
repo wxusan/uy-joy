@@ -344,7 +344,7 @@ export async function getOverviewReport(filters: ReportFilters, user: ReportUser
     filters: serializeFilters(filters),
     drilldowns: {
       totalLeads: `/portal/management-x7k9/crm/leads?from=${filters.from.toISOString()}&to=${filters.to.toISOString()}`,
-      overdueFollowups: "/portal/management-x7k9/crm/tasks?overdue=true",
+      overdueFollowups: "/portal/management-x7k9/crm/tasks?view=overdue",
       soldDeals: `/portal/management-x7k9/crm/deals?status=sold&from=${filters.from.toISOString()}&to=${filters.to.toISOString()}`,
     },
   };

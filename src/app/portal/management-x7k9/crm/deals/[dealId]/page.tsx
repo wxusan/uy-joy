@@ -16,6 +16,7 @@ import { PLATFORM_PERMISSIONS } from "@/lib/platform-plans";
 import { getPlatformSettings, platformSettingsHasFeature } from "@/lib/platform-settings";
 import DealActions from "./DealActions";
 import DealFinanceActions from "./DealFinanceActions";
+import PaymentPlanPdfButton from "./PaymentPlanPdfButton";
 import ReservationCountdown from "@/components/crm/ReservationCountdown";
 
 export const dynamic = "force-dynamic";
@@ -113,18 +114,32 @@ export default async function DealProfilePage({ params }: { params: Promise<{ de
           <div className="p-4 border-b" style={{ borderColor: "var(--a-border)" }}><h2 className="text-[15px] font-semibold">{t("paymentPlans")}</h2></div>
           {deal.paymentPlans.map((plan) => (
             <div key={plan.id} className="p-4 border-b" style={{ borderColor: "var(--a-border)" }}>
-              <div className="flex justify-between gap-3 text-[13px]"><strong>{plan.name}</strong><span>{paymentPlanStatusLabel(t, plan.status)}</span></div>
+              <div className="flex justify-between gap-3 text-[13px] items-center">
+                <div className="flex flex-col">
+                  <strong>{plan.name}</strong>
+                  <span style={{ color: "var(--a-text-tertiary)" }}>{paymentPlanStatusLabel(t, plan.status)}</span>
+                </div>
+                <PaymentPlanPdfButton paymentPlanId={plan.id} />
+              </div>
               <table className="a-table mt-3 min-w-[560px]">
                 <tbody>
-                  {plan.payments.map((payment) => (
-                    <tr key={payment.id}>
-                      <td>{payment.sequence}. {payment.label}</td>
-                      <td>{payment.expectedAmount.toLocaleString()}</td>
-                      <td>{payment.paidAmount.toLocaleString()}</td>
-                      <td>{paymentStatusLabel(t, payment.status)}</td>
-                      <td style={{ textAlign: "right" }}>{payment.dueDate.toLocaleDateString()}</td>
+                  {plan.payments.length > 0 ? (
+                    plan.payments.map((payment) => (
+                      <tr key={payment.id}>
+                        <td>{payment.sequence}. {payment.label}</td>
+                        <td>{payment.expectedAmount.toLocaleString()}</td>
+                        <td>{payment.paidAmount.toLocaleString()}</td>
+                        <td>{paymentStatusLabel(t, payment.status)}</td>
+                        <td style={{ textAlign: "right" }}>{payment.dueDate.toLocaleDateString()}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={5} style={{ color: "var(--a-text-tertiary)" }}>
+                        {t("paymentPlanNoRows")}
+                      </td>
                     </tr>
-                  ))}
+                  )}
                 </tbody>
               </table>
             </div>

@@ -14,6 +14,7 @@ type Deal = {
   initialPaymentAmount: number;
   initialPaymentPercent: number;
   paymentTermMonths: number;
+  currency: string;
 };
 
 export default function DealActions({ deal }: { deal: Deal }) {
@@ -23,9 +24,11 @@ export default function DealActions({ deal }: { deal: Deal }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [paymentForm, setPaymentForm] = useState({
     listPrice: String(deal.listPrice),
-    discountAmount: String(deal.discountAmount || ""),
+    cashDiscountAmount: String(deal.discountAmount || ""),
+    installmentDiscountAmount: String(deal.discountAmount || ""),
     initialPaymentAmount: String(deal.initialPaymentAmount || ""),
     termMonths: String(deal.paymentTermMonths || 12),
+    startDate: new Date().toISOString().slice(0, 10),
   });
   const [documentForm, setDocumentForm] = useState({
     type: "passport",
@@ -50,16 +53,30 @@ export default function DealActions({ deal }: { deal: Deal }) {
     router.refresh();
   }
 
-  async function createPlan(event: React.FormEvent) {
-    event.preventDefault();
+  const listPrice = Number(paymentForm.listPrice || 0);
+  const cashDiscount = Number(paymentForm.cashDiscountAmount || 0);
+  const installmentDiscount = Number(paymentForm.installmentDiscountAmount || 0);
+  const installmentMonths = Math.max(0, Number(paymentForm.termMonths || 0));
+  const installmentSalePrice = Math.max(0, listPrice - installmentDiscount);
+  const initialPayment = Math.min(Math.max(0, Number(paymentForm.initialPaymentAmount || 0)), installmentSalePrice);
+  const installmentRemaining = Math.max(0, installmentSalePrice - initialPayment);
+  const monthlyPayment = installmentMonths > 0 ? installmentRemaining / installmentMonths : 0;
+  const cashSalePrice = Math.max(0, listPrice - cashDiscount);
+  const formatMoney = (value: number) => `${Math.round(value).toLocaleString()} ${deal.currency}`;
+
+  async function createPlan(type: "cash" | "installment") {
+    const isCash = type === "cash";
+    const salePrice = isCash ? cashSalePrice : installmentSalePrice;
+    const discountAmount = isCash ? cashDiscount : installmentDiscount;
     await post(`/api/crm/deals/${deal.id}/payment-plan`, {
-      name: "Default payment plan",
-      type: Number(paymentForm.termMonths) > 0 ? "installment" : "cash",
-      listPrice: Number(paymentForm.listPrice || 0),
-      discountAmount: Number(paymentForm.discountAmount || 0),
-      initialPaymentAmount: Number(paymentForm.initialPaymentAmount || 0),
-      termMonths: Number(paymentForm.termMonths || 0),
-      startDate: new Date().toISOString(),
+      name: isCash ? t("cashPlanName") : t("installmentPlanName"),
+      type,
+      listPrice,
+      discountAmount,
+      initialPaymentAmount: isCash ? salePrice : initialPayment,
+      termMonths: isCash ? 0 : installmentMonths,
+      startDate: new Date(`${paymentForm.startDate}T00:00:00`).toISOString(),
+      notes: isCash ? t("cashPlanNote") : t("installmentPlanNote"),
     });
   }
 
@@ -142,16 +159,43 @@ export default function DealActions({ deal }: { deal: Deal }) {
           </button>
         </div>
       </div>
-      <form className="a-card p-4 grid gap-3" onSubmit={createPlan}>
-        <h2 className="text-[15px] font-semibold">{t("calculatorPaymentPlan")}</h2>
-        <div className="grid gap-2 md:grid-cols-4">
+      <div className="a-card p-4 grid gap-3">
+        <div>
+          <h2 className="text-[15px] font-semibold">{t("adminPriceCalculator")}</h2>
+          <p className="text-[12px]" style={{ color: "var(--a-text-tertiary)" }}>{t("adminPriceCalculatorSubtitle")}</p>
+        </div>
+        <div className="grid gap-2 md:grid-cols-5">
           <input className="a-input" type="number" value={paymentForm.listPrice} onChange={(e) => setPaymentForm({ ...paymentForm, listPrice: e.target.value })} placeholder={t("listPrice")} />
-          <input className="a-input" type="number" value={paymentForm.discountAmount} onChange={(e) => setPaymentForm({ ...paymentForm, discountAmount: e.target.value })} placeholder={t("discount")} />
+          <input className="a-input" type="number" value={paymentForm.cashDiscountAmount} onChange={(e) => setPaymentForm({ ...paymentForm, cashDiscountAmount: e.target.value })} placeholder={t("cashDiscount")} />
+          <input className="a-input" type="number" value={paymentForm.installmentDiscountAmount} onChange={(e) => setPaymentForm({ ...paymentForm, installmentDiscountAmount: e.target.value })} placeholder={t("installmentDiscount")} />
           <input className="a-input" type="number" value={paymentForm.initialPaymentAmount} onChange={(e) => setPaymentForm({ ...paymentForm, initialPaymentAmount: e.target.value })} placeholder={t("initialPayment")} />
           <input className="a-input" type="number" value={paymentForm.termMonths} onChange={(e) => setPaymentForm({ ...paymentForm, termMonths: e.target.value })} placeholder={t("months")} />
         </div>
-        <button className="a-btn a-btn-primary" type="submit" disabled={Boolean(busy)}>{t("saveDraftPlan")}</button>
-      </form>
+        <input className="a-input max-w-[220px]" type="date" value={paymentForm.startDate} onChange={(e) => setPaymentForm({ ...paymentForm, startDate: e.target.value })} />
+        <div className="grid gap-3 md:grid-cols-2">
+          <div className="rounded border p-3 grid gap-2" style={{ borderColor: "var(--a-border)" }}>
+            <div className="text-[13px] font-semibold">{t("cashPayment")}</div>
+            <div className="text-[12px]" style={{ color: "var(--a-text-secondary)" }}>{t("cashPaymentDescription")}</div>
+            <dl className="grid gap-1 text-[12px]">
+              <div className="flex justify-between gap-2"><dt>{t("listPrice")}</dt><dd>{formatMoney(listPrice)}</dd></div>
+              <div className="flex justify-between gap-2"><dt>{t("discount")}</dt><dd>{formatMoney(cashDiscount)}</dd></div>
+              <div className="flex justify-between gap-2 font-semibold"><dt>{t("agreedPrice")}</dt><dd>{formatMoney(cashSalePrice)}</dd></div>
+            </dl>
+            <button className="a-btn a-btn-primary" type="button" disabled={Boolean(busy)} onClick={() => void createPlan("cash")}>{t("saveCashPlan")}</button>
+          </div>
+          <div className="rounded border p-3 grid gap-2" style={{ borderColor: "var(--a-border)" }}>
+            <div className="text-[13px] font-semibold">{t("installmentPayment")}</div>
+            <div className="text-[12px]" style={{ color: "var(--a-text-secondary)" }}>{t("installmentPaymentDescription")}</div>
+            <dl className="grid gap-1 text-[12px]">
+              <div className="flex justify-between gap-2"><dt>{t("agreedPrice")}</dt><dd>{formatMoney(installmentSalePrice)}</dd></div>
+              <div className="flex justify-between gap-2"><dt>{t("initialPayment")}</dt><dd>{formatMoney(initialPayment)}</dd></div>
+              <div className="flex justify-between gap-2"><dt>{t("remaining")}</dt><dd>{formatMoney(installmentRemaining)}</dd></div>
+              <div className="flex justify-between gap-2 font-semibold"><dt>{t("monthlyPayment")}</dt><dd>{formatMoney(monthlyPayment)} × {installmentMonths}</dd></div>
+            </dl>
+            <button className="a-btn a-btn-primary" type="button" disabled={Boolean(busy)} onClick={() => void createPlan("installment")}>{t("saveInstallmentPlan")}</button>
+          </div>
+        </div>
+      </div>
       <form className="a-card p-4 grid gap-3 lg:col-span-2" onSubmit={uploadDocument}>
         <h2 className="text-[15px] font-semibold">{t("uploadDocument")}</h2>
         <div className="grid gap-2 md:grid-cols-[180px_1fr_1.5fr_auto]">

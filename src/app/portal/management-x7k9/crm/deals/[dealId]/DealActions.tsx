@@ -132,6 +132,22 @@ export default function DealActions({ deal }: { deal: Deal }) {
         <div className="flex gap-2 flex-wrap">
           <button className="a-btn" disabled={Boolean(busy)} onClick={() => post(`/api/crm/deals/${deal.id}/reserve`, {})}>{t("reserve")}</button>
           <button className="a-btn" disabled={Boolean(busy)} onClick={() => post(`/api/crm/deals/${deal.id}/reservation-slip`)}>{t("slipPdf")}</button>
+          {deal.status === "reserved" ? (
+            <button
+              className="a-btn"
+              disabled={Boolean(busy)}
+              onClick={() => {
+                const hours = Number(window.prompt(t("extendBronHoursPrompt"), "48"));
+                if (!Number.isFinite(hours) || hours <= 0) return;
+                const reason = window.prompt(t("extendBronReasonPrompt"));
+                if (!reason) return;
+                const expiresAt = new Date(Date.now() + hours * 60 * 60 * 1000).toISOString();
+                void post(`/api/crm/deals/${deal.id}/extend-reservation`, { reservationExpiresAt: expiresAt, reason });
+              }}
+            >
+              {t("extendBron")}
+            </button>
+          ) : null}
           <button
             className="a-btn"
             disabled={Boolean(busy)}

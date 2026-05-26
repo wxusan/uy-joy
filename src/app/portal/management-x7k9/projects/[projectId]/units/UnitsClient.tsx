@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { formatPrice } from "@/lib/utils";
+import BronApartmentButton from "@/components/crm/BronApartmentButton";
 import ReservationCountdown, { getReservationTone } from "@/components/crm/ReservationCountdown";
 
 interface Unit {
@@ -52,6 +53,8 @@ interface Props {
   initialUnits: Unit[];
   initialBuildings: Building[];
   projectId: string;
+  currentUserId: string | null;
+  managers: { id: string; name: string | null; email: string | null }[];
 }
 
 const statusMeta = (status: string) => {
@@ -68,7 +71,7 @@ function reservationCardClass(unit: Unit) {
   return "border-neutral-200 bg-white";
 }
 
-export default function UnitsClient({ initialUnits, initialBuildings, projectId }: Props) {
+export default function UnitsClient({ initialUnits, initialBuildings, projectId, currentUserId, managers }: Props) {
   const t = useTranslations("admin");
   const tc = useTranslations("common");
   const [units, setUnits] = useState<Unit[]>(initialUnits);
@@ -117,7 +120,8 @@ export default function UnitsClient({ initialUnits, initialBuildings, projectId 
   };
 
   const handleStatusChange = (unit: Unit, newStatus: string) => {
-    if (newStatus === "reserved" || newStatus === "sold") {
+    if (newStatus === "reserved") return;
+    if (newStatus === "sold") {
       setReservationModal({ ...unit, status: newStatus });
     } else {
       updateUnit(unit.id, { status: newStatus, customerName: null, customerPhone: null, customerNotes: null });
@@ -326,7 +330,7 @@ export default function UnitsClient({ initialUnits, initialBuildings, projectId 
                           className={`rounded-[6px] border border-neutral-200 bg-neutral-50 px-2 py-1 text-xs font-medium outline-none ${meta.labelClass}`}
                         >
                           <option value="available">{t("available")}</option>
-                          <option value="reserved">{t("reserved")}</option>
+                          <option value="reserved" disabled={unit.status !== "reserved"}>{t("reserved")}</option>
                           <option value="sold">{t("sold")}</option>
                         </select>
                       </div>
@@ -369,6 +373,28 @@ export default function UnitsClient({ initialUnits, initialBuildings, projectId 
                             status={unit.status}
                             expiresAt={unit.reservationExpiresAt}
                             href={unit.currentDeal ? `/portal/management-x7k9/crm/deals/${unit.currentDeal.id}` : undefined}
+                          />
+                        </div>
+                      ) : null}
+                      {unit.status === "available" ? (
+                        <div className="mt-3 border-t border-neutral-200 pt-3">
+                          <BronApartmentButton
+                            unit={{
+                              id: unit.id,
+                              unitNumber: unit.unitNumber,
+                              displayNumber: unit.displayNumber,
+                              buildingName: unit.floor.building.name,
+                              floorNumber: unit.floor.number,
+                              rooms: unit.rooms,
+                              area: unit.area,
+                              totalPrice,
+                              status: unit.status,
+                            }}
+                            projectId={projectId}
+                            currentUserId={currentUserId}
+                            managers={managers}
+                            className="a-btn a-btn-primary !h-8 !px-3 text-xs"
+                            onReserved={() => loadUnits(filterStatus, filterRooms)}
                           />
                         </div>
                       ) : null}

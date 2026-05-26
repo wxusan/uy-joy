@@ -274,7 +274,7 @@ export async function syncLeadStageForDeal(
   await createActivity(
     {
       type: "status_changed",
-      title: `Lead moved to ${nextStatus} from deal workflow`,
+      title: `Lid bitim orqali ${nextStatus} holatiga o'tdi`,
       clientId: lead.clientId,
       leadId,
       actorId,

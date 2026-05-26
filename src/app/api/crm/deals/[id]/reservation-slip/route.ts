@@ -24,6 +24,14 @@ function escapeHtml(value: string | number | null | undefined) {
     .replace(/"/g, "&quot;");
 }
 
+function absoluteAssetUrl(value: string | null | undefined) {
+  if (!value) return null;
+  if (/^https?:\/\//i.test(value)) return value;
+  const base = process.env.NEXTAUTH_URL || process.env.CLIENT_PUBLIC_DOMAIN;
+  if (!base) return value;
+  return `${base.replace(/\/$/, "")}/${value.replace(/^\//, "")}`;
+}
+
 async function launchPdfBrowser() {
   if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
     return puppeteer.launch({
@@ -42,6 +50,7 @@ async function launchPdfBrowser() {
 
 async function makeReservationSlipPdfDataUri(input: {
   brandName: string;
+  logoUrl?: string | null;
   dealNumber: string;
   clientName: string;
   clientPhone: string;
@@ -56,17 +65,17 @@ async function makeReservationSlipPdfDataUri(input: {
   project: string;
 }) {
   const rows = [
-    ["Deal", input.dealNumber],
-    ["Client", `${input.clientName} ${input.clientPhone}`],
-    ["Unit", input.unitLabel],
-    ["Area / rooms", input.areaRooms],
-    ["Reserved", input.reservedAt],
-    ["Expires", input.expiresAt],
-    ["List price", input.listPrice],
-    ["Agreed price", input.salePrice],
-    ["Initial payment", input.initialPayment],
-    ["Sales agent", input.salesAgent],
-    ["Project", input.project],
+    ["Bron raqami", input.dealNumber],
+    ["Klient", `${input.clientName} ${input.clientPhone}`],
+    ["Xonadon", input.unitLabel],
+    ["Maydon / xona", input.areaRooms],
+    ["Bron ochildi", input.reservedAt],
+    ["Bron tugaydi", input.expiresAt],
+    ["Boshlang'ich narx", input.listPrice],
+    ["Kelishilgan narx", input.salePrice],
+    ["Boshlang'ich to'lov", input.initialPayment],
+    ["Mas'ul menejer", input.salesAgent],
+    ["Loyiha", input.project],
   ];
   const html = `<!doctype html>
 <html>
@@ -74,22 +83,31 @@ async function makeReservationSlipPdfDataUri(input: {
     <meta charset="utf-8" />
     <style>
       body { font-family: Arial, "Helvetica Neue", sans-serif; color: #15120f; margin: 0; padding: 40px; }
+      .head { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 24px; }
+      .logo { max-width: 140px; max-height: 56px; object-fit: contain; }
       h1 { font-size: 26px; margin: 0 0 8px; }
       .sub { color: #6f665c; margin-bottom: 28px; }
       table { border-collapse: collapse; width: 100%; font-size: 13px; }
       td { border-bottom: 1px solid #e7dfd4; padding: 11px 0; vertical-align: top; }
       td:first-child { color: #6f665c; width: 180px; }
+      .note { margin-top: 24px; border: 1px solid #e7dfd4; border-radius: 10px; padding: 14px; background: #fbf7f1; font-size: 13px; }
       .footer { margin-top: 32px; color: #6f665c; font-size: 11px; }
     </style>
   </head>
   <body>
-    <h1>Bron hujjati</h1>
-    <div class="sub">${escapeHtml(input.project)}</div>
+    <div class="head">
+      <div>
+        <h1>Bron hujjati</h1>
+        <div class="sub">${escapeHtml(input.project)}</div>
+      </div>
+      ${input.logoUrl ? `<img class="logo" src="${escapeHtml(input.logoUrl)}" />` : `<strong>${escapeHtml(input.brandName)}</strong>`}
+    </div>
     <table>
       <tbody>
         ${rows.map(([label, value]) => `<tr><td>${escapeHtml(label)}</td><td>${escapeHtml(value)}</td></tr>`).join("")}
       </tbody>
     </table>
+    <div class="note">Ushbu hujjat xonadon vaqtincha bron qilinganini tasdiqlaydi. Bron muddati tugaguncha shartlar savdo bo'limi bilan kelishiladi.</div>
     <div class="footer">${escapeHtml(input.brandName)} CRM orqali yaratildi.</div>
   </body>
 </html>`;
@@ -121,13 +139,14 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
   const settings = getPlatformSettings();
   const pdfDataUri = await makeReservationSlipPdfDataUri({
     brandName: settings.publicBrandName,
+    logoUrl: absoluteAssetUrl(settings.branding.logoUrl),
     dealNumber: deal.dealNumber,
     clientName: deal.client.fullName,
     clientPhone: deal.client.phone,
-    unitLabel: unit ? `${unit.unitNumber}, Building ${unit.floor.building.name}, Floor ${unit.floor.number}` : "Draft",
-    areaRooms: unit ? `${unit.area} m2 / ${unit.rooms}` : "-",
-    reservedAt: deal.reservedAt?.toISOString() || "-",
-    expiresAt: deal.reservationExpiresAt?.toISOString() || "-",
+    unitLabel: unit ? `${unit.floor.building.name}, ${unit.floor.number}-qavat, №${unit.unitNumber}` : "Draft",
+    areaRooms: unit ? `${unit.area} m2 / ${unit.rooms} xona` : "-",
+    reservedAt: deal.reservedAt?.toLocaleString("uz-UZ", { timeZone: "Asia/Tashkent" }) || "-",
+    expiresAt: deal.reservationExpiresAt?.toLocaleString("uz-UZ", { timeZone: "Asia/Tashkent" }) || "-",
     listPrice: `${deal.listPrice} ${deal.currency}`,
     salePrice: `${deal.salePrice} ${deal.currency}`,
     initialPayment: `${deal.initialPaymentAmount} ${deal.currency}`,

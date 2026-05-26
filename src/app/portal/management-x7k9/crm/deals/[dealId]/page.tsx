@@ -88,6 +88,30 @@ export default async function DealProfilePage({ params }: { params: Promise<{ de
         ) : null}
       </div>
 
+      {deal.status === "reserved" ? (
+        <div className="a-card p-4">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <h2 className="text-[16px] font-semibold">{t("bronControlTitle")}</h2>
+              <p className="text-[13px]" style={{ color: "var(--a-text-secondary)" }}>
+                {deal.primaryUnit
+                  ? `${deal.primaryUnit.floor.building.name} · ${deal.primaryUnit.floor.number}-${t("floor").toLowerCase()} · №${deal.primaryUnit.unitNumber}`
+                  : t("draftDealNoUnit")}
+              </p>
+              <p className="mt-1 text-[13px]" style={{ color: "var(--a-text-secondary)" }}>
+                {deal.client.fullName} · {deal.assignedTo?.name || deal.assignedTo?.email || t("unassigned")}
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {deal.reservationExpiresAt ? <ReservationCountdown status={deal.status} expiresAt={deal.reservationExpiresAt.toISOString()} compact /> : null}
+              <span className="text-[13px]" style={{ color: "var(--a-text-tertiary)" }}>
+                {deal.reservationExpiresAt ? deal.reservationExpiresAt.toLocaleString("uz-UZ", { timeZone: "Asia/Tashkent" }) : "—"}
+              </span>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       <DealActions deal={deal} />
       <DealFinanceActions
         plans={deal.paymentPlans.map((plan) => ({ id: plan.id, name: plan.name, status: plan.status }))}

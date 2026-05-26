@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import prisma from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
-import { clientVisibilityWhere } from "@/lib/crm-access";
+import { canViewAllLeads, clientVisibilityWhere } from "@/lib/crm-access";
 import { clientStatusLabel, leadSourceLabelUi, leadStatusLabel, taskStatusLabel } from "@/lib/crm-labels";
 import {
   canEditClientQualification,
@@ -38,10 +38,18 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ c
   if (!client) notFound();
   const t = await getTranslations("admin");
   const locale = await getLocale();
-  const [qualification, interestedUnits, recommendations] = await Promise.all([
+  const canAssignLeads = canViewAllLeads(user);
+  const [qualification, interestedUnits, recommendations, managers] = await Promise.all([
     getClientQualification(client.id),
     getInterestedUnits(client.id),
     getUnitRecommendations(client.id),
+    canAssignLeads
+      ? prisma.user.findMany({
+          where: { isActive: true, role: { in: ["sales_director", "sales_agent", "external_agent"] } },
+          select: { id: true, name: true, email: true },
+          orderBy: [{ role: "asc" }, { name: "asc" }],
+        })
+      : Promise.resolve([]),
   ]);
   const visibleQualification = qualificationForRole(qualification, user);
   const canEditQualification = canEditClientQualification(user, client);
@@ -104,6 +112,10 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ c
         initialInterestedUnits={JSON.parse(JSON.stringify(interestedUnits))}
         initialRecommendations={JSON.parse(JSON.stringify(recommendations))}
         canEdit={canEditQualification}
+        client={{ id: client.id, fullName: client.fullName, phone: client.phone }}
+        currentUserId={user.id || null}
+        assignedToId={client.assignedToId}
+        managers={managers}
       />
 
       <div className="grid gap-4 lg:grid-cols-2">

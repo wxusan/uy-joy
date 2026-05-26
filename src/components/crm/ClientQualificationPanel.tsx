@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
+import BronApartmentButton from "@/components/crm/BronApartmentButton";
 
 type Qualification = {
   cityRegion: string | null;
@@ -102,6 +103,10 @@ export default function ClientQualificationPanel({
   initialInterestedUnits,
   initialRecommendations,
   canEdit,
+  client,
+  currentUserId,
+  assignedToId,
+  managers = [],
 }: {
   clientId: string;
   leadId?: string | null;
@@ -110,6 +115,10 @@ export default function ClientQualificationPanel({
   initialInterestedUnits: InterestedUnit[];
   initialRecommendations: Recommendation[];
   canEdit: boolean;
+  client?: { id: string; fullName: string; phone: string } | null;
+  currentUserId?: string | null;
+  assignedToId?: string | null;
+  managers?: { id: string; name: string | null; email: string | null }[];
 }) {
   const t = useTranslations("admin");
   const [form, setForm] = useState<FormState>(() => toForm(initialQualification));
@@ -311,7 +320,31 @@ export default function ClientQualificationPanel({
                   <div className="font-medium">{unit.buildingName} · {unit.floorNumber}-qavat · {unit.unitNumber}</div>
                   <div style={{ color: "var(--a-text-tertiary)" }}>{unit.rooms} xona · {unit.area} m² · {unit.totalPrice ? unit.totalPrice.toLocaleString() : "—"}</div>
                 </div>
-                {canEdit ? <button className="a-btn !h-7 !px-2" onClick={() => void removeInterestedUnit(unit.unitId)}>×</button> : null}
+                {canEdit ? (
+                  <div className="flex shrink-0 items-center gap-2">
+                    {unit.status === "available" ? (
+                      <BronApartmentButton
+                        unit={{
+                          id: unit.unitId,
+                          unitNumber: unit.unitNumber,
+                          buildingName: unit.buildingName,
+                          floorNumber: unit.floorNumber,
+                          rooms: unit.rooms,
+                          area: unit.area,
+                          totalPrice: unit.totalPrice,
+                          status: unit.status,
+                        }}
+                        client={client || { id: clientId, fullName: "", phone: "" }}
+                        leadId={leadId || null}
+                        assignedToId={assignedToId || null}
+                        currentUserId={currentUserId || null}
+                        managers={managers}
+                        className="a-btn a-btn-primary !h-7 !px-2"
+                      />
+                    ) : null}
+                    <button className="a-btn !h-7 !px-2" onClick={() => void removeInterestedUnit(unit.unitId)}>×</button>
+                  </div>
+                ) : null}
               </div>
             ))}
             {interestedUnits.length === 0 ? <p className="text-[13px]" style={{ color: "var(--a-text-tertiary)" }}>{t("noInterestedUnits")}</p> : null}

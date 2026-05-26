@@ -9,21 +9,29 @@ import UnitsClient from "./UnitsClient";
 export const dynamic = "force-dynamic";
 
 export default async function AdminUnits({ params }: { params: { projectId: string } }) {
-  await requireAdmin(PLATFORM_PERMISSIONS.manageInventory);
+  const session = await requireAdmin(PLATFORM_PERMISSIONS.manageInventory);
   if (!platformSettingsHasFeature(getPlatformSettings(), "inventory")) {
     notFound();
   }
+  const user = session.user as { id?: string; role?: string };
 
-  const project = await prisma.project.findUnique({
-    where: { id: params.projectId },
-    select: {
-      id: true,
-      buildings: {
-        select: { id: true, name: true },
-        orderBy: { sortOrder: "asc" },
+  const [project, managers] = await Promise.all([
+    prisma.project.findUnique({
+      where: { id: params.projectId },
+      select: {
+        id: true,
+        buildings: {
+          select: { id: true, name: true },
+          orderBy: { sortOrder: "asc" },
+        },
       },
-    },
-  });
+    }),
+    prisma.user.findMany({
+      where: { isActive: true, role: { in: ["sales_director", "sales_agent", "external_agent"] } },
+      select: { id: true, name: true, email: true },
+      orderBy: [{ role: "asc" }, { name: "asc" }],
+    }),
+  ]);
 
   if (!project) notFound();
 
@@ -106,6 +114,8 @@ export default async function AdminUnits({ params }: { params: { projectId: stri
       }))}
       initialBuildings={project.buildings}
       projectId={params.projectId}
+      currentUserId={user.id || null}
+      managers={managers}
     />
   );
 }

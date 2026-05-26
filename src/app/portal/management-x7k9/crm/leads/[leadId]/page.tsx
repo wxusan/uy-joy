@@ -16,6 +16,7 @@ import {
 import { PLATFORM_PERMISSIONS } from "@/lib/platform-plans";
 import { getPlatformSettings, platformSettingsHasFeature } from "@/lib/platform-settings";
 import ClientQualificationPanel from "@/components/crm/ClientQualificationPanel";
+import BronApartmentButton from "@/components/crm/BronApartmentButton";
 import LeadOwnerSelect from "@/components/crm/LeadOwnerSelect";
 import LeadQuickActions from "./LeadQuickActions";
 
@@ -42,7 +43,21 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ lea
   });
   if (!lead) notFound();
   const canAssignLeads = canViewAllLeads(user);
-  const [qualification, interestedUnits, recommendations, managers] = lead.clientId
+  const leadUnitPromise = lead.unitId
+    ? prisma.unit.findUnique({
+        where: { id: lead.unitId },
+        select: {
+          id: true,
+          unitNumber: true,
+          rooms: true,
+          area: true,
+          status: true,
+          totalPrice: true,
+          floor: { select: { number: true, building: { select: { name: true } } } },
+        },
+      })
+    : Promise.resolve(null);
+  const [qualification, interestedUnits, recommendations, managers, leadUnit] = lead.clientId
     ? await Promise.all([
         getClientQualification(lead.clientId),
         getInterestedUnits(lead.clientId),
@@ -54,6 +69,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ lea
               orderBy: [{ role: "asc" }, { name: "asc" }],
             })
           : Promise.resolve([]),
+        leadUnitPromise,
       ])
     : await Promise.all([
         Promise.resolve(null),
@@ -66,6 +82,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ lea
               orderBy: [{ role: "asc" }, { name: "asc" }],
             })
           : Promise.resolve([]),
+        leadUnitPromise,
       ]);
   const visibleQualification = qualificationForRole(qualification, user);
   const canEditQualification = Boolean(lead.client && canEditClientQualification(user, { ...lead.client, leads: [{ assignedToId: lead.assignedToId }] }));
@@ -141,6 +158,40 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ lea
         phone={lead.client?.phone || lead.phone}
       />
 
+      {leadUnit?.status === "available" ? (
+        <div className="a-card p-4 flex flex-col gap-3">
+          <div>
+            <h2 className="text-[15px] font-semibold">{t("bronFromLeadTitle")}</h2>
+            <p className="text-[13px]" style={{ color: "var(--a-text-secondary)" }}>
+              {leadUnit.floor.building.name} · {leadUnit.floor.number}-qavat · №{lead.unitNumberSnapshot || leadUnit.unitNumber}
+            </p>
+          </div>
+          <BronApartmentButton
+            unit={{
+              id: leadUnit.id,
+              unitNumber: leadUnit.unitNumber,
+              displayNumber: lead.unitNumberSnapshot || leadUnit.unitNumber,
+              buildingName: leadUnit.floor.building.name,
+              floorNumber: leadUnit.floor.number,
+              rooms: leadUnit.rooms,
+              area: leadUnit.area,
+              totalPrice: leadUnit.totalPrice,
+              status: leadUnit.status,
+            }}
+            client={lead.client ? { id: lead.client.id, fullName: lead.client.fullName, phone: lead.client.phone } : null}
+            defaultClientName={lead.client?.fullName || lead.name}
+            defaultClientPhone={lead.client?.phone || lead.phone}
+            leadId={lead.id}
+            projectId={lead.projectId}
+            source={lead.source}
+            assignedToId={lead.assignedToId}
+            currentUserId={user.id || null}
+            managers={managers}
+            className="a-btn a-btn-primary w-fit"
+          />
+        </div>
+      ) : null}
+
       {lead.clientId ? (
         <ClientQualificationPanel
           clientId={lead.clientId}
@@ -150,6 +201,10 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ lea
           initialInterestedUnits={JSON.parse(JSON.stringify(interestedUnits))}
           initialRecommendations={JSON.parse(JSON.stringify(recommendations))}
           canEdit={canEditQualification}
+          client={lead.client ? { id: lead.client.id, fullName: lead.client.fullName, phone: lead.client.phone } : null}
+          currentUserId={user.id || null}
+          assignedToId={lead.assignedToId}
+          managers={managers}
         />
       ) : null}
 

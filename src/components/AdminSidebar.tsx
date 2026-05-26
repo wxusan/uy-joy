@@ -202,7 +202,7 @@ const navGroups: NavGroup[] = [
         icon: <Globe2 className="w-[14px] h-[14px]" />,
         permission: "managePublicContent",
         feature: "publicPage",
-        audiences: ["marketing"],
+        audiences: ["developer", "marketing"],
       },
       {
         href: "/portal/management-x7k9/projects",
@@ -210,7 +210,7 @@ const navGroups: NavGroup[] = [
         icon: <Building2 className="w-[14px] h-[14px]" />,
         permission: "managePublicContent",
         feature: "publicPage",
-        audiences: ["marketing"],
+        audiences: ["developer", "marketing"],
       },
       {
         href: "/portal/management-x7k9/faqs",
@@ -218,7 +218,7 @@ const navGroups: NavGroup[] = [
         icon: <HelpCircle className="w-[14px] h-[14px]" />,
         permission: "managePublicContent",
         feature: "publicPage",
-        audiences: ["marketing"],
+        audiences: ["developer", "marketing"],
       },
     ],
   },
@@ -229,8 +229,8 @@ const navGroups: NavGroup[] = [
         href: "/portal/management-x7k9/settings",
         labelKey: "settingsNav",
         icon: <Settings className="w-[14px] h-[14px]" />,
-        permission: "manageDeploymentSettings",
-        audiences: ["developer", "owner"],
+        permission: "technicalSettings",
+        audiences: ["developer"],
       },
       {
         href: "/portal/management-x7k9/users",

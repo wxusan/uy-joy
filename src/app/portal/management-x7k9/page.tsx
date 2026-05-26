@@ -16,6 +16,7 @@ export default async function AdminDashboard() {
   const role = (session.user as { role?: string } | undefined)?.role;
   const user = session.user as { id?: string; role?: string };
   const settings = getPlatformSettings();
+  const isDeveloper = roleHasPlatformPermission(role, "technicalSettings");
   const inventoryEnabled = platformSettingsHasFeature(settings, "inventory");
   const publicPageEnabled = platformSettingsHasFeature(settings, "publicPage");
   const crmEnabled = platformSettingsHasFeature(settings, "crm");
@@ -33,6 +34,118 @@ export default async function AdminDashboard() {
     const days = Math.round(h / 24);
     if (days < 7) return t("daysAgo", { days });
     return d.toLocaleDateString();
+  }
+
+  if (isDeveloper) {
+    const [
+      projectCount,
+      buildingCount,
+      floorCount,
+      unitCount,
+      heroImageCount,
+      analyticsEventCount,
+      firstProject,
+    ] = await Promise.all([
+      prisma.project.count(),
+      prisma.building.count(),
+      prisma.floor.count(),
+      prisma.unit.count(),
+      prisma.heroImage.count(),
+      prisma.analyticsEvent.count(),
+      prisma.project.findFirst({ select: { id: true, name: true }, orderBy: { createdAt: "asc" } }),
+    ]);
+
+    const developerStats = [
+      { label: t("projects"), value: projectCount },
+      { label: t("buildings"), value: buildingCount },
+      { label: t("floors"), value: floorCount },
+      { label: t("units"), value: unitCount },
+      { label: t("buildingImages"), value: heroImageCount },
+      { label: t("analytics"), value: analyticsEventCount },
+    ];
+
+    const developerActions = [
+      { label: t("projects"), href: "/portal/management-x7k9/projects" },
+      firstProject
+        ? { label: t("buildings"), href: `/portal/management-x7k9/projects/${firstProject.id}/buildings` }
+        : null,
+      firstProject
+        ? { label: t("buildingImages"), href: `/portal/management-x7k9/projects/${firstProject.id}/images` }
+        : null,
+      firstProject
+        ? { label: t("units"), href: `/portal/management-x7k9/projects/${firstProject.id}/units` }
+        : null,
+      { label: t("publicPageNav"), href: "/portal/management-x7k9/public-page" },
+      { label: t("faq"), href: "/portal/management-x7k9/faqs" },
+      { label: t("analytics"), href: "/portal/management-x7k9/analytics" },
+      { label: t("settingsNav"), href: "/portal/management-x7k9/settings" },
+      { label: t("users"), href: "/portal/management-x7k9/users" },
+    ].filter((action): action is { label: string; href: string } => Boolean(action));
+
+    return (
+      <div className="flex flex-col gap-8">
+        <div className="flex items-end justify-between gap-4">
+          <div>
+            <h1 className="a-page-title">{t("dashboard")}</h1>
+            <p className="a-page-sub">Developer workspace · kontent, uploads, PostHog va tizim sozlamalari.</p>
+          </div>
+          <Link href="/portal/management-x7k9/analytics" className="a-btn">
+            {t("analytics")}
+            <ArrowUpRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+
+        <section className="a-card grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6" style={{ overflow: "hidden" }}>
+          {developerStats.map((s, i) => (
+            <div
+              key={s.label}
+              className="px-4 py-3"
+              style={{ borderRight: i < developerStats.length - 1 ? "1px solid var(--a-border)" : undefined }}
+            >
+              <div className="text-[11px] uppercase tracking-wide" style={{ color: "var(--a-text-tertiary)", letterSpacing: "0.04em" }}>
+                {s.label}
+              </div>
+              <div className="mt-1 text-[22px] font-semibold tabular-nums" style={{ color: "var(--a-text)", lineHeight: 1.1 }}>
+                {s.value}
+              </div>
+            </div>
+          ))}
+        </section>
+
+        <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 a-card p-4">
+            <div className="text-[13px] font-semibold mb-3" style={{ color: "var(--a-text)" }}>
+              Developer tools
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {developerActions.map((action) => (
+                <Link
+                  key={action.href}
+                  href={action.href}
+                  className="flex items-center justify-between rounded-[6px] border px-3 py-2 text-[13px] hover:bg-[var(--a-bg-hover)]"
+                  style={{ borderColor: "var(--a-border)", color: "var(--a-text)" }}
+                >
+                  <span>{action.label}</span>
+                  <ArrowUpRight className="w-3.5 h-3.5" style={{ color: "var(--a-text-tertiary)" }} />
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          <div className="a-card p-4">
+            <div className="text-[13px] font-semibold mb-3" style={{ color: "var(--a-text)" }}>
+              PostHog
+            </div>
+            <p className="text-[13px]" style={{ color: "var(--a-text-secondary)" }}>
+              Public sahifadagi ko&apos;rishlar, kliklar, kvartira ochishlar va lead yuborish eventlarini shu yerdan tekshirasiz.
+            </p>
+            <Link href="/portal/management-x7k9/analytics" className="a-btn mt-4">
+              {t("openPosthog")}
+            </Link>
+          </div>
+        </section>
+      </div>
+    );
   }
 
   const [total, available, reserved, sold, leadsTotal, leadsNew, recentLeads] = await Promise.all([

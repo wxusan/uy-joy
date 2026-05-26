@@ -45,7 +45,7 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
 export default async function SettingsPage() {
   const session = await requireAdmin();
   const user = session.user as { role?: string } | undefined;
-  const canManageSettings = roleHasPlatformPermission(user?.role, "manageDeploymentSettings");
+  const canManageSettings = roleHasPlatformPermission(user?.role, "technicalSettings");
   if (!canManageSettings) redirect("/portal/management-x7k9");
 
   const [settings, settingsRecord] = await Promise.all([getStoredPlatformSettings(), getPlatformSettingsRecord()]);

@@ -344,7 +344,6 @@ export function roleCanSeeNavigationAudience(
 ) {
   if (!audiences?.length) return true;
   const normalizedRole = normalizePlatformRole(role);
-  if (normalizedRole === "developer") return true;
   return Boolean(normalizedRole && audiences.includes(normalizedRole));
 }
 

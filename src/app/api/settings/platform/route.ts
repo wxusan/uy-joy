@@ -57,7 +57,7 @@ const PlatformSettingsPatchSchema = z.object({
 });
 
 export async function GET() {
-  const auth = await requirePlatformApiAccess("manageDeploymentSettings");
+  const auth = await requirePlatformApiAccess("technicalSettings");
   if (auth.response) return auth.response;
 
   const [record, settings] = await Promise.all([getPlatformSettingsRecord(), getStoredPlatformSettings()]);
@@ -70,7 +70,7 @@ export async function GET() {
 }
 
 export async function PATCH(req: Request) {
-  const auth = await requirePlatformApiAccess("manageDeploymentSettings");
+  const auth = await requirePlatformApiAccess("technicalSettings");
   if (auth.response) return auth.response;
 
   const parsed = PlatformSettingsPatchSchema.safeParse(await req.json().catch(() => null));

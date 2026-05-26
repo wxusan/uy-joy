@@ -149,6 +149,7 @@ const navGroups: NavGroup[] = [
         permission: "viewReports",
         feature: "reports",
         audiences: ["owner", "sales_director"],
+        exact: true,
       },
       {
         href: "/portal/management-x7k9/reports/sales",
